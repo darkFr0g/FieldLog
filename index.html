@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Field Log">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1a1917">
+<title>Field Log</title>
+
+<!-- PWA -->
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
+
+<!-- Fonts (runtime-cached by the service worker after first online load) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="./css/styles.css">
+</head>
+<body>
+
+<nav class="nav">
+  <button class="nav-btn active" onclick="showPage('route')" id="nav-route">
+    <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+    Route
+  </button>
+  <button class="nav-btn" onclick="showPage('dlr')" id="nav-dlr">
+    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+    DLR
+  </button>
+  <button class="nav-btn" onclick="showPage('history')" id="nav-history">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    History
+  </button>
+  <button class="nav-btn" onclick="showPage('settings')" id="nav-settings">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M16.24 7.76a6 6 0 0 1 0 8.49M5.76 7.76a6 6 0 0 0 0 8.49M2.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+    Settings
+  </button>
+</nav>
+
+<!-- ROUTE PAGE -->
+<div id="page-route" class="page active">
+<div class="wrap">
+  <div class="hdr">
+    <div class="vbadge">v5.2</div>
+    <h1 class="hdr-title">Locations for <span id="headingName">Jeremiah Flavin</span></h1>
+  </div>
+  <div id="uploadSection">
+    <div class="name-box">
+      <label for="inspectorInput">Inspector name</label>
+      <input type="text" id="inspectorInput" value="Jeremiah Flavin" autocomplete="off" spellcheck="false">
+    </div>
+    <div class="drop-zone" id="dropZone">
+      <span style="display:block;margin-bottom:12px">
+        <svg width="48" height="48" viewBox="0 0 44 44" fill="none"><rect x="8" y="4" width="28" height="36" rx="3" fill="#e2e0da" stroke="#1a1917" stroke-width="2"/><rect x="15" y="1" width="14" height="7" rx="2" fill="#1a1917" stroke="#1a1917" stroke-width="2"/><line x1="14" y1="17" x2="30" y2="17" stroke="#1a1917" stroke-width="2" stroke-linecap="round"/><line x1="14" y1="23" x2="30" y2="23" stroke="#1a1917" stroke-width="2" stroke-linecap="round"/><line x1="14" y1="29" x2="24" y2="29" stroke="#1a1917" stroke-width="2" stroke-linecap="round"/></svg>
+      </span>
+      <h2>Drop route sheet here</h2>
+      <p>Tap to browse · .xlsx files only</p>
+      <label class="file-label">
+        <input type="file" id="fileInput" accept=".xlsx,.xls">
+        <span class="browse-btn">Browse file</span>
+      </label>
+    </div>
+    <div class="status-bar" id="statusBar">
+      <div class="status-dot" id="statusDot"></div>
+      <span id="statusText"></span>
+    </div>
+  </div>
+  <div id="resultsSection" style="display:none">
+    <div class="cci-bar" id="cciBar"><span class="cci-label">CCI</span><div class="cci-list" id="cciList"></div></div>
+    <div class="gen-dlr-bar" id="genDlrBar">
+      <div class="gen-dlr-info" id="genDlrInfo"></div>
+      <button class="gen-dlr-btn" id="genDlrBtn">Generate DLR from Route Sheet →</button>
+      <button class="reset-btn" id="resetBtn">↩ Load another file</button>
+    </div>
+    <div class="tabs" id="tabBar"></div>
+    <div class="results-hdr" id="resultsHdr" style="display:none">
+      <span class="results-label">Your assignments</span>
+      <span class="results-count" id="resultsCount"></span>
+    </div>
+    <div id="jobsContainer"></div>
+  </div>
+</div>
+</div>
+
+<!-- DLR PAGE -->
+<div id="page-dlr" class="page">
+  <div class="date-header">
+    <div>
+      <div class="date-display" id="today-display"></div>
+      <div class="date-sub">Daily Log Report</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button class="btn btn-secondary btn-sm" onclick="saveDraft()">Save</button>
+      <input type="date" id="log-date" style="background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:6px 8px;font-size:13px;color:var(--ink);font-family:var(--font);outline:none" onchange="updateDateDisplay()">
+    </div>
+  </div>
+  <div id="crews-container"></div>
+  <div class="add-crew-wrap">
+    <button class="btn btn-secondary" style="width:100%;justify-content:center" onclick="addCrew()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Add Crew
+    </button>
+  </div>
+  <div style="padding:0 12px 12px;margin-top:8px">
+    <button class="btn btn-green" style="width:100%;justify-content:center" onclick="submitLog()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+      Submit Log
+    </button>
+  </div>
+</div>
+
+<!-- HISTORY PAGE -->
+<div id="page-history" class="page">
+  <div class="page-header"><h1>Log History</h1><button class="btn btn-secondary btn-sm" onclick="showExportModal()">Export</button></div>
+  <div class="search-bar"><input class="search-input" placeholder="Search date, WO/WR#, location…" id="search-input" oninput="renderHistory()"></div>
+  <div id="history-list"></div>
+</div>
+
+<!-- SETTINGS PAGE -->
+<div id="page-settings" class="page">
+  <div class="page-header"><h1>Settings</h1></div>
+  <div class="settings-section">
+    <div class="settings-title">Master Lists</div>
+    <div class="settings-card">
+      <div class="settings-row" style="cursor:pointer" onclick="showListEditor('trade')">
+        <span style="font-size:15px">Employee Trades</span>
+        <span style="color:var(--ink-3);font-size:13px" id="trade-count"></span>
+      </div>
+      <div class="settings-row" style="cursor:pointer" onclick="showListEditor('equipment')">
+        <span style="font-size:15px">Equipment Types</span>
+        <span style="color:var(--ink-3);font-size:13px" id="equip-count"></span>
+      </div>
+    </div>
+  </div>
+  <div class="settings-section">
+    <div class="settings-title">Data</div>
+    <div class="settings-card">
+      <div class="settings-row"><span style="font-size:15px">Total logs saved</span><span style="color:var(--ink-3);font-size:13px" id="log-count-display"></span></div>
+      <div class="settings-row" style="cursor:pointer" onclick="clearAllData()"><span style="font-size:15px;color:var(--red)">Clear all data</span></div>
+    </div>
+  </div>
+  <div class="settings-section" style="margin-bottom:20px">
+    <div class="settings-title">About</div>
+    <div class="settings-card">
+      <div class="settings-row"><span style="font-size:15px">Field Log</span><span style="color:var(--ink-3);font-size:13px">v5.2</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- PICKER SHEET -->
+<div id="picker-overlay" style="display:none">
+  <div class="picker-overlay" onclick="closePicker(event)">
+    <div class="picker-sheet" onclick="event.stopPropagation()">
+      <div class="picker-header">
+        <div class="picker-title" id="picker-title"></div>
+        <button class="picker-close" onclick="closePicker()">×</button>
+      </div>
+      <div class="picker-list" id="picker-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- LIST EDITOR MODAL -->
+<div id="list-modal" style="display:none">
+  <div class="modal-overlay" onclick="closeListModal(event)">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <div class="modal-title" id="list-modal-title"></div>
+        <button onclick="closeListModal()" style="background:none;border:none;font-size:24px;color:var(--ink-3);cursor:pointer;line-height:1">×</button>
+      </div>
+      <div id="list-modal-items" class="settings-card"></div>
+      <div class="add-item-row">
+        <input placeholder="Add new item…" id="new-item-input" onkeydown="if(event.key==='Enter')addListItem()">
+        <button class="btn btn-primary btn-sm" onclick="addListItem()">Add</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- EXPORT MODAL -->
+<div id="export-modal" style="display:none">
+  <div class="modal-overlay" onclick="closeExportModal(event)">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal-title">Export Logs</div>
+      <div style="margin-bottom:12px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div><label style="font-size:11px;color:var(--ink-4);font-weight:700;text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:4px">From</label><input type="date" id="export-from" class="field-input"></div>
+          <div><label style="font-size:11px;color:var(--ink-4);font-weight:700;text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:4px">To</label><input type="date" id="export-to" class="field-input"></div>
+        </div>
+      </div>
+      <div style="margin-bottom:16px"><label style="font-size:11px;color:var(--ink-4);font-weight:700;text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:4px">Filter (optional)</label><input class="field-input" placeholder="WO/WR # or location" id="export-filter"></div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <button class="btn btn-primary" style="justify-content:center" onclick="exportCSV()">Export to CSV (Excel)</button>
+        <button class="btn btn-secondary" style="justify-content:center" onclick="exportTXT()">Export as Text Report</button>
+        <button class="btn btn-secondary" style="justify-content:center" onclick="closeExportModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script src="./vendor/xlsx.full.min.js"></script>
+<script src="./js/app.js"></script>
+</body>
+</html>

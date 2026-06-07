@@ -1,0 +1,14 @@
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*~
+
+# Local tooling / secrets (incl. the local dev server + preview config)
+.claude/
+.vscode/
+.idea/
+
+# Keep the original single-file app out of the deploy if you drop a copy here
+FieldLog.html
