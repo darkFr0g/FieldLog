@@ -669,24 +669,69 @@ function downloadFile(name,content,type){var blob=new Blob([content],{type:type}
 // Builds a clean, readable text report for ONE log and hands it to the
 // native share sheet. On iPhone the sheet offers Notes, OneNote (if
 // installed), Mail, Messages, and Copy. Works offline.
+// Short names matching the user's Apple Notes DLR template.
+var TRADE_ABBR={
+  'Foreman':'FOREMAN','Operating Engineer':'OPERATOR','Laborers':'LABORER',
+  'Maintenance Engineer':'MECH','Welders':'WELDER','Chauffeur':'CHAFF','Flagger':'FLAGGER'
+};
+var EQUIP_ABBR={
+  'Pick Up Truck':'4x4 TRK','Backhoe':'BACKHOE','Compressor Truck':'COMP TRK',
+  'Box Truck':'BOX TRK','Weld Truck':'WELD TRK','Dump Truck':'DUMP TRK'
+};
+function abbr(map,name){return map[name]||String(name||'').toUpperCase();}
+function padR(s,n){s=String(s==null?'':s);while(s.length<n)s+=' ';return s;}
+
+// Build a plain-text report that mirrors the Apple Notes "Daily Log Report"
+// template (dividers, ••(CREW n) headers, aligned CREW/EQUIPMENT columns,
+// Task/Description/T&E/Explanation/Notes scaffold). Reads best in a
+// monospaced note. Tables can't be injected via the share sheet, so the
+// grid is rendered as aligned text columns.
 function buildLogText(log){
-  var lines=['DAILY LOG REPORT — CON EDISON',fmtDate(log.date),''];
+  var DIV='••••••••••••••••••••••••••••••••••••';
+  var d=new Date(log.date+'T12:00:00');
+  var weekday=d.toLocaleDateString('en-US',{weekday:'long'});
+  var p=log.date.split('-'); // YYYY-MM-DD
+  var mdy=parseInt(p[1],10)+'/'+parseInt(p[2],10)+'/'+p[0].slice(2);
+  var lines=[];
+  lines.push('*Daily Log Report-['+weekday+']-['+mdy+']*');
+  lines.push('');
+  lines.push('<^><^><^><^> <^><^><^><^> <^><^><^><^>');
+  var nums=log.crews.map(function(c){return c.num+'x';});
+  lines.push('++++++++['+nums.join(' & ')+']++++++++');
+  lines.push('');
   log.crews.forEach(function(c){
-    lines.push('CREW '+c.num+(c.foremen&&c.foremen.length?' — '+c.foremen.join(', '):''));
-    if(c.location)lines.push('Location: '+c.location);
-    if(c.wo)lines.push('Ticket #: '+c.wo);
-    if(c.cworxWO)lines.push('WO #: '+c.cworxWO);
-    if(c.contractor)lines.push('Contractor: '+c.contractor);
-    if(c.workDescs&&c.workDescs.length)lines.push('Work: '+c.workDescs.join(' · '));
-    var tl=(c.trades||[]).filter(function(t){return t.c>0;}).map(function(t){return t.n+': '+t.c;}).join(', ');
-    if(tl)lines.push('Trades: '+tl);
-    var el=(c.equip||[]).filter(function(e){return e.c>0;}).map(function(e){return e.n+': '+e.c;}).join(', ');
-    if(el)lines.push('Equipment: '+el);
-    if(c.comments)lines.push('Comments: '+c.comments);
-    if(c.te){lines.push('T&E: '+(c.teHours||'')+(c.teReason?' — '+c.teReason:''));if(c.teRemarks)lines.push('T&E Remarks: '+c.teRemarks);}
+    lines.push('••(CREW '+c.num+')__________________');
+    lines.push('Location: '+(c.location||''));
+    lines.push('WO/WR#: '+[c.wo,c.cworxWO].filter(Boolean).join('  '));
+    lines.push(DIV);
+    lines.push('Crew Lead: '+((c.foremen||[]).join(', ')));
+    lines.push('Contractor: '+(c.contractor||''));
     lines.push('');
+    var crewList=(c.trades||[]).filter(function(t){return t.c>0;}).map(function(t){return {n:abbr(TRADE_ABBR,t.n),c:t.c};});
+    var equipList=(c.equip||[]).filter(function(e){return e.c>0;}).map(function(e){return {n:abbr(EQUIP_ABBR,e.n),c:e.c};});
+    lines.push(padR('::::::CREW::::::',18)+'::::EQUIPMENT::::');
+    var rowN=Math.max(crewList.length,equipList.length);
+    for(var i=0;i<rowN;i++){
+      var L=crewList[i]?padR(crewList[i].n,11)+crewList[i].c:'';
+      var R=equipList[i]?padR(equipList[i].n,11)+equipList[i].c:'';
+      lines.push(padR(L,18)+R);
+    }
+    lines.push(DIV);
+    lines.push('Task:');
+    lines.push('Description:');
+    lines.push('Labor Crew: '+(c.comments||''));
+    lines.push('Mechanic:');
+    lines.push('Welders:');
+    lines.push('');
+    lines.push('T&E: '+((c.te&&c.teHours)?c.teHours:'')+'        OT:');
+    lines.push('');
+    lines.push('Explanation:');
+    lines.push('[•]:');
+    lines.push('Notes:');
+    lines.push('   [•]: '+((c.te&&c.teRemarks)?c.teRemarks:((c.te&&c.teReason)?c.teReason:'')));
+    lines.push(DIV);
   });
-  return lines.join('\n').replace(/\n{3,}/g,'\n\n').trim();
+  return lines.map(function(l){return l.replace(/\s+$/,'');}).join('\n');
 }
 
 function fallbackCopy(text){
