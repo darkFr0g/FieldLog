@@ -597,6 +597,7 @@ function renderHistory(){
       '<div class="log-expanded" id="daylog-'+log.date+'">'+crewsHTML+
         '<div style="padding:10px 16px;display:flex;gap:8px">'+
           '<button class="btn btn-secondary btn-sm" onclick="loadLogForEdit(\''+log.date+'\')">Edit</button>'+
+          '<button class="btn btn-secondary btn-sm" onclick="shareLog(\''+log.date+'\')">Share</button>'+
           '<button class="btn btn-danger btn-sm" onclick="deleteLog(\''+log.date+'\')">Delete</button>'+
         '</div></div></div>';
   }).join('');
@@ -663,6 +664,67 @@ function exportTXT(){
 }
 
 function downloadFile(name,content,type){var blob=new Blob([content],{type:type});var url=URL.createObjectURL(blob);var a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);}
+
+// ── SHARE (iOS share sheet → Notes / OneNote / etc.) ─────────────
+// Builds a clean, readable text report for ONE log and hands it to the
+// native share sheet. On iPhone the sheet offers Notes, OneNote (if
+// installed), Mail, Messages, and Copy. Works offline.
+function buildLogText(log){
+  var lines=['DAILY LOG REPORT — CON EDISON',fmtDate(log.date),''];
+  log.crews.forEach(function(c){
+    lines.push('CREW '+c.num+(c.foremen&&c.foremen.length?' — '+c.foremen.join(', '):''));
+    if(c.location)lines.push('Location: '+c.location);
+    if(c.wo)lines.push('Ticket #: '+c.wo);
+    if(c.cworxWO)lines.push('WO #: '+c.cworxWO);
+    if(c.contractor)lines.push('Contractor: '+c.contractor);
+    if(c.workDescs&&c.workDescs.length)lines.push('Work: '+c.workDescs.join(' · '));
+    var tl=(c.trades||[]).filter(function(t){return t.c>0;}).map(function(t){return t.n+': '+t.c;}).join(', ');
+    if(tl)lines.push('Trades: '+tl);
+    var el=(c.equip||[]).filter(function(e){return e.c>0;}).map(function(e){return e.n+': '+e.c;}).join(', ');
+    if(el)lines.push('Equipment: '+el);
+    if(c.comments)lines.push('Comments: '+c.comments);
+    if(c.te){lines.push('T&E: '+(c.teHours||'')+(c.teReason?' — '+c.teReason:''));if(c.teRemarks)lines.push('T&E Remarks: '+c.teRemarks);}
+    lines.push('');
+  });
+  return lines.join('\n').replace(/\n{3,}/g,'\n\n').trim();
+}
+
+function fallbackCopy(text){
+  try{
+    var ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.opacity='0';
+    document.body.appendChild(ta);ta.focus();ta.select();
+    var ok=document.execCommand('copy');document.body.removeChild(ta);
+    showToast(ok?'Copied — paste into Notes':'Could not share');
+  }catch(e){showToast('Could not share');}
+}
+
+function shareText(title,text){
+  if(navigator.share){
+    navigator.share({title:title,text:text}).catch(function(err){
+      // User cancelling the share sheet rejects with AbortError — ignore that.
+      if(err&&err.name!=='AbortError'){
+        if(navigator.clipboard&&navigator.clipboard.writeText){
+          navigator.clipboard.writeText(text).then(function(){showToast('Copied — paste into Notes');}).catch(function(){fallbackCopy(text);});
+        }else fallbackCopy(text);
+      }
+    });
+  }else if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(function(){showToast('Copied — paste into Notes');}).catch(function(){fallbackCopy(text);});
+  }else{
+    fallbackCopy(text);
+  }
+}
+
+function shareCurrentDLR(){
+  if(currentCrews.length===0){showToast('No crews to share');return;}
+  var date=document.getElementById('log-date').value;
+  shareText('DLR — '+fmtDate(date),buildLogText({date:date,crews:currentCrews}));
+}
+
+function shareLog(date){
+  var log=logs.find(function(l){return l.date===date;});if(!log)return;
+  shareText('DLR — '+fmtDate(date),buildLogText(log));
+}
 
 initLogDate();loadTodayDraft();renderCrews();updateSettingsCounts();
 if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('./sw.js').catch(function(){});});}
