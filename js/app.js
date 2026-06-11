@@ -113,8 +113,28 @@ function parseSummaryDate(wb){
 function extractPhone(s){if(!s)return null;var m=String(s).match(/\(?\s*(\d{3})\s*[).\-\s]\s*(\d{3})\s*[.\-\s]\s*(\d{4})\b/);return m?(m[1]+m[2]+m[3]):null;}
 function normPhone(p){if(!p)return '';var d=String(p).replace(/\D/g,'');if(d.length===10)return '+1'+d;if(d.length===11&&d.charAt(0)==='1')return '+'+d;return '+'+d;}
 function smsHref(phone,msg){return 'sms:'+normPhone(phone)+'&body='+encodeURIComponent(msg);}
+function formatPhone(p){var d=String(p||'').replace(/\D/g,'');if(d.length===11&&d.charAt(0)==='1')d=d.slice(1);if(d.length!==10)return String(p||'');return '('+d.slice(0,3)+') '+d.slice(3,6)+'-'+d.slice(6);}
 // Foreman name without the leading "ID- " and trailing " (phone)".
 function foremanName(s){if(!s)return '';return String(s).replace(/^\d+\s*[-\s]\s*/,'').replace(/\s*\([^)]*\)\s*$/,'').trim();}
+
+// Tap a foreman number → small Call / Send-text chooser (text keeps the
+// prefilled greeting). Actions are stashed by index to avoid attribute escaping.
+function openForemanActions(idx){
+  var a=(window._fmActions||[])[idx];if(!a)return;
+  var ov=document.createElement('div');ov.className='modal-overlay';
+  ov.innerHTML='<div class="modal fm-actions">'+
+    '<div class="fm-actions-name">'+escHtml(a.name||'Foreman')+'</div>'+
+    '<div class="fm-actions-num">'+escHtml(a.display)+'</div>'+
+    '<a class="btn btn-green fm-act" href="tel:'+a.intl+'">Call</a>'+
+    '<a class="btn btn-primary fm-act" href="'+smsHref(a.digits,a.msg)+'">Send text</a>'+
+    '<button class="btn btn-secondary fm-act fm-cancel">Cancel</button>'+
+  '</div>';
+  function close(){if(ov.parentNode)ov.parentNode.removeChild(ov);}
+  ov.addEventListener('click',function(e){if(e.target===ov||e.target.classList.contains('fm-cancel'))close();});
+  var links=ov.querySelectorAll('a.fm-act');
+  for(var i=0;i<links.length;i++){links[i].addEventListener('click',function(){setTimeout(close,150);});}
+  document.body.appendChild(ov);
+}
 
 function processFile(file){
   var NAME=inspectorInput.value.trim()||'Jeremiah Flavin';
@@ -231,6 +251,7 @@ function renderFlavinJobs(jobs){
   resultsHdr.style.display='flex';resultsCount.textContent=jobs.length+' job'+(jobs.length!==1?'s':'');
   jobsContainer.innerHTML='';if(!jobs||jobs.length===0){jobsContainer.innerHTML='<div class="no-jobs">No jobs assigned</div>';return;}
   var h=allData.headers;var grid=document.createElement('div');grid.className='jobs';
+  window._fmActions=[];
   jobs.forEach(function(row){
     var loc=gv(row,h,'Location')||'—',tw=gv(row,h,'Type Of Work')||'',wd=gv(row,h,'Work Description'),tk=gv(row,h,'Ticket #'),wo=gv(row,h,'Layout/CWORX Work Order #'),fm=gv(row,h,"Contractor's Foreman"),ph=gv(row,h,'Permit Hours'),psc=gv(row,h,'PSC File #'),cci=gv(row,h,'CCI'),jo=gv(row,h,'Job Owner'),cg=gv(row,h,'Contingency (Y/N)'),cn=gv(row,h,'Contingency #'),hp=gv(row,h,'Hold Point'),c7=gv(row,h,'Code 753'),co=row._co||'';
     var twl=tw.toLowerCase();var bc=twl.indexOf('major')!==-1?'tbadge t-major':twl.indexOf('new')!==-1?'tbadge t-new':'tbadge t-mrp';
@@ -238,11 +259,15 @@ function renderFlavinJobs(jobs){
     var fmPhone=extractPhone(fm);var fmDisp=fm?(foremanName(fm)||fm):'';
     var wrMsg=(tk||wo||'');
     var greet='Good morning, I\'m covering you on '+((wrMsg+' '+(loc==='—'?'':loc)).replace(/\s+/g,' ').trim())+' today';
-    var fmBtn=fmPhone?'<a class="fm-text-btn" href="'+smsHref(fmPhone,greet)+'">Text foreman</a>':'';
+    var fmLink='';
+    if(fmPhone){
+      var fmIdx=window._fmActions.push({name:fmDisp,digits:fmPhone,intl:normPhone(fmPhone),display:formatPhone(fmPhone),msg:greet})-1;
+      fmLink='<a class="fm-phone" href="javascript:void(0)" onclick="openForemanActions('+fmIdx+');return false;">'+formatPhone(fmPhone)+'</a>';
+    }
     var card=document.createElement('div');card.className='job-card';
     card.innerHTML='<div class="card-head"><div class="loc">'+loc+'</div>'+(tw?'<span class="'+bc+'">'+tw+'</span>':'')+' </div>'+
       '<div class="card-primary"><div class="pf"><span class="fl">Ticket #</span><span class="fv'+(tk?'':' mt')+'">'+(tk||'N/A')+'</span></div><div class="pf"><span class="fl">Contingency</span><span class="fv pl'+(cgf?'':' mt')+'">'+(cgf||'No')+'</span></div></div>'+
-      '<div class="card-foreman">'+(co?'<div class="co-tag">'+co+'</div>':'')+' <div class="fm-name'+(fm?'':' mt')+'">'+(fmDisp||'N/A')+'</div>'+fmBtn+'</div>'+
+      '<div class="card-foreman">'+(co?'<div class="co-tag">'+co+'</div>':'')+' <div class="fm-name'+(fm?'':' mt')+'">'+(fmDisp||'N/A')+'</div>'+fmLink+'</div>'+
       '<div class="card-fields"><div class="cf"><span class="fl">Work</span><span class="cfv pl'+(wd?'':' mt')+'">'+(wd||'N/A')+'</span></div><div class="cf"><span class="fl">Work order</span><span class="cfv'+(wo?'':' mt')+'">'+(wo||'N/A')+'</span></div><div class="cf"><span class="fl">Permit hrs</span><span class="cfv'+(ph?'':' mt')+'">'+(ph||'N/A')+'</span></div><div class="cf"><span class="fl">PSC</span><span class="cfv pl'+(psc?'':' mt')+'">'+(psc||'N/A')+'</span></div><div class="cf"><span class="fl">CCI</span><span class="cfv pl'+(cci?'':' mt')+'">'+(cci||'N/A')+'</span></div><div class="cf"><span class="fl">Job owner</span><span class="cfv pl'+(jo?'':' mt')+'">'+(jo||'N/A')+'</span></div><div class="cf"><span class="fl">Code 753</span><span class="cfv'+(c7?'':' mt')+'">'+(c7||'N/A')+'</span></div></div>'+
       '<div class="badges"><span class="b-cont">Contingency: '+(cgf||'No')+'</span><span class="b-hp">Hold Point: '+((hp&&hp.toLowerCase()!=='n')?hp:'N/A')+'</span></div>';
     grid.appendChild(card);
