@@ -69,22 +69,42 @@ The Share button (DLR page + each History entry) uses `navigator.share` to push
 a **plain-text** report into the iOS share sheet (Notes, OneNote, Mail, etc.),
 with a clipboard-copy fallback on desktop.
 
-`buildLogText(log)` is intentionally shaped to **mirror the user's Apple Notes
-"Daily Log Report" template**:
-- Title line `*Daily Log Report-[DAY]-[M/D/YY]*` (becomes the Notes title)
-- `<^><^>` divider, `++++[Nx & ...]++++` crew banner
-- Per crew: `••(CREW n)__`, Location, WO/WR#, Crew Lead, Contractor
+`buildLogText(log)` is a **clean plain-text** report (symbols removed; the
+earlier `••••`/`<^>`/`::::`/`++++` template style was dropped as "ugly"):
+- First line `Daily Log Report — <full weekday, month day, year>` (becomes the
+  Notes title; carries the **route-sheet date**, not the export date)
+- Per crew: `CREW n`, then aligned labels `Crew Lead:` / `Contractor:` /
+  `Location:` / `WO/WR#:`
 - **CREW / EQUIPMENT grid as aligned monospaced text columns** (real Notes
   tables can't be injected via the share sheet — plain text only)
-- Task / Description / Mechanic / Welders / T&E / OT / Explanation / Notes
-  scaffold, left mostly blank for the user to fill in the field
-- Uses the template's short names via `TRADE_ABBR` / `EQUIP_ABBR`:
-  Foreman→FOREMAN, Operating Engineer→OPERATOR, Laborers→LABORER,
-  Maintenance Engineer→MECH, Welders→WELDER, Chauffeur→CHAFF, Flagger→FLAGGER;
-  Pick Up Truck→4x4 TRK, Compressor Truck→COMP TRK, Box Truck→BOX TRK,
-  Weld Truck→WELD TRK, Dump Truck→DUMP TRK.
+- `Task:` / `Description:` always; **`Labor Crew:` / `Mechanic:` / `Welders:`
+  only appear when that trade is on the crew** (Laborers / Maintenance Engineer
+  / Welders). Comments ride on `Labor Crew:` (else `Description:`). `T&E:`/`OT:`
+  line only when T&E is toggled.
+- **Striking rule (`━━━…`) between crews**; subtle blank-line separation within.
+- Short names via `TRADE_ABBR` / `EQUIP_ABBR`: Foreman→FOREMAN, Operating
+  Engineer→OPERATOR, Laborers→LABORER, Maintenance Engineer→MECH,
+  Welders→WELDER, Chauffeur→CHAFF, Flagger→FLAGGER; Pick Up Truck→4x4 TRK,
+  Compressor Truck→COMP TRK, Box Truck→BOX TRK, Weld Truck→WELD TRK,
+  Dump Truck→DUMP TRK.
 
 Columns align best when the Notes font is set to **Monospaced** (Aa toggle).
+
+## Route-sheet date (`parseDateFromName` / `parseSummaryDate`)
+
+The DLR work date comes from the uploaded **file name** (`BxCMG MM.DD.YY ...xlsx`),
+falling back to **Summary!A1** (e.g. "Thursday, June 11, 2026"), then today.
+`generateDLR` sets the DLR date picker from it, so the date flows into the
+shared-note title and History.
+
+## Text the foreman (assignment cards)
+
+The route sheet embeds the foreman's number in the **Contractor's Foreman**
+field, e.g. `566059- Ben Cramer (973-919-9700)`. `renderFlavinJobs` shows the
+cleaned name (`foremanName`) plus a green **"Text foreman"** button — an
+`sms:+1…&body=…` link (`extractPhone` / `normPhone` / `smsHref`) that opens
+iOS Messages prefilled with "Good morning, I'm covering you on `<Ticket #>`
+`<Location>` today".
 
 ## Master lists (exact cWorx/Maximo names — keep exact)
 
