@@ -88,6 +88,34 @@ function parseCCIs(wb){
   return out;
 }
 
+// ── ROUTE-SHEET DATE ─────────────────────────────────────────────
+// The work date is reliably in the file name (BxCMG MM.DD.YY ...xlsx);
+// Summary!A1 (e.g. "Thursday, June 11, 2026") is a secondary fallback.
+function parseDateFromName(name){
+  if(!name)return null;
+  var m=String(name).match(/(\d{1,2})[.\-_](\d{1,2})[.\-_](\d{2,4})/);
+  if(!m)return null;
+  var mo=+m[1],da=+m[2],yr=+m[3];if(yr<100)yr+=2000;
+  if(mo<1||mo>12||da<1||da>31)return null;
+  return yr+'-'+('0'+mo).slice(-2)+'-'+('0'+da).slice(-2);
+}
+function parseSummaryDate(wb){
+  var ss=wb.Sheets['Summary'];if(!ss||!ss['A1'])return null;
+  var v=ss['A1'].v;
+  if(v instanceof Date&&!isNaN(v))return v.getFullYear()+'-'+('0'+(v.getMonth()+1)).slice(-2)+'-'+('0'+v.getDate()).slice(-2);
+  var t=Date.parse(String(v));
+  if(!isNaN(t)){var d=new Date(t);return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);}
+  return null;
+}
+
+// ── FOREMAN PHONE / SMS ──────────────────────────────────────────
+// The foreman field embeds the number, e.g. "566059- Ben Cramer (973-919-9700)".
+function extractPhone(s){if(!s)return null;var m=String(s).match(/\(?\s*(\d{3})\s*[).\-\s]\s*(\d{3})\s*[.\-\s]\s*(\d{4})\b/);return m?(m[1]+m[2]+m[3]):null;}
+function normPhone(p){if(!p)return '';var d=String(p).replace(/\D/g,'');if(d.length===10)return '+1'+d;if(d.length===11&&d.charAt(0)==='1')return '+'+d;return '+'+d;}
+function smsHref(phone,msg){return 'sms:'+normPhone(phone)+'&body='+encodeURIComponent(msg);}
+// Foreman name without the leading "ID- " and trailing " (phone)".
+function foremanName(s){if(!s)return '';return String(s).replace(/^\d+\s*[-\s]\s*/,'').replace(/\s*\([^)]*\)\s*$/,'').trim();}
+
 function processFile(file){
   var NAME=inspectorInput.value.trim()||'Jeremiah Flavin';
   headingName.textContent=NAME;
@@ -160,7 +188,8 @@ function processFile(file){
           }
         });
       }
-      allData={headers:headers,flavin:myJobs,flavinCompany:myJobsCompany,owned:ownedJobs,sheets:sheetJobs,ccis:ccis,contractorSheets:SHEETS,name:NAME};
+      var routeDate=parseDateFromName(file.name)||parseSummaryDate(wb)||null;
+      allData={headers:headers,flavin:myJobs,flavinCompany:myJobsCompany,owned:ownedJobs,sheets:sheetJobs,ccis:ccis,contractorSheets:SHEETS,name:NAME,routeDate:routeDate};
       renderRouteResults();
     }catch(err){setStatus('err','Error: '+err.message);dropZone.style.display='';}
   };
@@ -206,10 +235,14 @@ function renderFlavinJobs(jobs){
     var loc=gv(row,h,'Location')||'—',tw=gv(row,h,'Type Of Work')||'',wd=gv(row,h,'Work Description'),tk=gv(row,h,'Ticket #'),wo=gv(row,h,'Layout/CWORX Work Order #'),fm=gv(row,h,"Contractor's Foreman"),ph=gv(row,h,'Permit Hours'),psc=gv(row,h,'PSC File #'),cci=gv(row,h,'CCI'),jo=gv(row,h,'Job Owner'),cg=gv(row,h,'Contingency (Y/N)'),cn=gv(row,h,'Contingency #'),hp=gv(row,h,'Hold Point'),c7=gv(row,h,'Code 753'),co=row._co||'';
     var twl=tw.toLowerCase();var bc=twl.indexOf('major')!==-1?'tbadge t-major':twl.indexOf('new')!==-1?'tbadge t-new':'tbadge t-mrp';
     var cgf=(cg&&cg.toLowerCase()!=='no')?(cg+(cn?' · '+cn:'')):null;
+    var fmPhone=extractPhone(fm);var fmDisp=fm?(foremanName(fm)||fm):'';
+    var wrMsg=(tk||wo||'');
+    var greet='Good morning, I\'m covering you on '+((wrMsg+' '+(loc==='—'?'':loc)).replace(/\s+/g,' ').trim())+' today';
+    var fmBtn=fmPhone?'<a class="fm-text-btn" href="'+smsHref(fmPhone,greet)+'">Text foreman</a>':'';
     var card=document.createElement('div');card.className='job-card';
     card.innerHTML='<div class="card-head"><div class="loc">'+loc+'</div>'+(tw?'<span class="'+bc+'">'+tw+'</span>':'')+' </div>'+
       '<div class="card-primary"><div class="pf"><span class="fl">Ticket #</span><span class="fv'+(tk?'':' mt')+'">'+(tk||'N/A')+'</span></div><div class="pf"><span class="fl">Contingency</span><span class="fv pl'+(cgf?'':' mt')+'">'+(cgf||'No')+'</span></div></div>'+
-      '<div class="card-foreman">'+(co?'<div class="co-tag">'+co+'</div>':'')+' <div class="fm-name'+(fm?'':' mt')+'">'+(fm||'N/A')+'</div></div>'+
+      '<div class="card-foreman">'+(co?'<div class="co-tag">'+co+'</div>':'')+' <div class="fm-name'+(fm?'':' mt')+'">'+(fmDisp||'N/A')+'</div>'+fmBtn+'</div>'+
       '<div class="card-fields"><div class="cf"><span class="fl">Work</span><span class="cfv pl'+(wd?'':' mt')+'">'+(wd||'N/A')+'</span></div><div class="cf"><span class="fl">Work order</span><span class="cfv'+(wo?'':' mt')+'">'+(wo||'N/A')+'</span></div><div class="cf"><span class="fl">Permit hrs</span><span class="cfv'+(ph?'':' mt')+'">'+(ph||'N/A')+'</span></div><div class="cf"><span class="fl">PSC</span><span class="cfv pl'+(psc?'':' mt')+'">'+(psc||'N/A')+'</span></div><div class="cf"><span class="fl">CCI</span><span class="cfv pl'+(cci?'':' mt')+'">'+(cci||'N/A')+'</span></div><div class="cf"><span class="fl">Job owner</span><span class="cfv pl'+(jo?'':' mt')+'">'+(jo||'N/A')+'</span></div><div class="cf"><span class="fl">Code 753</span><span class="cfv'+(c7?'':' mt')+'">'+(c7||'N/A')+'</span></div></div>'+
       '<div class="badges"><span class="b-cont">Contingency: '+(cgf||'No')+'</span><span class="b-hp">Hold Point: '+((hp&&hp.toLowerCase()!=='n')?hp:'N/A')+'</span></div>';
     grid.appendChild(card);
@@ -292,8 +325,11 @@ function generateDLR(){
       comments:'',te:false,teHours:'',teReason:'',teRemarks:'',_fromRoute:true
     });
   });
-  initLogDate();renderCrews();showPage('dlr');
-  showToast(keys.length+' block'+(keys.length!==1?'s':'')+' generated');
+  var rd=(allData&&allData.routeDate)||today();
+  document.getElementById('log-date').value=rd;
+  updateDateDisplay();
+  renderCrews();showPage('dlr');
+  showToast(keys.length+' block'+(keys.length!==1?'s':'')+' generated'+(allData&&allData.routeDate?' · '+rd:''));
 }
 
 // ── DLR RENDERING ────────────────────────────────────────────────
@@ -687,51 +723,54 @@ function padR(s,n){s=String(s==null?'':s);while(s.length<n)s+=' ';return s;}
 // monospaced note. Tables can't be injected via the share sheet, so the
 // grid is rendered as aligned text columns.
 function buildLogText(log){
-  var DIV='••••••••••••••••••••••••••••••••••••';
+  var RULE='━━━━━━━━━━━━━━━━━━━━━━━━━━━━';
   var d=new Date(log.date+'T12:00:00');
-  var weekday=d.toLocaleDateString('en-US',{weekday:'long'});
-  var p=log.date.split('-'); // YYYY-MM-DD
-  var mdy=parseInt(p[1],10)+'/'+parseInt(p[2],10)+'/'+p[0].slice(2);
-  var lines=[];
-  lines.push('*Daily Log Report-['+weekday+']-['+mdy+']*');
-  lines.push('');
-  lines.push('<^><^><^><^> <^><^><^><^> <^><^><^><^>');
-  var nums=log.crews.map(function(c){return c.num+'x';});
-  lines.push('++++++++['+nums.join(' & ')+']++++++++');
-  lines.push('');
-  log.crews.forEach(function(c){
-    lines.push('••(CREW '+c.num+')__________________');
-    lines.push('Location: '+(c.location||''));
-    lines.push('WO/WR#: '+[c.wo,c.cworxWO].filter(Boolean).join('  '));
-    lines.push(DIV);
-    lines.push('Crew Lead: '+((c.foremen||[]).join(', ')));
-    lines.push('Contractor: '+(c.contractor||''));
-    lines.push('');
+  var dateLine=d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+  var out=[];
+  // First line becomes the Notes title — carries the (route-sheet) date.
+  out.push('Daily Log Report — '+dateLine);
+  out.push('');
+  log.crews.forEach(function(c,ci){
+    if(ci>0){out.push('');out.push(RULE);out.push('');}
+    out.push('CREW '+c.num);
+    var lead=(c.foremen||[]).join(', ');
+    if(lead)out.push(padR('Crew Lead:',12)+lead);
+    if(c.contractor)out.push(padR('Contractor:',12)+c.contractor);
+    if(c.location)out.push(padR('Location:',12)+c.location);
+    var wr=[c.wo,c.cworxWO].filter(Boolean).join('  ');
+    if(wr)out.push(padR('WO/WR#:',12)+wr);
+    out.push('');
+    // CREW / EQUIPMENT as aligned monospaced columns
     var crewList=(c.trades||[]).filter(function(t){return t.c>0;}).map(function(t){return {n:abbr(TRADE_ABBR,t.n),c:t.c};});
     var equipList=(c.equip||[]).filter(function(e){return e.c>0;}).map(function(e){return {n:abbr(EQUIP_ABBR,e.n),c:e.c};});
-    lines.push(padR('::::::CREW::::::',18)+'::::EQUIPMENT::::');
-    var rowN=Math.max(crewList.length,equipList.length);
-    for(var i=0;i<rowN;i++){
-      var L=crewList[i]?padR(crewList[i].n,11)+crewList[i].c:'';
-      var R=equipList[i]?padR(equipList[i].n,11)+equipList[i].c:'';
-      lines.push(padR(L,18)+R);
+    if(crewList.length||equipList.length){
+      out.push(padR('CREW',18)+'EQUIPMENT');
+      var rowN=Math.max(crewList.length,equipList.length);
+      for(var i=0;i<rowN;i++){
+        var L=crewList[i]?padR(crewList[i].n,10)+crewList[i].c:'';
+        var R=equipList[i]?padR(equipList[i].n,10)+equipList[i].c:'';
+        out.push(padR(L,18)+R);
+      }
+      out.push('');
     }
-    lines.push(DIV);
-    lines.push('Task:');
-    lines.push('Description:');
-    lines.push('Labor Crew: '+(c.comments||''));
-    lines.push('Mechanic:');
-    lines.push('Welders:');
-    lines.push('');
-    lines.push('T&E: '+((c.te&&c.teHours)?c.teHours:'')+'        OT:');
-    lines.push('');
-    lines.push('Explanation:');
-    lines.push('[•]:');
-    lines.push('Notes:');
-    lines.push('   [•]: '+((c.te&&c.teRemarks)?c.teRemarks:((c.te&&c.teReason)?c.teReason:'')));
-    lines.push(DIV);
+    // Task / Description, then Labor Crew / Mechanic / Welders ONLY if that
+    // trade is on the crew. Comments ride on Labor Crew (else Description).
+    var hasLab=(c.trades||[]).some(function(t){return t.n==='Laborers'&&t.c>0;});
+    var hasMech=(c.trades||[]).some(function(t){return t.n==='Maintenance Engineer'&&t.c>0;});
+    var hasWeld=(c.trades||[]).some(function(t){return t.n==='Welders'&&t.c>0;});
+    out.push('Task:');
+    out.push('Description:'+((c.comments&&!hasLab)?(' '+c.comments):''));
+    if(hasLab)out.push('Labor Crew:'+(c.comments?(' '+c.comments):''));
+    if(hasMech)out.push('Mechanic:');
+    if(hasWeld)out.push('Welders:');
+    if(c.te){
+      out.push('');
+      out.push(padR('T&E:',12)+(c.teHours||'')+'    OT:');
+      var teNote=[c.teReason,c.teRemarks].filter(Boolean).join(' — ');
+      if(teNote)out.push(teNote);
+    }
   });
-  return lines.map(function(l){return l.replace(/\s+$/,'');}).join('\n');
+  return out.map(function(l){return l.replace(/\s+$/,'');}).join('\n');
 }
 
 function fallbackCopy(text){
