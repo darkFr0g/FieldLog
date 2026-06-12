@@ -113,7 +113,11 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
 .dim-row{display:flex;align-items:center;gap:6px}
 .dim-row .field-input{flex:1;text-align:center}
 .dim-x{font-size:16px;font-weight:800;color:var(--ink-4);flex-shrink:0}
-.pin-row{display:grid;grid-template-columns:64px 78px 1fr;gap:6px;margin-bottom:6px}
+.pin-row{display:grid;grid-template-columns:62px 94px 1fr;gap:6px;margin-bottom:6px}
+.dir-wrap{position:relative;display:flex}
+.dir-wrap input{width:100%;text-align:center;padding-right:24px}
+.dir-pick{position:absolute;right:2px;top:0;bottom:0;width:22px;border:none;background:none;color:var(--ink-3);font-size:15px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1}
+.dir-desc{color:var(--ink-4);font-size:12px;font-weight:600}
 .pin-row:last-child{margin-bottom:0}
 .pin-row .pin-dist,.pin-row .pin-dir{text-align:center}
 .cont-hint{font-size:11px;color:var(--ink-4);margin-top:6px;line-height:1.5;font-weight:600}
@@ -125,7 +129,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
 .fac-remove{width:30px;height:30px;border-radius:var(--radius-sm);border:2px solid var(--border);background:var(--surface);color:var(--ink-4);font-size:16px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1}
 .fac-away{display:flex;gap:6px;margin-bottom:8px}
 .fac-away .fac-dist{flex:0 0 84px;text-align:center}
-.fac-away .fac-dir{flex:1;text-align:center}
+.fac-away .fac-dir-wrap{flex:1}
 .add-fac-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;background:var(--surface-2);border:2px solid var(--border);border-radius:var(--radius-sm);font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-3);cursor:pointer;font-family:var(--font)}
 .add-fac-btn:active{background:var(--border)}
 .list-jobs{display:flex;flex-direction:column;gap:6px}

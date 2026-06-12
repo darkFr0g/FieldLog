@@ -47,7 +47,7 @@
 <div id="page-route" class="page active">
 <div class="wrap">
   <div class="hdr">
-    <div class="vbadge">v5.4</div>
+    <div class="vbadge">v5.5</div>
     <h1 class="hdr-title">Locations for <span id="headingName">Jeremiah Flavin</span></h1>
   </div>
   <div id="uploadSection">
@@ -152,7 +152,7 @@
   <div class="settings-section" style="margin-bottom:20px">
     <div class="settings-title">About</div>
     <div class="settings-card">
-      <div class="settings-row"><span style="font-size:15px">Field Log</span><span style="color:var(--ink-3);font-size:13px">v5.4</span></div>
+      <div class="settings-row"><span style="font-size:15px">Field Log</span><span style="color:var(--ink-3);font-size:13px">v5.5</span></div>
     </div>
   </div>
 </div>
@@ -217,35 +217,35 @@
         <button onclick="closeContModal()" style="background:none;border:none;font-size:24px;color:var(--ink-3);cursor:pointer;line-height:1">×</button>
       </div>
       <form class="cont-form" onsubmit="return false">
-        <div class="cont-field"><label>Subject</label><input id="cont-subject" class="field-input" autocapitalize="words"></div>
+        <div class="cont-field"><label>Subject</label><input id="cont-subject" class="field-input" enterkeyhint="next" autocapitalize="words"></div>
         <div class="cont-row">
-          <div class="cont-field"><label>Contingency #</label><input id="cont-num" class="field-input"></div>
-          <div class="cont-field"><label>Layout</label><input id="cont-layout" class="field-input"></div>
+          <div class="cont-field"><label>Contingency #</label><input id="cont-num" class="field-input" enterkeyhint="next"></div>
+          <div class="cont-field"><label>Layout</label><input id="cont-layout" class="field-input" enterkeyhint="next"></div>
         </div>
-        <div class="cont-field"><label>Code 753/811</label><input id="cont-code" class="field-input"></div>
-        <div class="cont-field"><label>Contractor</label><input id="cont-contractor" class="field-input" autocapitalize="words"></div>
-        <div class="cont-field"><label>Scope — contractor will be…</label><input id="cont-scope" class="field-input" placeholder="performing weld inspection and backfill"></div>
+        <div class="cont-field"><label>Code 753/811</label><input id="cont-code" class="field-input" enterkeyhint="next"></div>
+        <div class="cont-field"><label>Contractor</label><input id="cont-contractor" class="field-input" enterkeyhint="next" autocapitalize="words"></div>
+        <div class="cont-field"><label>Scope — contractor will be…</label><input id="cont-scope" class="field-input" enterkeyhint="next" placeholder="performing weld inspection and backfill"></div>
         <div class="cont-field"><label>Dimensions — L × W × D</label>
           <div class="dim-row">
-            <input id="cont-dim-l" class="field-input" inputmode="decimal" placeholder="L" onblur="mirrorFeet(this)">
+            <input id="cont-dim-l" class="field-input" inputmode="decimal" enterkeyhint="next" placeholder="L" onblur="mirrorFeet(this)">
             <span class="dim-x">×</span>
-            <input id="cont-dim-w" class="field-input" inputmode="decimal" placeholder="W" onblur="mirrorFeet(this)">
+            <input id="cont-dim-w" class="field-input" inputmode="decimal" enterkeyhint="next" placeholder="W" onblur="mirrorFeet(this)">
             <span class="dim-x">×</span>
-            <input id="cont-dim-d" class="field-input" inputmode="decimal" placeholder="D" onblur="mirrorFeet(this)">
+            <input id="cont-dim-d" class="field-input" inputmode="decimal" enterkeyhint="next" placeholder="D" onblur="mirrorFeet(this)">
           </div>
         </div>
         <div class="cont-field"><label>Pinpoint location</label>
           <div class="pin-row">
-            <input id="cont-pin1-dist" class="field-input pin-dist" inputmode="decimal" placeholder="310" onblur="mirrorFeet(this)">
-            <input id="cont-pin1-dir" class="field-input pin-dir" placeholder="NNC" autocapitalize="characters" autocorrect="off" spellcheck="false">
-            <input id="cont-pin1-ref" class="field-input pin-ref" placeholder="E 141st St">
+            <input id="cont-pin1-dist" class="field-input pin-dist" inputmode="decimal" enterkeyhint="next" placeholder="310" onblur="mirrorFeet(this)">
+            <div class="dir-wrap"><input id="cont-pin1-dir" class="field-input pin-dir" enterkeyhint="next" placeholder="NNC" autocapitalize="characters" autocorrect="off" spellcheck="false"><button type="button" class="dir-pick" onclick="openDirPicker(this,'curb')">⌄</button></div>
+            <input id="cont-pin1-ref" class="field-input pin-ref" enterkeyhint="next" placeholder="E 141st St">
           </div>
           <div class="pin-row">
-            <input id="cont-pin2-dist" class="field-input pin-dist" inputmode="decimal" placeholder="31" onblur="mirrorFeet(this)">
-            <input id="cont-pin2-dir" class="field-input pin-dir" placeholder="EWC" autocapitalize="characters" autocorrect="off" spellcheck="false">
-            <input id="cont-pin2-ref" class="field-input pin-ref" placeholder="Walnut Ave.">
+            <input id="cont-pin2-dist" class="field-input pin-dist" inputmode="decimal" enterkeyhint="next" placeholder="31" onblur="mirrorFeet(this)">
+            <div class="dir-wrap"><input id="cont-pin2-dir" class="field-input pin-dir" enterkeyhint="next" placeholder="EWC" autocapitalize="characters" autocorrect="off" spellcheck="false"><button type="button" class="dir-pick" onclick="openDirPicker(this,'curb')">⌄</button></div>
+            <input id="cont-pin2-ref" class="field-input pin-ref" enterkeyhint="next" placeholder="Walnut Ave.">
           </div>
-          <div class="cont-hint">Curb dir: EEC · EWC · WEC · WWC · SSC · SNC · NSC · NNC&nbsp;&nbsp;(e.g. NNC = north of north curb)</div>
+          <div class="cont-hint">Tap ⌄ to pick a curb direction, or type one. EEC · EWC · WEC · WWC · SSC · SNC · NSC · NNC&nbsp;&nbsp;(e.g. NNC = north of north curb)</div>
         </div>
         <div class="cont-field"><label>Facility / main(s)</label>
           <div id="cont-fac-list"></div>
@@ -258,6 +258,19 @@
         <button type="button" class="btn btn-primary" style="justify-content:center" onclick="composeContingencyEmail()">Compose Email</button>
         <button type="button" class="btn btn-secondary" style="justify-content:center" onclick="copyContingencyReport()">Copy report</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- DIRECTION PICKER (curb / cardinal) -->
+<div id="dir-picker" style="display:none">
+  <div class="picker-overlay" onclick="closeDirPicker(event)">
+    <div class="picker-sheet" onclick="event.stopPropagation()">
+      <div class="picker-header">
+        <div class="picker-title" id="dir-picker-title">Direction</div>
+        <button class="picker-close" onclick="closeDirPicker()">×</button>
+      </div>
+      <div class="picker-list" id="dir-picker-list"></div>
     </div>
   </div>
 </div>

@@ -939,10 +939,10 @@ function facRowHTML(){
       '<button type="button" class="fac-remove" onclick="removeFacRow(this)">×</button>'+
     '</div>'+
     '<div class="fac-away" style="display:none">'+
-      '<input class="field-input fac-dist" inputmode="decimal" placeholder="dist" onblur="mirrorFeet(this)">'+
-      '<input class="field-input fac-dir" placeholder="N / S / E / W" autocapitalize="characters" autocorrect="off" spellcheck="false">'+
+      '<input class="field-input fac-dist" inputmode="decimal" enterkeyhint="next" placeholder="dist" onblur="mirrorFeet(this)">'+
+      '<div class="dir-wrap fac-dir-wrap"><input class="field-input fac-dir" enterkeyhint="next" placeholder="N/S/E/W" autocapitalize="characters" autocorrect="off" spellcheck="false"><button type="button" class="dir-pick" onclick="openDirPicker(this,\'card\')">⌄</button></div>'+
     '</div>'+
-    '<input class="field-input fac-desc" placeholder="36” XHP ST(C) 2013 Main">'+
+    '<input class="field-input fac-desc" enterkeyhint="next" placeholder="36” XHP ST(C) 2013 Main">'+
   '</div>';
 }
 function addFacRow(){
@@ -951,8 +951,9 @@ function addFacRow(){
   list.appendChild(tmp.firstChild);
   updateFacRemoveButtons();
 }
+function facItem(el){while(el&&el!==document){if(el.className&&(' '+el.className+' ').indexOf(' fac-item ')!==-1)return el;el=el.parentNode;}return null;}
 function removeFacRow(btn){
-  var item=btn.parentNode&&btn.parentNode.parentNode;
+  var item=facItem(btn);
   if(item&&item.parentNode)item.parentNode.removeChild(item);
   updateFacRemoveButtons();
 }
@@ -961,11 +962,41 @@ function updateFacRemoveButtons(){
   items.forEach(function(it){var r=it.querySelector('.fac-remove');if(r)r.style.display=items.length>1?'flex':'none';});
 }
 function setFacRel(btn,rel){
-  var item=btn.parentNode.parentNode;if(!item)return;
+  var item=facItem(btn);if(!item)return;
   item.querySelectorAll('.fac-rel-btn').forEach(function(b){b.classList.remove('active');});
   btn.classList.add('active');
   item.setAttribute('data-rel',rel);
   var away=item.querySelector('.fac-away');if(away)away.style.display=(rel==='away')?'flex':'none';
+}
+
+// ── DIRECTION PICKER (tap ⌄ to choose; field still accepts typed custom) ──
+var CURB_DIRS=[['EEC','East of East curb'],['EWC','East of West curb'],['WEC','West of East curb'],['WWC','West of West curb'],['SSC','South of South curb'],['SNC','South of North curb'],['NSC','North of South curb'],['NNC','North of North curb']];
+var CARD_DIRS=[['N','North'],['S','South'],['E','East'],['W','West']];
+var dirTarget=null;
+function openDirPicker(btn,kind){
+  dirTarget=btn.parentNode.querySelector('input');
+  var list=kind==='card'?CARD_DIRS:CURB_DIRS;
+  document.getElementById('dir-picker-title').textContent=kind==='card'?'Direction':'Curb direction';
+  document.getElementById('dir-picker-list').innerHTML=list.map(function(o){
+    return '<div class="picker-item" onclick="pickDir(\''+o[0]+'\')"><span>'+o[0]+'</span><span class="dir-desc">'+o[1]+'</span></div>';
+  }).join('');
+  document.getElementById('dir-picker').style.display='block';
+}
+function pickDir(v){if(dirTarget)dirTarget.value=v;closeDirPicker();}
+function closeDirPicker(e){if(e&&!e.target.classList.contains('picker-overlay'))return;document.getElementById('dir-picker').style.display='none';dirTarget=null;}
+
+// iOS often hides the keyboard prev/next arrows — make Return jump to the next field.
+function setupContKeyboard(){
+  var form=document.querySelector('#cont-modal .cont-form');if(!form)return;
+  form.addEventListener('keydown',function(e){
+    if(e.key!=='Enter'&&e.keyCode!==13)return;
+    var t=e.target;if(!t||t.tagName!=='INPUT')return; // textareas keep newline
+    e.preventDefault();
+    var inputs=Array.prototype.slice.call(form.querySelectorAll('input'));
+    var i=inputs.indexOf(t);
+    for(var j=i+1;j<inputs.length;j++){if(inputs[j].offsetParent!==null){inputs[j].focus();return;}}
+    t.blur();
+  });
 }
 
 // Route cards stash payloads by index (like _fmActions); DLR crews look up live.
@@ -1048,4 +1079,5 @@ initLogDate();
 if(!restoreWorkingDLR())loadTodayDraft();
 renderCrews();updateSettingsCounts();
 restoreRoute();
+setupContKeyboard();
 if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('./sw.js').catch(function(){});});}
