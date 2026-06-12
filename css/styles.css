@@ -98,14 +98,29 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
 .cf{display:flex;flex-direction:column;gap:3px}
 .cfv{font-size:12px;font-weight:700;color:var(--ink);word-break:break-word;line-height:1.4;font-family:var(--font-mono)}
 .cfv.pl{font-family:var(--font)}.cfv.mt{color:var(--border-mid);font-family:var(--font);font-weight:500}
-.badges{display:flex;flex-wrap:wrap;gap:4px;padding:7px 14px;border-top:2px solid var(--border)}
-.b-cont{background:var(--amber-bg);color:var(--amber-text);font-size:11px;font-weight:700;padding:3px 8px;border-radius:var(--radius-xs)}
-.b-hp{background:var(--coral-bg);color:var(--coral-text);font-size:11px;font-weight:700;padding:3px 8px;border-radius:var(--radius-xs)}
-.cont-chip{display:inline-flex;align-items:center;gap:5px;background:var(--amber-bg);color:var(--amber-text);font-size:12px;font-weight:800;padding:6px 12px;border-radius:var(--radius-xs);border:2px solid #f0d5a0;min-height:34px;cursor:pointer;font-family:var(--font);letter-spacing:.02em}
+.badges{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:8px 14px;border-top:2px solid var(--border)}
+/* Status tags share one box shape so Contingency / Hold Point / Fusing Peer line up. */
+.b-cont,.b-hp,.b-fuse,.status-off{display:inline-flex;align-items:center;min-height:34px;font-size:11px;font-weight:700;padding:5px 10px;border-radius:var(--radius-xs)}
+.b-cont{background:var(--amber-bg);color:var(--amber-text)}
+.b-hp{background:var(--coral-bg);color:var(--coral-text)}
+.b-fuse{background:var(--green-bg);color:var(--green-text)}
+.status-off{background:var(--surface-2);color:var(--ink-4);font-weight:600;font-style:italic;border:1px dashed var(--border-mid)}
+.cont-chip{display:inline-flex;align-items:center;gap:5px;background:var(--amber-bg);color:var(--amber-text);font-size:12px;font-weight:800;padding:5px 12px;border-radius:var(--radius-xs);border:2px solid #f0d5a0;min-height:34px;cursor:pointer;font-family:var(--font);letter-spacing:.02em}
 .cont-chip:active{background:#f3e0c0}
 .cont-form{display:flex;flex-direction:column;gap:12px}
 .cont-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .cont-field label{font-size:10px;color:var(--ink-4);font-weight:800;text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:4px}
+.dim-row{display:flex;align-items:center;gap:6px}
+.dim-row .field-input{flex:1;text-align:center}
+.dim-x{font-size:16px;font-weight:800;color:var(--ink-4);flex-shrink:0}
+.pin-row{display:grid;grid-template-columns:64px 78px 1fr;gap:6px;margin-bottom:6px}
+.pin-row:last-child{margin-bottom:0}
+.pin-row .pin-dist,.pin-row .pin-dir{text-align:center}
+.fac-row{display:flex;gap:6px;align-items:center}
+.fac-row #cont-fac-rel{flex:1}
+.fac-away{display:flex;gap:6px;flex-shrink:0}
+.fac-away .field-input{width:64px;text-align:center}
+.cont-field select.field-input{-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='3'><polyline points='6 9 12 15 18 9'/></svg>");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px}
 .list-jobs{display:flex;flex-direction:column;gap:6px}
 .list-item{background:var(--surface);border:2px solid var(--border);border-radius:var(--radius-sm);padding:11px 14px;animation:slideIn .2s ease forwards;opacity:0;transform:translateY(5px)}
 .list-loc{font-size:14px;font-weight:800;line-height:1.3;margin-bottom:4px;letter-spacing:-.01em}
@@ -195,7 +210,7 @@ textarea.field-input{resize:none;min-height:70px;line-height:1.5}
 .foreman-tag{font-size:12px;background:var(--surface-2);border:2px solid var(--border);border-radius:var(--radius-xs);padding:3px 10px;color:var(--ink-2);font-weight:700}
 
 .add-crew-wrap{padding:10px 12px}
-.badge-bar{display:flex;flex-wrap:wrap;gap:4px;padding:7px 14px;border-top:2px solid var(--border);background:#fff}
+.badge-bar{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:8px 14px;border-top:2px solid var(--border);background:#fff}
 
 /* HISTORY */
 .search-bar{padding:10px 12px;background:var(--surface);border-bottom:2px solid var(--border)}

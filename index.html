@@ -225,9 +225,40 @@
         <div class="cont-field"><label>Code 753/811</label><input id="cont-code" class="field-input"></div>
         <div class="cont-field"><label>Contractor</label><input id="cont-contractor" class="field-input"></div>
         <div class="cont-field"><label>Scope — contractor will be…</label><input id="cont-scope" class="field-input" placeholder="performing weld inspection and backfill"></div>
-        <div class="cont-field"><label>Dimensions</label><input id="cont-dims" class="field-input" placeholder="7&rsquo; W x 10&rsquo; L x 12&rsquo; D"></div>
-        <div class="cont-field"><label>Pinpoint location</label><input id="cont-pinpoint" class="field-input" placeholder="310&rsquo; NNC E 141st St &amp; 31&rsquo; EWC Walnut Ave."></div>
-        <div class="cont-field"><label>Facility — directly over the…</label><input id="cont-facility" class="field-input" placeholder="36&rdquo; XHP ST(C) 2013 Main"></div>
+        <div class="cont-field"><label>Dimensions (ft) — L × W × D</label>
+          <div class="dim-row">
+            <input id="cont-dim-l" class="field-input" inputmode="decimal" placeholder="L">
+            <span class="dim-x">×</span>
+            <input id="cont-dim-w" class="field-input" inputmode="decimal" placeholder="W">
+            <span class="dim-x">×</span>
+            <input id="cont-dim-d" class="field-input" inputmode="decimal" placeholder="D">
+          </div>
+        </div>
+        <div class="cont-field"><label>Pinpoint location</label>
+          <div class="pin-row">
+            <input id="cont-pin1-dist" class="field-input pin-dist" inputmode="decimal" placeholder="310">
+            <input id="cont-pin1-dir" class="field-input pin-dir" list="curb-dirs" placeholder="NNC" autocapitalize="characters">
+            <input id="cont-pin1-ref" class="field-input pin-ref" placeholder="E 141st St">
+          </div>
+          <div class="pin-row">
+            <input id="cont-pin2-dist" class="field-input pin-dist" inputmode="decimal" placeholder="31">
+            <input id="cont-pin2-dir" class="field-input pin-dir" list="curb-dirs" placeholder="EWC" autocapitalize="characters">
+            <input id="cont-pin2-ref" class="field-input pin-ref" placeholder="Walnut Ave.">
+          </div>
+        </div>
+        <div class="cont-field"><label>Facility</label>
+          <div class="fac-row">
+            <select id="cont-fac-rel" class="field-input" onchange="toggleContAway()">
+              <option value="over">Directly over the</option>
+              <option value="away">Distance away from the</option>
+            </select>
+            <div id="cont-away" class="fac-away" style="display:none">
+              <input id="cont-fac-dist" class="field-input" inputmode="decimal" placeholder="dist">
+              <input id="cont-fac-dir" class="field-input" list="card-dirs" placeholder="N" autocapitalize="characters">
+            </div>
+          </div>
+          <input id="cont-fac-desc" class="field-input" style="margin-top:8px" placeholder="36&rdquo; XHP ST(C) 2013 Main">
+        </div>
         <div class="cont-field"><label>Additional comments</label><textarea id="cont-comments" class="field-input" rows="3" placeholder="Con Edison corrosion has been notified&#10;NO FURTHER EXCAVATION REQUIRED!"></textarea></div>
         <div class="cont-field"><label>Inspector / CR</label><input id="cont-inspector" class="field-input"></div>
       </div>
@@ -235,6 +266,22 @@
         <button class="btn btn-primary" style="justify-content:center" onclick="composeContingencyEmail()">Compose Email</button>
         <button class="btn btn-secondary" style="justify-content:center" onclick="copyContingencyReport()">Copy report</button>
       </div>
+      <datalist id="curb-dirs">
+        <option value="EEC">East of East curb</option>
+        <option value="EWC">East of West curb</option>
+        <option value="WEC">West of East curb</option>
+        <option value="WWC">West of West curb</option>
+        <option value="SSC">South of South curb</option>
+        <option value="SNC">South of North curb</option>
+        <option value="NSC">North of South curb</option>
+        <option value="NNC">North of North curb</option>
+      </datalist>
+      <datalist id="card-dirs">
+        <option value="N">North</option>
+        <option value="S">South</option>
+        <option value="E">East</option>
+        <option value="W">West</option>
+      </datalist>
     </div>
   </div>
 </div>

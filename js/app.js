@@ -286,6 +286,11 @@ function renderRouteResults(){
 }
 
 function gv(row,h,name){var i=h.indexOf(name);if(i===-1||row[i]==null||row[i]==='')return null;return String(row[i]).trim();}
+// Fusing Peer column name varies on the sheet — match it loosely.
+var FUSE_RE=/fus[a-z]*\s*peer|peer\s*fus[a-z]*|fusing/i;
+function gvRe(row,h,re){for(var i=0;i<h.length;i++){if(h[i]&&re.test(String(h[i]))){var v=row[i];return (v==null||v==='')?null:String(v).trim();}}return null;}
+// A Contingency / Hold Point / Fusing Peer value counts as "active" unless it's blank or a negative.
+function isActive(v){if(!v)return false;var s=String(v).trim().toLowerCase();return s!==''&&s!=='no'&&s!=='n'&&s!=='n/a'&&s!=='none'&&s!=='0'&&s!=='false';}
 
 function renderFlavinJobs(jobs){
   resultsHdr.style.display='flex';resultsCount.textContent=jobs.length+' job'+(jobs.length!==1?'s':'');
@@ -293,7 +298,7 @@ function renderFlavinJobs(jobs){
   var h=allData.headers;var grid=document.createElement('div');grid.className='jobs';
   window._fmActions=[];window._contData=[];
   jobs.forEach(function(row){
-    var loc=gv(row,h,'Location')||'—',tw=gv(row,h,'Type Of Work')||'',wd=gv(row,h,'Work Description'),tk=gv(row,h,'Ticket #'),wo=gv(row,h,'Layout/CWORX Work Order #'),fm=gv(row,h,"Contractor's Foreman"),ph=gv(row,h,'Permit Hours'),psc=gv(row,h,'PSC File #'),cci=gv(row,h,'CCI'),jo=gv(row,h,'Job Owner'),cg=gv(row,h,'Contingency (Y/N)'),cn=gv(row,h,'Contingency #'),hp=gv(row,h,'Hold Point'),c7=gv(row,h,'Code 753'),co=row._co||'';
+    var loc=gv(row,h,'Location')||'—',tw=gv(row,h,'Type Of Work')||'',wd=gv(row,h,'Work Description'),tk=gv(row,h,'Ticket #'),wo=gv(row,h,'Layout/CWORX Work Order #'),fm=gv(row,h,"Contractor's Foreman"),ph=gv(row,h,'Permit Hours'),psc=gv(row,h,'PSC File #'),cci=gv(row,h,'CCI'),jo=gv(row,h,'Job Owner'),cg=gv(row,h,'Contingency (Y/N)'),cn=gv(row,h,'Contingency #'),hp=gv(row,h,'Hold Point'),fz=gvRe(row,h,FUSE_RE),c7=gv(row,h,'Code 753'),co=row._co||'';
     var twl=tw.toLowerCase();var bc=twl.indexOf('major')!==-1?'tbadge t-major':twl.indexOf('new')!==-1?'tbadge t-new':'tbadge t-mrp';
     var cgf=(cg&&cg.toLowerCase()!=='no')?(cg+(cn?' · '+cn:'')):null;
     var fmPhone=extractPhone(fm);var fmDisp=fm?(foremanName(fm)||fm):'';
@@ -304,17 +309,19 @@ function renderFlavinJobs(jobs){
       var fmIdx=window._fmActions.push({name:fmDisp,digits:fmPhone,intl:normPhone(fmPhone),display:formatPhone(fmPhone),msg:greet})-1;
       fmLink='<a class="fm-phone" href="javascript:void(0)" onclick="openForemanActions('+fmIdx+');return false;">'+formatPhone(fmPhone)+'</a>';
     }
-    var contBadge='<span class="b-cont">Contingency: No</span>';
-    if(cgf){
+    var contTag='<span class="status-off">Contingency: No</span>';
+    if(isActive(cg)){
       var contIdx=window._contData.push({num:cn||'',layout:wo||'',code:c7||'',contractor:co||'',location:(loc==='—'?'':loc),inspector:allData.name})-1;
-      contBadge='<button class="cont-chip" onclick="openContingencyRoute('+contIdx+')">⚠ '+escHtml(cn||'Contingency')+' →</button>';
+      contTag='<button class="cont-chip" onclick="openContingencyRoute('+contIdx+')">⚠ '+escHtml(cn||'Contingency')+' →</button>';
     }
+    var hpTag=isActive(hp)?('<span class="b-hp">Hold Point: '+escHtml(hp)+'</span>'):'<span class="status-off">Hold Point: No</span>';
+    var fuseTag=isActive(fz)?('<span class="b-fuse">Fusing Peer: '+escHtml(fz)+'</span>'):'<span class="status-off">Fusing Peer: No</span>';
     var card=document.createElement('div');card.className='job-card';
     card.innerHTML='<div class="card-head"><div class="loc">'+loc+'</div>'+(tw?'<span class="'+bc+'">'+tw+'</span>':'')+' </div>'+
       '<div class="card-primary"><div class="pf"><span class="fl">Ticket #</span><span class="fv'+(tk?'':' mt')+'">'+(tk||'N/A')+'</span></div><div class="pf"><span class="fl">Contingency</span><span class="fv pl'+(cgf?'':' mt')+'">'+(cgf||'No')+'</span></div></div>'+
       '<div class="card-foreman">'+(co?'<div class="co-tag">'+co+'</div>':'')+' <div class="fm-name'+(fm?'':' mt')+'">'+(fmDisp||'N/A')+'</div>'+fmLink+'</div>'+
       '<div class="card-fields"><div class="cf"><span class="fl">Work</span><span class="cfv pl'+(wd?'':' mt')+'">'+(wd||'N/A')+'</span></div><div class="cf"><span class="fl">Work order</span><span class="cfv'+(wo?'':' mt')+'">'+(wo||'N/A')+'</span></div><div class="cf"><span class="fl">Permit hrs</span><span class="cfv'+(ph?'':' mt')+'">'+(ph||'N/A')+'</span></div><div class="cf"><span class="fl">PSC</span><span class="cfv pl'+(psc?'':' mt')+'">'+(psc||'N/A')+'</span></div><div class="cf"><span class="fl">CCI</span><span class="cfv pl'+(cci?'':' mt')+'">'+(cci||'N/A')+'</span></div><div class="cf"><span class="fl">Job owner</span><span class="cfv pl'+(jo?'':' mt')+'">'+(jo||'N/A')+'</span></div><div class="cf"><span class="fl">Code 753</span><span class="cfv'+(c7?'':' mt')+'">'+(c7||'N/A')+'</span></div></div>'+
-      '<div class="badges">'+contBadge+'<span class="b-hp">Hold Point: '+((hp&&hp.toLowerCase()!=='n')?hp:'N/A')+'</span></div>';
+      '<div class="badges">'+contTag+hpTag+fuseTag+'</div>';
     grid.appendChild(card);
   });
   jobsContainer.appendChild(grid);
@@ -365,7 +372,7 @@ function groupByWOLocation(jobs){
     var tk=gv(row,h,'Ticket #')||'';
     var key=tk.replace(/\s/g,'').toUpperCase()+'||'+loc;
     if(!groups[key]){
-      groups[key]={location:gv(row,h,'Location')||'',wo:tk,cworxWO:gv(row,h,'Layout/CWORX Work Order #')||'',contractor:(isMainJobs&&allData.flavinCompany&&allData.flavinCompany[rowIdx])||row._co||'',foremen:[],workDescs:[],permitHours:gv(row,h,'Permit Hours')||'',psc:gv(row,h,'PSC File #')||'',contingency:gv(row,h,'Contingency (Y/N)')||'',contingencyNum:gv(row,h,'Contingency #')||'',code753:gv(row,h,'Code 753')||'',holdPoint:gv(row,h,'Hold Point')||''};
+      groups[key]={location:gv(row,h,'Location')||'',wo:tk,cworxWO:gv(row,h,'Layout/CWORX Work Order #')||'',contractor:(isMainJobs&&allData.flavinCompany&&allData.flavinCompany[rowIdx])||row._co||'',foremen:[],workDescs:[],permitHours:gv(row,h,'Permit Hours')||'',psc:gv(row,h,'PSC File #')||'',contingency:gv(row,h,'Contingency (Y/N)')||'',contingencyNum:gv(row,h,'Contingency #')||'',code753:gv(row,h,'Code 753')||'',holdPoint:gv(row,h,'Hold Point')||'',fusingPeer:gvRe(row,h,FUSE_RE)||''};
       order.push(key);
     }
     var g=groups[key];
@@ -389,7 +396,7 @@ function generateDLR(){
       location:g.location,wo:g.wo,cworxWO:g.cworxWO,contractor:g.contractor,
       foremen:g.foremen,workDescs:g.workDescs,
       permitHours:g.permitHours,psc:g.psc,
-      contingency:g.contingency,contingencyNum:g.contingencyNum,code753:g.code753||'',holdPoint:g.holdPoint,
+      contingency:g.contingency,contingencyNum:g.contingencyNum,code753:g.code753||'',holdPoint:g.holdPoint,fusingPeer:g.fusingPeer||'',
       trades:DEFAULT_TRADES.map(function(t){return {n:t.n,c:t.c};}),
       equip:DEFAULT_EQUIP.map(function(e){return {n:e.n,c:e.c};}),
       comments:'',te:false,teHours:'',teReason:'',teRemarks:'',_fromRoute:true
@@ -411,7 +418,7 @@ function initLogDate(){var d=today();document.getElementById('log-date').value=d
 
 function addCrew(){
   var idx=currentCrews.length+1;
-  currentCrews.push({id:Date.now(),num:idx,location:'',wo:'',cworxWO:'',contractor:'',foremen:[],workDescs:[],permitHours:'',psc:'',contingency:'',contingencyNum:'',code753:'',holdPoint:'',
+  currentCrews.push({id:Date.now(),num:idx,location:'',wo:'',cworxWO:'',contractor:'',foremen:[],workDescs:[],permitHours:'',psc:'',contingency:'',contingencyNum:'',code753:'',holdPoint:'',fusingPeer:'',
     trades:DEFAULT_TRADES.map(function(t){return {n:t.n,c:t.c};}),
     equip:DEFAULT_EQUIP.map(function(e){return {n:e.n,c:e.c};}),
     comments:'',te:false,teHours:'',teReason:'',teRemarks:'',_fromRoute:false});
@@ -483,11 +490,16 @@ function crewHTML(crew){
 
   var wdText=crew.workDescs&&crew.workDescs.length?crew.workDescs.join(' · '):'';
   var routeTag=crew._fromRoute?'<span class="crew-source-tag">Route</span>':'';
-  var contBadge=(crew.contingency&&crew.contingency.toLowerCase()!=='no')?
-    '<button class="cont-chip" onclick="openContingencyCrew('+crew.id+')">⚠ '+escHtml(crew.contingencyNum||'Contingency')+' →</button>':'';
-  var hpBadge=(crew.holdPoint&&crew.holdPoint.toLowerCase()!=='n'&&crew.holdPoint!=='')?
-    '<span class="b-hp">Hold Point: '+escHtml(crew.holdPoint)+'</span>':'';
-  var badgeBar=(contBadge||hpBadge)?'<div class="badge-bar">'+contBadge+hpBadge+'</div>':'';
+  var contBadge=isActive(crew.contingency)?
+    '<button class="cont-chip" onclick="openContingencyCrew('+crew.id+')">⚠ '+escHtml(crew.contingencyNum||'Contingency')+' →</button>':
+    '<span class="status-off">Contingency: No</span>';
+  var hpBadge=isActive(crew.holdPoint)?
+    '<span class="b-hp">Hold Point: '+escHtml(crew.holdPoint)+'</span>':
+    '<span class="status-off">Hold Point: No</span>';
+  var fuseBadge=isActive(crew.fusingPeer)?
+    '<span class="b-fuse">Fusing Peer: '+escHtml(crew.fusingPeer)+'</span>':
+    '<span class="status-off">Fusing Peer: No</span>';
+  var badgeBar='<div class="badge-bar">'+contBadge+hpBadge+fuseBadge+'</div>';
 
   return '<div class="crew-card" id="crew-'+crew.id+'">'+
     '<div class="crew-card-header" onclick="toggleCrew('+crew.id+')">'+
@@ -901,11 +913,20 @@ function openContingencyModal(p){
   p=p||{};
   setContVal('cont-num',p.num);setContVal('cont-layout',p.layout);setContVal('cont-code',p.code);
   setContVal('cont-contractor',p.contractor);setContVal('cont-inspector',p.inspector||inspectorName());
-  setContVal('cont-scope','');setContVal('cont-dims','');setContVal('cont-pinpoint','');
-  setContVal('cont-facility','');setContVal('cont-comments','');
+  setContVal('cont-scope','');setContVal('cont-comments','');
+  // dimensions / pinpoint / facility — typed fresh each time
+  ['cont-dim-l','cont-dim-w','cont-dim-d','cont-pin1-dist','cont-pin1-dir','cont-pin1-ref',
+   'cont-pin2-dist','cont-pin2-dir','cont-pin2-ref','cont-fac-dist','cont-fac-dir','cont-fac-desc']
+    .forEach(function(id){setContVal(id,'');});
+  var rel=document.getElementById('cont-fac-rel');if(rel)rel.value='over';
+  toggleContAway();
   var subj='Contingency'+(p.num?' - '+p.num:'')+(p.location?' - '+p.location:'');
   setContVal('cont-subject',subj);
   document.getElementById('cont-modal').style.display='block';
+}
+function toggleContAway(){
+  var rel=document.getElementById('cont-fac-rel');var away=document.getElementById('cont-away');
+  if(rel&&away)away.style.display=(rel.value==='away')?'flex':'none';
 }
 function closeContModal(e){if(!e||e.target.classList.contains('modal-overlay'))document.getElementById('cont-modal').style.display='none';}
 
@@ -916,11 +937,38 @@ function openContingencyCrew(id){
   openContingencyModal({num:c.contingencyNum||'',layout:c.cworxWO||'',code:c.code753||'',contractor:c.contractor||'',location:c.location||'',inspector:inspectorName()});
 }
 
+function ft(v){return v?(v+'’'):'';} // append a foot mark (’)
+// "310 / NNC / E 141st St" -> "310’ NNC E 141st St"
+function contOffset(dist,dir,ref){
+  var s=[ft(dist),dir].filter(Boolean).join(' ');
+  if(ref)s=(s?s+' ':'')+ref;
+  return s.trim();
+}
 function buildContingencyBody(){
   var num=getContVal('cont-num'),layout=getContVal('cont-layout'),code=getContVal('cont-code'),
-      contractor=getContVal('cont-contractor'),scope=getContVal('cont-scope'),dims=getContVal('cont-dims'),
-      pin=getContVal('cont-pinpoint'),fac=getContVal('cont-facility'),comments=getContVal('cont-comments'),
-      insp=getContVal('cont-inspector');
+      contractor=getContVal('cont-contractor'),scope=getContVal('cont-scope'),
+      comments=getContVal('cont-comments'),insp=getContVal('cont-inspector');
+  // Dimensions: L × W × D (skip any blank)
+  var dparts=[];
+  if(getContVal('cont-dim-l'))dparts.push(ft(getContVal('cont-dim-l'))+' L');
+  if(getContVal('cont-dim-w'))dparts.push(ft(getContVal('cont-dim-w'))+' W');
+  if(getContVal('cont-dim-d'))dparts.push(ft(getContVal('cont-dim-d'))+' D');
+  var dims=dparts.join(' x ');
+  // Pinpoint: up to two curb offsets joined by " & "
+  var pin=[contOffset(getContVal('cont-pin1-dist'),getContVal('cont-pin1-dir'),getContVal('cont-pin1-ref')),
+           contOffset(getContVal('cont-pin2-dist'),getContVal('cont-pin2-dir'),getContVal('cont-pin2-ref'))]
+          .filter(Boolean).join(' & ');
+  // Facility: directly over, or a distance/direction away from
+  var fac=getContVal('cont-fac-desc');
+  var rel=(document.getElementById('cont-fac-rel')||{}).value;
+  var facClause;
+  if(rel==='away'){
+    var lead=[ft(getContVal('cont-fac-dist')),getContVal('cont-fac-dir')].filter(Boolean).join(' ');
+    facClause=(lead?lead+' ':'')+'away from the '+fac;
+  }else{
+    facClause='Directly over the '+fac;
+  }
+  var locLine=dims+' excavation located '+pin+' – '+facClause;
   var L=[];
   L.push('Contingency: '+num);
   L.push('Layout: '+layout);
@@ -928,7 +976,7 @@ function buildContingencyBody(){
   L.push('');
   L.push('Good morning,');
   L.push('Con Edison contractor '+contractor+' will be '+scope+' at the following location');
-  L.push(dims+' excavation located '+pin+' – Directly over the '+fac);
+  L.push(locLine.replace(/\s+/g,' ').trim());
   L.push('');
   if(comments){L.push(comments);L.push('');}
   L.push('I, '+insp+', am on location');

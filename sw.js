@@ -7,7 +7,7 @@
    - Google Fonts: cache-first runtime cache (degrades to system fonts if never cached).
    Bump CACHE_VERSION to force-evict everything on the next load.
 */
-var CACHE_VERSION = 'fieldlog-v2';
+var CACHE_VERSION = 'fieldlog-v3';
 var SHELL_CACHE   = CACHE_VERSION + '-shell';
 var STATIC_CACHE  = CACHE_VERSION + '-static';
 var FONT_CACHE    = CACHE_VERSION + '-fonts';
