@@ -86,8 +86,8 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
 .co-tag{font-size:9px;font-weight:800;color:var(--ink-4);text-transform:uppercase;letter-spacing:.1em;margin-bottom:2px}
 .fm-name{font-size:13px;font-weight:700;color:var(--ink)}
 .fm-name.mt{color:var(--ink-4);font-weight:500}
-.fm-phone{display:inline-flex;align-items:center;gap:6px;margin-top:6px;min-height:36px;padding:6px 13px;font-size:15px;font-weight:800;color:#2563EB;font-family:var(--font-mono);background:var(--c0bg);border:2px solid #BFDBFE;border-radius:var(--radius-sm);text-decoration:none;cursor:pointer}
-.fm-phone::before{content:'📞';font-size:13px}
+.fm-phone{display:inline-flex;align-items:center;gap:5px;margin-top:6px;min-height:32px;padding:4px 10px;font-size:12px;font-weight:800;color:#2563EB;font-family:var(--font-mono);background:var(--c0bg);border:2px solid #BFDBFE;border-radius:var(--radius-xs);text-decoration:none;cursor:pointer}
+.fm-phone::before{content:'📞';font-size:12px}
 .fm-phone:active{background:#DBEAFE}
 .fm-actions{display:flex;flex-direction:column;gap:14px;text-align:center}
 .fm-actions-name{font-size:18px;font-weight:800;letter-spacing:-.02em}

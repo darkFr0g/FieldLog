@@ -914,9 +914,13 @@ function openContingencyModal(p){
   setContVal('cont-num',p.num);setContVal('cont-layout',p.layout);setContVal('cont-code',p.code);
   setContVal('cont-contractor',p.contractor);setContVal('cont-inspector',p.inspector||inspectorName());
   setContVal('cont-scope','');setContVal('cont-comments','');
-  // dimensions / pinpoint — typed fresh each time
-  ['cont-dim-l','cont-dim-w','cont-dim-d','cont-pin1-dist','cont-pin1-dir','cont-pin1-ref',
-   'cont-pin2-dist','cont-pin2-dir','cont-pin2-ref'].forEach(function(id){setContVal(id,'');});
+  // dimensions / distances / directions — typed fresh each time
+  ['cont-dim-l','cont-dim-w','cont-dim-d','cont-pin1-dist','cont-pin1-dir',
+   'cont-pin2-dist','cont-pin2-dir'].forEach(function(id){setContVal(id,'');});
+  // Pre-fill the two cross streets from the workbook Location (e.g. "Bussing Ave & Bronxwood Ave").
+  var streets=String(p.location||'').split(/\s*(?:&|\band\b|\/|@)\s*/i).filter(function(s){return s.trim();});
+  setContVal('cont-pin1-ref',(streets[0]||'').trim());
+  setContVal('cont-pin2-ref',(streets[1]||'').trim());
   // facility list — reset to a single fresh "main" row
   var fl=document.getElementById('cont-fac-list');if(fl)fl.innerHTML='';
   addFacRow();
@@ -1035,7 +1039,7 @@ function facilityClause(){
 }
 function buildContingencyBody(){
   var num=getContVal('cont-num'),layout=getContVal('cont-layout'),code=getContVal('cont-code'),
-      contractor=getContVal('cont-contractor'),scope=getContVal('cont-scope'),
+      contractor=getContVal('cont-contractor'),scope=getContVal('cont-scope').toLowerCase(),
       comments=getContVal('cont-comments'),insp=getContVal('cont-inspector');
   // Dimensions: L x W x D (skip any blank)
   var dparts=[];
@@ -1067,12 +1071,79 @@ function composeContingencyEmail(){
   var url='mailto:?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(buildContingencyBody());
   var a=document.createElement('a');a.href=url;document.body.appendChild(a);a.click();document.body.removeChild(a);
 }
+// ── Bold HTML version (for "Copy formatted") ─────────────────────
+// mailto bodies are plain text and can't carry bold, so the formatted copy
+// puts rich text/html on the clipboard; pasting into Mail/OneNote keeps the
+// bold on dimensions, distances, and street/facility names.
+function bcEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function B(s){s=String(s==null?'':s).trim();return s?'<b>'+bcEsc(s)+'</b>':'';}
+function facilityClauseHTML(){
+  var items=document.querySelectorAll('#cont-fac-list .fac-item');
+  var clauses=[];
+  items.forEach(function(it){
+    var desc=((it.querySelector('.fac-desc')||{}).value||'').trim();
+    var rel=it.getAttribute('data-rel')||'over';
+    if(rel==='away'){
+      var dist=((it.querySelector('.fac-dist')||{}).value||'').trim();
+      var dir=((it.querySelector('.fac-dir')||{}).value||'').trim();
+      if(!desc&&!dist&&!dir)return;
+      var dd=(ft(dist)+' '+dirWord(dir)).replace(/\s+/g,' ').trim();
+      clauses.push((dd?B(dd)+' ':'')+'of '+B(desc));
+    }else{
+      if(!desc)return;
+      clauses.push('Directly over the '+B(desc));
+    }
+  });
+  return clauses.join(' and ');
+}
+function buildContingencyHTML(){
+  var num=getContVal('cont-num'),layout=getContVal('cont-layout'),code=getContVal('cont-code'),
+      contractor=getContVal('cont-contractor'),scope=getContVal('cont-scope').toLowerCase(),
+      comments=getContVal('cont-comments'),insp=getContVal('cont-inspector');
+  var dparts=[];
+  if(getContVal('cont-dim-l'))dparts.push(ft(getContVal('cont-dim-l'))+' L');
+  if(getContVal('cont-dim-w'))dparts.push(ft(getContVal('cont-dim-w'))+' W');
+  if(getContVal('cont-dim-d'))dparts.push(ft(getContVal('cont-dim-d'))+' D');
+  var dims=dparts.join(' x ');
+  var offs=[];
+  [['cont-pin1-dist','cont-pin1-dir','cont-pin1-ref'],['cont-pin2-dist','cont-pin2-dir','cont-pin2-ref']].forEach(function(ids){
+    var dist=getContVal(ids[0]),dir=getContVal(ids[1]),ref=getContVal(ids[2]);
+    if(!dist&&!dir&&!ref)return;
+    var dd=[ft(dist),dir].filter(Boolean).join(' ');
+    offs.push([B(dd),B(ref)].filter(Boolean).join(' '));
+  });
+  var facHtml=facilityClauseHTML();
+  var loc=(dims?B(dims)+' ':'')+'excavation'+(offs.length?' located '+offs.join(' &amp; '):'')+(facHtml?' – '+facHtml:'');
+  var lines=[];
+  lines.push('Contingency: '+bcEsc(num));
+  lines.push('Layout: '+bcEsc(layout));
+  lines.push('Code 753/811: '+bcEsc(code));
+  lines.push('');
+  lines.push('Good morning,');
+  lines.push('Con Edison contractor '+bcEsc(contractor)+' will be '+bcEsc(scope)+' at the following location');
+  lines.push(loc);
+  lines.push('');
+  if(comments){lines.push(bcEsc(comments).replace(/\n/g,'<br>'));lines.push('');}
+  lines.push('I, '+bcEsc(insp)+', am on location');
+  return lines.join('<br>');
+}
 function copyContingencyReport(){
   var subject=getContVal('cont-subject');
-  var text=(subject?subject+'\n\n':'')+buildContingencyBody();
+  var plain=(subject?subject+'\n\n':'')+buildContingencyBody();
+  var html=(subject?bcEsc(subject)+'<br><br>':'')+buildContingencyHTML();
+  if(window.ClipboardItem&&navigator.clipboard&&navigator.clipboard.write){
+    try{
+      var item=new ClipboardItem({
+        'text/html':new Blob([html],{type:'text/html'}),
+        'text/plain':new Blob([plain],{type:'text/plain'})
+      });
+      navigator.clipboard.write([item]).then(function(){showToast('Copied — paste into your email');}).catch(function(){fallbackCopy(plain);});
+      return;
+    }catch(e){}
+  }
   if(navigator.clipboard&&navigator.clipboard.writeText){
-    navigator.clipboard.writeText(text).then(function(){showToast('Report copied');}).catch(function(){fallbackCopy(text);});
-  }else fallbackCopy(text);
+    navigator.clipboard.writeText(plain).then(function(){showToast('Copied — paste into your email');}).catch(function(){fallbackCopy(plain);});
+  }else fallbackCopy(plain);
 }
 
 initLogDate();

@@ -47,7 +47,7 @@
 <div id="page-route" class="page active">
 <div class="wrap">
   <div class="hdr">
-    <div class="vbadge">v5.5</div>
+    <div class="vbadge">v5.6</div>
     <h1 class="hdr-title">Locations for <span id="headingName">Jeremiah Flavin</span></h1>
   </div>
   <div id="uploadSection">
@@ -152,7 +152,7 @@
   <div class="settings-section" style="margin-bottom:20px">
     <div class="settings-title">About</div>
     <div class="settings-card">
-      <div class="settings-row"><span style="font-size:15px">Field Log</span><span style="color:var(--ink-3);font-size:13px">v5.5</span></div>
+      <div class="settings-row"><span style="font-size:15px">Field Log</span><span style="color:var(--ink-3);font-size:13px">v5.6</span></div>
     </div>
   </div>
 </div>
@@ -238,12 +238,12 @@
           <div class="pin-row">
             <input id="cont-pin1-dist" class="field-input pin-dist" inputmode="decimal" enterkeyhint="next" placeholder="310" onblur="mirrorFeet(this)">
             <div class="dir-wrap"><input id="cont-pin1-dir" class="field-input pin-dir" enterkeyhint="next" placeholder="NNC" autocapitalize="characters" autocorrect="off" spellcheck="false"><button type="button" class="dir-pick" onclick="openDirPicker(this,'curb')">⌄</button></div>
-            <input id="cont-pin1-ref" class="field-input pin-ref" enterkeyhint="next" placeholder="E 141st St">
+            <input id="cont-pin1-ref" class="field-input pin-ref" enterkeyhint="next" placeholder="Cross street">
           </div>
           <div class="pin-row">
             <input id="cont-pin2-dist" class="field-input pin-dist" inputmode="decimal" enterkeyhint="next" placeholder="31" onblur="mirrorFeet(this)">
             <div class="dir-wrap"><input id="cont-pin2-dir" class="field-input pin-dir" enterkeyhint="next" placeholder="EWC" autocapitalize="characters" autocorrect="off" spellcheck="false"><button type="button" class="dir-pick" onclick="openDirPicker(this,'curb')">⌄</button></div>
-            <input id="cont-pin2-ref" class="field-input pin-ref" enterkeyhint="next" placeholder="Walnut Ave.">
+            <input id="cont-pin2-ref" class="field-input pin-ref" enterkeyhint="next" placeholder="Cross street">
           </div>
           <div class="cont-hint">Tap ⌄ to pick a curb direction, or type one. EEC · EWC · WEC · WWC · SSC · SNC · NSC · NNC&nbsp;&nbsp;(e.g. NNC = north of north curb)</div>
         </div>
@@ -256,7 +256,7 @@
       </form>
       <div style="display:flex;flex-direction:column;gap:8px;margin-top:16px">
         <button type="button" class="btn btn-primary" style="justify-content:center" onclick="composeContingencyEmail()">Compose Email</button>
-        <button type="button" class="btn btn-secondary" style="justify-content:center" onclick="copyContingencyReport()">Copy report</button>
+        <button type="button" class="btn btn-secondary" style="justify-content:center" onclick="copyContingencyReport()">Copy formatted (bold) — paste into email</button>
       </div>
     </div>
   </div>
