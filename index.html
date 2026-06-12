@@ -47,7 +47,7 @@
 <div id="page-route" class="page active">
 <div class="wrap">
   <div class="hdr">
-    <div class="vbadge">v5.2</div>
+    <div class="vbadge">v5.3</div>
     <h1 class="hdr-title">Locations for <span id="headingName">Jeremiah Flavin</span></h1>
   </div>
   <div id="uploadSection">
@@ -152,7 +152,7 @@
   <div class="settings-section" style="margin-bottom:20px">
     <div class="settings-title">About</div>
     <div class="settings-card">
-      <div class="settings-row"><span style="font-size:15px">Field Log</span><span style="color:var(--ink-3);font-size:13px">v5.2</span></div>
+      <div class="settings-row"><span style="font-size:15px">Field Log</span><span style="color:var(--ink-3);font-size:13px">v5.3</span></div>
     </div>
   </div>
 </div>
@@ -203,6 +203,37 @@
         <button class="btn btn-primary" style="justify-content:center" onclick="exportCSV()">Export to CSV (Excel)</button>
         <button class="btn btn-secondary" style="justify-content:center" onclick="exportTXT()">Export as Text Report</button>
         <button class="btn btn-secondary" style="justify-content:center" onclick="closeExportModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CONTINGENCY REPORT MODAL -->
+<div id="cont-modal" style="display:none">
+  <div class="modal-overlay" onclick="closeContModal(event)">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <div class="modal-title">Contingency Report</div>
+        <button onclick="closeContModal()" style="background:none;border:none;font-size:24px;color:var(--ink-3);cursor:pointer;line-height:1">×</button>
+      </div>
+      <div class="cont-form">
+        <div class="cont-field"><label>Subject</label><input id="cont-subject" class="field-input"></div>
+        <div class="cont-row">
+          <div class="cont-field"><label>Contingency #</label><input id="cont-num" class="field-input"></div>
+          <div class="cont-field"><label>Layout</label><input id="cont-layout" class="field-input"></div>
+        </div>
+        <div class="cont-field"><label>Code 753/811</label><input id="cont-code" class="field-input"></div>
+        <div class="cont-field"><label>Contractor</label><input id="cont-contractor" class="field-input"></div>
+        <div class="cont-field"><label>Scope — contractor will be…</label><input id="cont-scope" class="field-input" placeholder="performing weld inspection and backfill"></div>
+        <div class="cont-field"><label>Dimensions</label><input id="cont-dims" class="field-input" placeholder="7&rsquo; W x 10&rsquo; L x 12&rsquo; D"></div>
+        <div class="cont-field"><label>Pinpoint location</label><input id="cont-pinpoint" class="field-input" placeholder="310&rsquo; NNC E 141st St &amp; 31&rsquo; EWC Walnut Ave."></div>
+        <div class="cont-field"><label>Facility — directly over the…</label><input id="cont-facility" class="field-input" placeholder="36&rdquo; XHP ST(C) 2013 Main"></div>
+        <div class="cont-field"><label>Additional comments</label><textarea id="cont-comments" class="field-input" rows="3" placeholder="Con Edison corrosion has been notified&#10;NO FURTHER EXCAVATION REQUIRED!"></textarea></div>
+        <div class="cont-field"><label>Inspector / CR</label><input id="cont-inspector" class="field-input"></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:16px">
+        <button class="btn btn-primary" style="justify-content:center" onclick="composeContingencyEmail()">Compose Email</button>
+        <button class="btn btn-secondary" style="justify-content:center" onclick="copyContingencyReport()">Copy report</button>
       </div>
     </div>
   </div>

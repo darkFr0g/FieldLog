@@ -38,6 +38,45 @@ var allData = {};
 var pickerCrewId = null;
 var pickerType   = null;
 
+// ── PERSISTENCE (survive iOS dropping the app from memory) ───────
+// The parsed route (allData) and the in-progress DLR (currentCrews) used to
+// live only in memory, so iOS reclaiming RAM wiped them on the next reload.
+// We now mirror both into localStorage and restore on launch, so the Route
+// tab stays populated and the DLR stays intact until a new file is loaded.
+// Each job row is an Array carrying a custom `_co` (contractor) property,
+// which JSON.stringify silently drops. Capture/reattach it around save/restore.
+function coArr(rows){return (rows||[]).map(function(r){return r._co||'';});}
+function saveRoute(){
+  try{
+    if(!allData||!allData.headers)return;
+    var snap={};for(var k in allData){if(allData.hasOwnProperty(k))snap[k]=allData[k];}
+    snap._coFlavin=coArr(allData.flavin);
+    snap._coOwned=coArr(allData.owned);
+    setData('dlr_route',snap);
+  }catch(e){}
+}
+function clearRoute(){try{localStorage.removeItem('dlr_route');}catch(e){}}
+function restoreRoute(){
+  var r=getData('dlr_route',null);
+  if(!r||!r.headers)return;
+  if(r.flavin&&r._coFlavin)r.flavin.forEach(function(row,i){row._co=r._coFlavin[i]||'';});
+  if(r.owned&&r._coOwned)r.owned.forEach(function(row,i){row._co=r._coOwned[i]||'';});
+  if(r.sheets)Object.keys(r.sheets).forEach(function(sn){var sd=r.sheets[sn];if(sd&&sd.jobs)sd.jobs.forEach(function(row){row._co=sd.company||sn;});});
+  allData=r;
+  renderRouteResults();
+}
+function saveWorkingDLR(){try{var d=document.getElementById('log-date');setData('dlr_working',{date:d?d.value:today(),crews:currentCrews});}catch(e){}}
+function clearWorkingDLR(){try{localStorage.removeItem('dlr_working');}catch(e){}}
+function restoreWorkingDLR(){
+  var w=getData('dlr_working',null);
+  if(w&&w.crews&&w.crews.length){
+    currentCrews=w.crews;
+    if(w.date){document.getElementById('log-date').value=w.date;updateDateDisplay();}
+    return true;
+  }
+  return false;
+}
+
 function showPage(p){
   document.querySelectorAll('.page').forEach(function(el){el.classList.remove('active');});
   document.querySelectorAll('.nav-btn').forEach(function(el){el.classList.remove('active');});
@@ -71,7 +110,7 @@ dropZone.addEventListener('dragover',function(e){e.preventDefault();dropZone.cla
 dropZone.addEventListener('dragleave',function(){dropZone.classList.remove('drag-over');});
 dropZone.addEventListener('drop',function(e){e.preventDefault();dropZone.classList.remove('drag-over');var f=e.dataTransfer.files[0];if(f)processFile(f);});
 fileInput.addEventListener('change',function(){if(this.files&&this.files[0])processFile(this.files[0]);});
-document.getElementById('resetBtn').addEventListener('click',function(){location.reload();});
+document.getElementById('resetBtn').addEventListener('click',function(){clearRoute();location.reload();});
 document.getElementById('genDlrBtn').addEventListener('click',function(){generateDLR();});
 
 function setStatus(t,m){statusBar.classList.add('visible');statusDot.className='status-dot '+t;statusText.textContent=m;}
@@ -210,6 +249,7 @@ function processFile(file){
       }
       var routeDate=parseDateFromName(file.name)||parseSummaryDate(wb)||null;
       allData={headers:headers,flavin:myJobs,flavinCompany:myJobsCompany,owned:ownedJobs,sheets:sheetJobs,ccis:ccis,contractorSheets:SHEETS,name:NAME,routeDate:routeDate};
+      saveRoute();
       renderRouteResults();
     }catch(err){setStatus('err','Error: '+err.message);dropZone.style.display='';}
   };
@@ -251,7 +291,7 @@ function renderFlavinJobs(jobs){
   resultsHdr.style.display='flex';resultsCount.textContent=jobs.length+' job'+(jobs.length!==1?'s':'');
   jobsContainer.innerHTML='';if(!jobs||jobs.length===0){jobsContainer.innerHTML='<div class="no-jobs">No jobs assigned</div>';return;}
   var h=allData.headers;var grid=document.createElement('div');grid.className='jobs';
-  window._fmActions=[];
+  window._fmActions=[];window._contData=[];
   jobs.forEach(function(row){
     var loc=gv(row,h,'Location')||'—',tw=gv(row,h,'Type Of Work')||'',wd=gv(row,h,'Work Description'),tk=gv(row,h,'Ticket #'),wo=gv(row,h,'Layout/CWORX Work Order #'),fm=gv(row,h,"Contractor's Foreman"),ph=gv(row,h,'Permit Hours'),psc=gv(row,h,'PSC File #'),cci=gv(row,h,'CCI'),jo=gv(row,h,'Job Owner'),cg=gv(row,h,'Contingency (Y/N)'),cn=gv(row,h,'Contingency #'),hp=gv(row,h,'Hold Point'),c7=gv(row,h,'Code 753'),co=row._co||'';
     var twl=tw.toLowerCase();var bc=twl.indexOf('major')!==-1?'tbadge t-major':twl.indexOf('new')!==-1?'tbadge t-new':'tbadge t-mrp';
@@ -264,12 +304,17 @@ function renderFlavinJobs(jobs){
       var fmIdx=window._fmActions.push({name:fmDisp,digits:fmPhone,intl:normPhone(fmPhone),display:formatPhone(fmPhone),msg:greet})-1;
       fmLink='<a class="fm-phone" href="javascript:void(0)" onclick="openForemanActions('+fmIdx+');return false;">'+formatPhone(fmPhone)+'</a>';
     }
+    var contBadge='<span class="b-cont">Contingency: No</span>';
+    if(cgf){
+      var contIdx=window._contData.push({num:cn||'',layout:wo||'',code:c7||'',contractor:co||'',location:(loc==='—'?'':loc),inspector:allData.name})-1;
+      contBadge='<button class="cont-chip" onclick="openContingencyRoute('+contIdx+')">⚠ '+escHtml(cn||'Contingency')+' →</button>';
+    }
     var card=document.createElement('div');card.className='job-card';
     card.innerHTML='<div class="card-head"><div class="loc">'+loc+'</div>'+(tw?'<span class="'+bc+'">'+tw+'</span>':'')+' </div>'+
       '<div class="card-primary"><div class="pf"><span class="fl">Ticket #</span><span class="fv'+(tk?'':' mt')+'">'+(tk||'N/A')+'</span></div><div class="pf"><span class="fl">Contingency</span><span class="fv pl'+(cgf?'':' mt')+'">'+(cgf||'No')+'</span></div></div>'+
       '<div class="card-foreman">'+(co?'<div class="co-tag">'+co+'</div>':'')+' <div class="fm-name'+(fm?'':' mt')+'">'+(fmDisp||'N/A')+'</div>'+fmLink+'</div>'+
       '<div class="card-fields"><div class="cf"><span class="fl">Work</span><span class="cfv pl'+(wd?'':' mt')+'">'+(wd||'N/A')+'</span></div><div class="cf"><span class="fl">Work order</span><span class="cfv'+(wo?'':' mt')+'">'+(wo||'N/A')+'</span></div><div class="cf"><span class="fl">Permit hrs</span><span class="cfv'+(ph?'':' mt')+'">'+(ph||'N/A')+'</span></div><div class="cf"><span class="fl">PSC</span><span class="cfv pl'+(psc?'':' mt')+'">'+(psc||'N/A')+'</span></div><div class="cf"><span class="fl">CCI</span><span class="cfv pl'+(cci?'':' mt')+'">'+(cci||'N/A')+'</span></div><div class="cf"><span class="fl">Job owner</span><span class="cfv pl'+(jo?'':' mt')+'">'+(jo||'N/A')+'</span></div><div class="cf"><span class="fl">Code 753</span><span class="cfv'+(c7?'':' mt')+'">'+(c7||'N/A')+'</span></div></div>'+
-      '<div class="badges"><span class="b-cont">Contingency: '+(cgf||'No')+'</span><span class="b-hp">Hold Point: '+((hp&&hp.toLowerCase()!=='n')?hp:'N/A')+'</span></div>';
+      '<div class="badges">'+contBadge+'<span class="b-hp">Hold Point: '+((hp&&hp.toLowerCase()!=='n')?hp:'N/A')+'</span></div>';
     grid.appendChild(card);
   });
   jobsContainer.appendChild(grid);
@@ -320,7 +365,7 @@ function groupByWOLocation(jobs){
     var tk=gv(row,h,'Ticket #')||'';
     var key=tk.replace(/\s/g,'').toUpperCase()+'||'+loc;
     if(!groups[key]){
-      groups[key]={location:gv(row,h,'Location')||'',wo:tk,cworxWO:gv(row,h,'Layout/CWORX Work Order #')||'',contractor:(isMainJobs&&allData.flavinCompany&&allData.flavinCompany[rowIdx])||row._co||'',foremen:[],workDescs:[],permitHours:gv(row,h,'Permit Hours')||'',psc:gv(row,h,'PSC File #')||'',contingency:gv(row,h,'Contingency (Y/N)')||'',contingencyNum:gv(row,h,'Contingency #')||'',holdPoint:gv(row,h,'Hold Point')||''};
+      groups[key]={location:gv(row,h,'Location')||'',wo:tk,cworxWO:gv(row,h,'Layout/CWORX Work Order #')||'',contractor:(isMainJobs&&allData.flavinCompany&&allData.flavinCompany[rowIdx])||row._co||'',foremen:[],workDescs:[],permitHours:gv(row,h,'Permit Hours')||'',psc:gv(row,h,'PSC File #')||'',contingency:gv(row,h,'Contingency (Y/N)')||'',contingencyNum:gv(row,h,'Contingency #')||'',code753:gv(row,h,'Code 753')||'',holdPoint:gv(row,h,'Hold Point')||''};
       order.push(key);
     }
     var g=groups[key];
@@ -344,7 +389,7 @@ function generateDLR(){
       location:g.location,wo:g.wo,cworxWO:g.cworxWO,contractor:g.contractor,
       foremen:g.foremen,workDescs:g.workDescs,
       permitHours:g.permitHours,psc:g.psc,
-      contingency:g.contingency,contingencyNum:g.contingencyNum,holdPoint:g.holdPoint,
+      contingency:g.contingency,contingencyNum:g.contingencyNum,code753:g.code753||'',holdPoint:g.holdPoint,
       trades:DEFAULT_TRADES.map(function(t){return {n:t.n,c:t.c};}),
       equip:DEFAULT_EQUIP.map(function(e){return {n:e.n,c:e.c};}),
       comments:'',te:false,teHours:'',teReason:'',teRemarks:'',_fromRoute:true
@@ -353,6 +398,7 @@ function generateDLR(){
   var rd=(allData&&allData.routeDate)||today();
   document.getElementById('log-date').value=rd;
   updateDateDisplay();
+  saveWorkingDLR();
   renderCrews();showPage('dlr');
   showToast(keys.length+' block'+(keys.length!==1?'s':'')+' generated'+(allData&&allData.routeDate?' · '+rd:''));
 }
@@ -360,15 +406,16 @@ function generateDLR(){
 // ── DLR RENDERING ────────────────────────────────────────────────
 function today(){return new Date().toISOString().split('T')[0];}
 function fmtDate(d){var dt=new Date(d+'T12:00:00');return dt.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});}
-function updateDateDisplay(){document.getElementById('today-display').textContent=fmtDate(document.getElementById('log-date').value);}
+function updateDateDisplay(){document.getElementById('today-display').textContent=fmtDate(document.getElementById('log-date').value);saveWorkingDLR();}
 function initLogDate(){var d=today();document.getElementById('log-date').value=d;document.getElementById('today-display').textContent=fmtDate(d);}
 
 function addCrew(){
   var idx=currentCrews.length+1;
-  currentCrews.push({id:Date.now(),num:idx,location:'',wo:'',cworxWO:'',contractor:'',foremen:[],workDescs:[],permitHours:'',psc:'',contingency:'',contingencyNum:'',holdPoint:'',
+  currentCrews.push({id:Date.now(),num:idx,location:'',wo:'',cworxWO:'',contractor:'',foremen:[],workDescs:[],permitHours:'',psc:'',contingency:'',contingencyNum:'',code753:'',holdPoint:'',
     trades:DEFAULT_TRADES.map(function(t){return {n:t.n,c:t.c};}),
     equip:DEFAULT_EQUIP.map(function(e){return {n:e.n,c:e.c};}),
     comments:'',te:false,teHours:'',teReason:'',teRemarks:'',_fromRoute:false});
+  saveWorkingDLR();
   renderCrews();
   setTimeout(function(){var els=document.querySelectorAll('.crew-card');if(els.length)els[els.length-1].scrollIntoView({behavior:'smooth',block:'start'});},100);
 }
@@ -377,6 +424,7 @@ function removeCrew(id){
   var cid=parseInt(id);
   currentCrews=currentCrews.filter(function(c){return c.id!==cid;});
   currentCrews.forEach(function(c,i){c.num=i+1;});
+  saveWorkingDLR();
   renderCrews();
 }
 
@@ -436,7 +484,7 @@ function crewHTML(crew){
   var wdText=crew.workDescs&&crew.workDescs.length?crew.workDescs.join(' · '):'';
   var routeTag=crew._fromRoute?'<span class="crew-source-tag">Route</span>':'';
   var contBadge=(crew.contingency&&crew.contingency.toLowerCase()!=='no')?
-    '<span class="b-cont">Contingency: '+escHtml(crew.contingency)+(crew.contingencyNum?' · '+escHtml(crew.contingencyNum):'')+' </span>':'';
+    '<button class="cont-chip" onclick="openContingencyCrew('+crew.id+')">⚠ '+escHtml(crew.contingencyNum||'Contingency')+' →</button>':'';
   var hpBadge=(crew.holdPoint&&crew.holdPoint.toLowerCase()!=='n'&&crew.holdPoint!=='')?
     '<span class="b-hp">Hold Point: '+escHtml(crew.holdPoint)+'</span>':'';
   var badgeBar=(contBadge||hpBadge)?'<div class="badge-bar">'+contBadge+hpBadge+'</div>':'';
@@ -527,10 +575,11 @@ function toggleTE(id){
   if(check){check.className='te-check'+(crew.te?' on':'');check.textContent=crew.te?'✓':'';}
   if(fields)fields.classList.toggle('open',crew.te);
   if(lbl)lbl.classList.toggle('on',crew.te);
+  saveWorkingDLR();
 }
 
-function updateCrew(id,field,val){var cid=parseInt(id);var crew=currentCrews.find(function(c){return c.id===cid;});if(crew)crew[field]=val;}
-function updateCrewForeman(id,val){var cid=parseInt(id);var crew=currentCrews.find(function(c){return c.id===cid;});if(crew)crew.foremen=[val];}
+function updateCrew(id,field,val){var cid=parseInt(id);var crew=currentCrews.find(function(c){return c.id===cid;});if(crew){crew[field]=val;saveWorkingDLR();}}
+function updateCrewForeman(id,val){var cid=parseInt(id);var crew=currentCrews.find(function(c){return c.id===cid;});if(crew){crew.foremen=[val];saveWorkingDLR();}}
 
 function adjustItem(type,crewId,idx,delta){
   var cid=parseInt(crewId);
@@ -544,6 +593,7 @@ function adjustItem(type,crewId,idx,delta){
   var offset=type==='equip'?0:crew.equip.length;
   if(inputs[offset+i])inputs[offset+i].value=item.c;
   if(type==='trade')checkNudge(crew,item.n,item.c);
+  saveWorkingDLR();
 }
 
 function setItem(type,crewId,idx,val){
@@ -554,6 +604,7 @@ function setItem(type,crewId,idx,val){
   if(!arr[i])return;
   arr[i].c=Math.max(0,parseInt(val)||0);
   if(type==='trade')checkNudge(crew,arr[i].n,arr[i].c);
+  saveWorkingDLR();
 }
 
 function removeItem(type,crewId,idx){
@@ -561,6 +612,7 @@ function removeItem(type,crewId,idx){
   var crew=currentCrews.find(function(c){return c.id===cid;});if(!crew)return;
   var arr=type==='trade'?crew.trades:crew.equip;
   arr.splice(parseInt(idx),1);
+  saveWorkingDLR();
   // Re-render just this crew's section to fix indices
   renderOneCrew(cid);
 }
@@ -593,6 +645,7 @@ function pickItem(name){
   if(arr.find(function(i){return i.n===name;})){closePicker();return;}
   arr.push({n:name,c:1});
   var t=pickerType;var cid=pickerCrewId;
+  saveWorkingDLR();
   closePicker();
   renderOneCrew(cid);
   if(t==='trade')checkNudge(crew,name,1);
@@ -620,6 +673,7 @@ function submitLog(){
   logs.sort(function(a,b){return b.date.localeCompare(a.date);});
   setData('dlr_logs',logs);
   var drafts=getData('dlr_drafts',{});delete drafts[date];setData('dlr_drafts',drafts);
+  clearWorkingDLR();
   showToast('Log submitted');currentCrews=[];initLogDate();renderCrews();
 }
 
@@ -665,7 +719,7 @@ function renderHistory(){
 }
 
 function toggleDay(date){var el=document.getElementById('daylog-'+date);var ch=document.getElementById('daychev-'+date);if(el)el.classList.toggle('open');if(ch)ch.classList.toggle('open');}
-function loadLogForEdit(date){var log=logs.find(function(l){return l.date===date;});if(!log)return;currentCrews=JSON.parse(JSON.stringify(log.crews));document.getElementById('log-date').value=date;updateDateDisplay();renderCrews();showPage('dlr');showToast('Log loaded for editing');}
+function loadLogForEdit(date){var log=logs.find(function(l){return l.date===date;});if(!log)return;currentCrews=JSON.parse(JSON.stringify(log.crews));document.getElementById('log-date').value=date;updateDateDisplay();saveWorkingDLR();renderCrews();showPage('dlr');showToast('Log loaded for editing');}
 function deleteLog(date){if(!confirm('Delete log for '+fmtDate(date)+'?'))return;logs=logs.filter(function(l){return l.date!==date;});setData('dlr_logs',logs);renderHistory();updateSettingsCounts();showToast('Log deleted');}
 
 // ── SETTINGS ─────────────────────────────────────────────────────
@@ -835,5 +889,66 @@ function shareLog(date){
   shareText('DLR — '+fmtDate(date),buildLogText(log));
 }
 
-initLogDate();loadTodayDraft();renderCrews();updateSettingsCounts();
+// ── CONTINGENCY REPORT (tap a contingency # → prefilled email) ───
+// Builds the Con Edison contingency notification from the .docx template:
+// route fields are preloaded, field details are typed in, then it opens a
+// mailto: (recipients added in Mail) — or copies as a fallback.
+function inspectorName(){return (allData&&allData.name)||(inspectorInput&&inspectorInput.value.trim())||'Jeremiah Flavin';}
+function setContVal(id,v){var el=document.getElementById(id);if(el)el.value=v||'';}
+function getContVal(id){var el=document.getElementById(id);return el?(el.value||'').trim():'';}
+
+function openContingencyModal(p){
+  p=p||{};
+  setContVal('cont-num',p.num);setContVal('cont-layout',p.layout);setContVal('cont-code',p.code);
+  setContVal('cont-contractor',p.contractor);setContVal('cont-inspector',p.inspector||inspectorName());
+  setContVal('cont-scope','');setContVal('cont-dims','');setContVal('cont-pinpoint','');
+  setContVal('cont-facility','');setContVal('cont-comments','');
+  var subj='Contingency'+(p.num?' - '+p.num:'')+(p.location?' - '+p.location:'');
+  setContVal('cont-subject',subj);
+  document.getElementById('cont-modal').style.display='block';
+}
+function closeContModal(e){if(!e||e.target.classList.contains('modal-overlay'))document.getElementById('cont-modal').style.display='none';}
+
+// Route cards stash payloads by index (like _fmActions); DLR crews look up live.
+function openContingencyRoute(idx){var p=(window._contData||[])[idx];if(p)openContingencyModal(p);}
+function openContingencyCrew(id){
+  var cid=parseInt(id);var c=currentCrews.find(function(x){return x.id===cid;});if(!c)return;
+  openContingencyModal({num:c.contingencyNum||'',layout:c.cworxWO||'',code:c.code753||'',contractor:c.contractor||'',location:c.location||'',inspector:inspectorName()});
+}
+
+function buildContingencyBody(){
+  var num=getContVal('cont-num'),layout=getContVal('cont-layout'),code=getContVal('cont-code'),
+      contractor=getContVal('cont-contractor'),scope=getContVal('cont-scope'),dims=getContVal('cont-dims'),
+      pin=getContVal('cont-pinpoint'),fac=getContVal('cont-facility'),comments=getContVal('cont-comments'),
+      insp=getContVal('cont-inspector');
+  var L=[];
+  L.push('Contingency: '+num);
+  L.push('Layout: '+layout);
+  L.push('Code 753/811: '+code);
+  L.push('');
+  L.push('Good morning,');
+  L.push('Con Edison contractor '+contractor+' will be '+scope+' at the following location');
+  L.push(dims+' excavation located '+pin+' – Directly over the '+fac);
+  L.push('');
+  if(comments){L.push(comments);L.push('');}
+  L.push('I, '+insp+', am on location');
+  return L.join('\n');
+}
+function composeContingencyEmail(){
+  var subject=getContVal('cont-subject');
+  var url='mailto:?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(buildContingencyBody());
+  var a=document.createElement('a');a.href=url;document.body.appendChild(a);a.click();document.body.removeChild(a);
+}
+function copyContingencyReport(){
+  var subject=getContVal('cont-subject');
+  var text=(subject?subject+'\n\n':'')+buildContingencyBody();
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(function(){showToast('Report copied');}).catch(function(){fallbackCopy(text);});
+  }else fallbackCopy(text);
+}
+
+initLogDate();
+if(!restoreWorkingDLR())loadTodayDraft();
+renderCrews();updateSettingsCounts();
+restoreRoute();
 if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('./sw.js').catch(function(){});});}
