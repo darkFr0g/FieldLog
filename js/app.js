@@ -914,21 +914,59 @@ function openContingencyModal(p){
   setContVal('cont-num',p.num);setContVal('cont-layout',p.layout);setContVal('cont-code',p.code);
   setContVal('cont-contractor',p.contractor);setContVal('cont-inspector',p.inspector||inspectorName());
   setContVal('cont-scope','');setContVal('cont-comments','');
-  // dimensions / pinpoint / facility — typed fresh each time
+  // dimensions / pinpoint — typed fresh each time
   ['cont-dim-l','cont-dim-w','cont-dim-d','cont-pin1-dist','cont-pin1-dir','cont-pin1-ref',
-   'cont-pin2-dist','cont-pin2-dir','cont-pin2-ref','cont-fac-dist','cont-fac-dir','cont-fac-desc']
-    .forEach(function(id){setContVal(id,'');});
-  var rel=document.getElementById('cont-fac-rel');if(rel)rel.value='over';
-  toggleContAway();
+   'cont-pin2-dist','cont-pin2-dir','cont-pin2-ref'].forEach(function(id){setContVal(id,'');});
+  // facility list — reset to a single fresh "main" row
+  var fl=document.getElementById('cont-fac-list');if(fl)fl.innerHTML='';
+  addFacRow();
   var subj='Contingency'+(p.num?' - '+p.num:'')+(p.location?' - '+p.location:'');
   setContVal('cont-subject',subj);
   document.getElementById('cont-modal').style.display='block';
 }
-function toggleContAway(){
-  var rel=document.getElementById('cont-fac-rel');var away=document.getElementById('cont-away');
-  if(rel&&away)away.style.display=(rel.value==='away')?'flex':'none';
-}
 function closeContModal(e){if(!e||e.target.classList.contains('modal-overlay'))document.getElementById('cont-modal').style.display='none';}
+
+// Mirror raw feet entry back with a foot mark: 4 -> 4’ (idempotent).
+function mirrorFeet(el){if(!el)return;var v=String(el.value||'').replace(/[’']+/g,'').trim();el.value=v?v+'’':'';}
+// Facility "main" rows are repeatable; each is over OR a distance/direction away.
+function facRowHTML(){
+  return '<div class="fac-item" data-rel="over">'+
+    '<div class="fac-head">'+
+      '<div class="fac-rel-toggle">'+
+        '<button type="button" class="fac-rel-btn active" onclick="setFacRel(this,\'over\')">Over</button>'+
+        '<button type="button" class="fac-rel-btn" onclick="setFacRel(this,\'away\')">Away</button>'+
+      '</div>'+
+      '<button type="button" class="fac-remove" onclick="removeFacRow(this)">×</button>'+
+    '</div>'+
+    '<div class="fac-away" style="display:none">'+
+      '<input class="field-input fac-dist" inputmode="decimal" placeholder="dist" onblur="mirrorFeet(this)">'+
+      '<input class="field-input fac-dir" placeholder="N / S / E / W" autocapitalize="characters" autocorrect="off" spellcheck="false">'+
+    '</div>'+
+    '<input class="field-input fac-desc" placeholder="36” XHP ST(C) 2013 Main">'+
+  '</div>';
+}
+function addFacRow(){
+  var list=document.getElementById('cont-fac-list');if(!list)return;
+  var tmp=document.createElement('div');tmp.innerHTML=facRowHTML();
+  list.appendChild(tmp.firstChild);
+  updateFacRemoveButtons();
+}
+function removeFacRow(btn){
+  var item=btn.parentNode&&btn.parentNode.parentNode;
+  if(item&&item.parentNode)item.parentNode.removeChild(item);
+  updateFacRemoveButtons();
+}
+function updateFacRemoveButtons(){
+  var items=document.querySelectorAll('#cont-fac-list .fac-item');
+  items.forEach(function(it){var r=it.querySelector('.fac-remove');if(r)r.style.display=items.length>1?'flex':'none';});
+}
+function setFacRel(btn,rel){
+  var item=btn.parentNode.parentNode;if(!item)return;
+  item.querySelectorAll('.fac-rel-btn').forEach(function(b){b.classList.remove('active');});
+  btn.classList.add('active');
+  item.setAttribute('data-rel',rel);
+  var away=item.querySelector('.fac-away');if(away)away.style.display=(rel==='away')?'flex':'none';
+}
 
 // Route cards stash payloads by index (like _fmActions); DLR crews look up live.
 function openContingencyRoute(idx){var p=(window._contData||[])[idx];if(p)openContingencyModal(p);}
@@ -937,18 +975,38 @@ function openContingencyCrew(id){
   openContingencyModal({num:c.contingencyNum||'',layout:c.cworxWO||'',code:c.code753||'',contractor:c.contractor||'',location:c.location||'',inspector:inspectorName()});
 }
 
-function ft(v){return v?(v+'’'):'';} // append a foot mark (’)
+function ft(v){v=String(v==null?'':v).replace(/[’'\s]+$/,'');return v?v+'’':'';} // foot mark, idempotent
+function dirWord(d){var m={N:'north',S:'south',E:'east',W:'west'};if(!d)return '';return m[d.toUpperCase()]||String(d).toLowerCase();}
 // "310 / NNC / E 141st St" -> "310’ NNC E 141st St"
 function contOffset(dist,dir,ref){
   var s=[ft(dist),dir].filter(Boolean).join(' ');
   if(ref)s=(s?s+' ':'')+ref;
   return s.trim();
 }
+// Facility clauses: "Directly over the X" or "16’ west of 24” main", joined by " and ".
+function facilityClause(){
+  var items=document.querySelectorAll('#cont-fac-list .fac-item');
+  var clauses=[];
+  items.forEach(function(it){
+    var desc=((it.querySelector('.fac-desc')||{}).value||'').trim();
+    var rel=it.getAttribute('data-rel')||'over';
+    if(rel==='away'){
+      var dist=((it.querySelector('.fac-dist')||{}).value||'').trim();
+      var dir=((it.querySelector('.fac-dir')||{}).value||'').trim();
+      if(!desc&&!dist&&!dir)return;
+      clauses.push((ft(dist)+' '+dirWord(dir)+' of '+desc).replace(/\s+/g,' ').trim());
+    }else{
+      if(!desc)return;
+      clauses.push('Directly over the '+desc);
+    }
+  });
+  return clauses.join(' and ');
+}
 function buildContingencyBody(){
   var num=getContVal('cont-num'),layout=getContVal('cont-layout'),code=getContVal('cont-code'),
       contractor=getContVal('cont-contractor'),scope=getContVal('cont-scope'),
       comments=getContVal('cont-comments'),insp=getContVal('cont-inspector');
-  // Dimensions: L × W × D (skip any blank)
+  // Dimensions: L x W x D (skip any blank)
   var dparts=[];
   if(getContVal('cont-dim-l'))dparts.push(ft(getContVal('cont-dim-l'))+' L');
   if(getContVal('cont-dim-w'))dparts.push(ft(getContVal('cont-dim-w'))+' W');
@@ -958,17 +1016,8 @@ function buildContingencyBody(){
   var pin=[contOffset(getContVal('cont-pin1-dist'),getContVal('cont-pin1-dir'),getContVal('cont-pin1-ref')),
            contOffset(getContVal('cont-pin2-dist'),getContVal('cont-pin2-dir'),getContVal('cont-pin2-ref'))]
           .filter(Boolean).join(' & ');
-  // Facility: directly over, or a distance/direction away from
-  var fac=getContVal('cont-fac-desc');
-  var rel=(document.getElementById('cont-fac-rel')||{}).value;
-  var facClause;
-  if(rel==='away'){
-    var lead=[ft(getContVal('cont-fac-dist')),getContVal('cont-fac-dir')].filter(Boolean).join(' ');
-    facClause=(lead?lead+' ':'')+'away from the '+fac;
-  }else{
-    facClause='Directly over the '+fac;
-  }
-  var locLine=dims+' excavation located '+pin+' – '+facClause;
+  var fac=facilityClause();
+  var locLine=(dims?dims+' ':'')+'excavation'+(pin?' located '+pin:'')+(fac?' – '+fac:'');
   var L=[];
   L.push('Contingency: '+num);
   L.push('Layout: '+layout);
@@ -976,7 +1025,7 @@ function buildContingencyBody(){
   L.push('');
   L.push('Good morning,');
   L.push('Con Edison contractor '+contractor+' will be '+scope+' at the following location');
-  L.push(locLine.replace(/\s+/g,' ').trim());
+  L.push(locLine.replace(/[ \t]+/g,' ').trim());
   L.push('');
   if(comments){L.push(comments);L.push('');}
   L.push('I, '+insp+', am on location');

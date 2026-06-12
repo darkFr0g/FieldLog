@@ -47,7 +47,7 @@
 <div id="page-route" class="page active">
 <div class="wrap">
   <div class="hdr">
-    <div class="vbadge">v5.3</div>
+    <div class="vbadge">v5.4</div>
     <h1 class="hdr-title">Locations for <span id="headingName">Jeremiah Flavin</span></h1>
   </div>
   <div id="uploadSection">
@@ -152,7 +152,7 @@
   <div class="settings-section" style="margin-bottom:20px">
     <div class="settings-title">About</div>
     <div class="settings-card">
-      <div class="settings-row"><span style="font-size:15px">Field Log</span><span style="color:var(--ink-3);font-size:13px">v5.3</span></div>
+      <div class="settings-row"><span style="font-size:15px">Field Log</span><span style="color:var(--ink-3);font-size:13px">v5.4</span></div>
     </div>
   </div>
 </div>
@@ -216,72 +216,48 @@
         <div class="modal-title">Contingency Report</div>
         <button onclick="closeContModal()" style="background:none;border:none;font-size:24px;color:var(--ink-3);cursor:pointer;line-height:1">×</button>
       </div>
-      <div class="cont-form">
-        <div class="cont-field"><label>Subject</label><input id="cont-subject" class="field-input"></div>
+      <form class="cont-form" onsubmit="return false">
+        <div class="cont-field"><label>Subject</label><input id="cont-subject" class="field-input" autocapitalize="words"></div>
         <div class="cont-row">
           <div class="cont-field"><label>Contingency #</label><input id="cont-num" class="field-input"></div>
           <div class="cont-field"><label>Layout</label><input id="cont-layout" class="field-input"></div>
         </div>
         <div class="cont-field"><label>Code 753/811</label><input id="cont-code" class="field-input"></div>
-        <div class="cont-field"><label>Contractor</label><input id="cont-contractor" class="field-input"></div>
+        <div class="cont-field"><label>Contractor</label><input id="cont-contractor" class="field-input" autocapitalize="words"></div>
         <div class="cont-field"><label>Scope — contractor will be…</label><input id="cont-scope" class="field-input" placeholder="performing weld inspection and backfill"></div>
-        <div class="cont-field"><label>Dimensions (ft) — L × W × D</label>
+        <div class="cont-field"><label>Dimensions — L × W × D</label>
           <div class="dim-row">
-            <input id="cont-dim-l" class="field-input" inputmode="decimal" placeholder="L">
+            <input id="cont-dim-l" class="field-input" inputmode="decimal" placeholder="L" onblur="mirrorFeet(this)">
             <span class="dim-x">×</span>
-            <input id="cont-dim-w" class="field-input" inputmode="decimal" placeholder="W">
+            <input id="cont-dim-w" class="field-input" inputmode="decimal" placeholder="W" onblur="mirrorFeet(this)">
             <span class="dim-x">×</span>
-            <input id="cont-dim-d" class="field-input" inputmode="decimal" placeholder="D">
+            <input id="cont-dim-d" class="field-input" inputmode="decimal" placeholder="D" onblur="mirrorFeet(this)">
           </div>
         </div>
         <div class="cont-field"><label>Pinpoint location</label>
           <div class="pin-row">
-            <input id="cont-pin1-dist" class="field-input pin-dist" inputmode="decimal" placeholder="310">
-            <input id="cont-pin1-dir" class="field-input pin-dir" list="curb-dirs" placeholder="NNC" autocapitalize="characters">
+            <input id="cont-pin1-dist" class="field-input pin-dist" inputmode="decimal" placeholder="310" onblur="mirrorFeet(this)">
+            <input id="cont-pin1-dir" class="field-input pin-dir" placeholder="NNC" autocapitalize="characters" autocorrect="off" spellcheck="false">
             <input id="cont-pin1-ref" class="field-input pin-ref" placeholder="E 141st St">
           </div>
           <div class="pin-row">
-            <input id="cont-pin2-dist" class="field-input pin-dist" inputmode="decimal" placeholder="31">
-            <input id="cont-pin2-dir" class="field-input pin-dir" list="curb-dirs" placeholder="EWC" autocapitalize="characters">
+            <input id="cont-pin2-dist" class="field-input pin-dist" inputmode="decimal" placeholder="31" onblur="mirrorFeet(this)">
+            <input id="cont-pin2-dir" class="field-input pin-dir" placeholder="EWC" autocapitalize="characters" autocorrect="off" spellcheck="false">
             <input id="cont-pin2-ref" class="field-input pin-ref" placeholder="Walnut Ave.">
           </div>
+          <div class="cont-hint">Curb dir: EEC · EWC · WEC · WWC · SSC · SNC · NSC · NNC&nbsp;&nbsp;(e.g. NNC = north of north curb)</div>
         </div>
-        <div class="cont-field"><label>Facility</label>
-          <div class="fac-row">
-            <select id="cont-fac-rel" class="field-input" onchange="toggleContAway()">
-              <option value="over">Directly over the</option>
-              <option value="away">Distance away from the</option>
-            </select>
-            <div id="cont-away" class="fac-away" style="display:none">
-              <input id="cont-fac-dist" class="field-input" inputmode="decimal" placeholder="dist">
-              <input id="cont-fac-dir" class="field-input" list="card-dirs" placeholder="N" autocapitalize="characters">
-            </div>
-          </div>
-          <input id="cont-fac-desc" class="field-input" style="margin-top:8px" placeholder="36&rdquo; XHP ST(C) 2013 Main">
+        <div class="cont-field"><label>Facility / main(s)</label>
+          <div id="cont-fac-list"></div>
+          <button type="button" class="add-fac-btn" onclick="addFacRow()">+ Add another main</button>
         </div>
         <div class="cont-field"><label>Additional comments</label><textarea id="cont-comments" class="field-input" rows="3" placeholder="Con Edison corrosion has been notified&#10;NO FURTHER EXCAVATION REQUIRED!"></textarea></div>
-        <div class="cont-field"><label>Inspector / CR</label><input id="cont-inspector" class="field-input"></div>
-      </div>
+        <div class="cont-field"><label>Inspector / CR</label><input id="cont-inspector" class="field-input" autocapitalize="words"></div>
+      </form>
       <div style="display:flex;flex-direction:column;gap:8px;margin-top:16px">
-        <button class="btn btn-primary" style="justify-content:center" onclick="composeContingencyEmail()">Compose Email</button>
-        <button class="btn btn-secondary" style="justify-content:center" onclick="copyContingencyReport()">Copy report</button>
+        <button type="button" class="btn btn-primary" style="justify-content:center" onclick="composeContingencyEmail()">Compose Email</button>
+        <button type="button" class="btn btn-secondary" style="justify-content:center" onclick="copyContingencyReport()">Copy report</button>
       </div>
-      <datalist id="curb-dirs">
-        <option value="EEC">East of East curb</option>
-        <option value="EWC">East of West curb</option>
-        <option value="WEC">West of East curb</option>
-        <option value="WWC">West of West curb</option>
-        <option value="SSC">South of South curb</option>
-        <option value="SNC">South of North curb</option>
-        <option value="NSC">North of South curb</option>
-        <option value="NNC">North of North curb</option>
-      </datalist>
-      <datalist id="card-dirs">
-        <option value="N">North</option>
-        <option value="S">South</option>
-        <option value="E">East</option>
-        <option value="W">West</option>
-      </datalist>
     </div>
   </div>
 </div>
