@@ -112,6 +112,7 @@ dropZone.addEventListener('drop',function(e){e.preventDefault();dropZone.classLi
 fileInput.addEventListener('change',function(){if(this.files&&this.files[0])processFile(this.files[0]);});
 document.getElementById('resetBtn').addEventListener('click',function(){clearRoute();location.reload();});
 document.getElementById('genDlrBtn').addEventListener('click',function(){generateDLR();});
+(function(){var b=document.getElementById('mapStopsBtn');if(b)b.addEventListener('click',openMapModal);})();
 
 function setStatus(t,m){statusBar.classList.add('visible');statusDot.className='status-dot '+t;statusText.textContent=m;}
 function fmtName(n){if(!n)return '';var p=n.trim().split(/\s+/);return p.length===1?p[0]:p[0].charAt(0).toUpperCase()+'. '+p[p.length-1];}
@@ -1151,6 +1152,73 @@ function copyContingencyReport(){
   if(navigator.clipboard&&navigator.clipboard.writeText){
     navigator.clipboard.writeText(plain).then(function(){showToast('Copied — paste into your email');}).catch(function(){fallbackCopy(plain);});
   }else fallbackCopy(plain);
+}
+
+// ── MAP MY STOPS (Google Maps personal routing) ──────────────────
+// Pull unique job locations into an editable list (sheet data is messy, so
+// every stop is editable / removable / reorderable), append an area for
+// geocoding accuracy, then open a Google Maps driving route through them all.
+function uniqueRouteLocations(){
+  if(!allData||!allData.flavin||!allData.headers)return [];
+  var h=allData.headers;var seen={};var out=[];
+  allData.flavin.forEach(function(row){
+    var loc=gv(row,h,'Location');if(!loc)return;
+    loc=loc.replace(/\s+/g,' ').trim();
+    var k=loc.toUpperCase();if(seen[k])return;seen[k]=true;out.push(loc);
+  });
+  return out;
+}
+function mapRowHTML(v){
+  return '<div class="map-row">'+
+    '<button type="button" class="map-move" onclick="moveMapStop(this,-1)">↑</button>'+
+    '<button type="button" class="map-move" onclick="moveMapStop(this,1)">↓</button>'+
+    '<input class="field-input map-stop" value="'+escHtml(v||'')+'" placeholder="Address or intersection">'+
+    '<button type="button" class="count-remove" onclick="this.parentNode.remove()">×</button>'+
+  '</div>';
+}
+function addMapStop(){var t=document.createElement('div');t.innerHTML=mapRowHTML('');document.getElementById('map-list').appendChild(t.firstChild);}
+function moveMapStop(btn,dir){
+  var row=btn.parentNode;var list=row.parentNode;
+  if(dir<0&&row.previousElementSibling)list.insertBefore(row,row.previousElementSibling);
+  else if(dir>0&&row.nextElementSibling)list.insertBefore(row.nextElementSibling,row);
+}
+function openMapModal(){
+  if(!allData||!allData.flavin){showToast('Load a route sheet first');return;}
+  var locs=uniqueRouteLocations();
+  var sfx=document.getElementById('map-suffix');if(sfx&&!sfx.value.trim())sfx.value='Bronx, NY';
+  document.getElementById('map-list').innerHTML=(locs.length?locs:['']).map(function(l){return mapRowHTML(l);}).join('');
+  document.getElementById('map-modal').style.display='block';
+}
+function closeMapModal(e){if(!e||e.target.classList.contains('modal-overlay'))document.getElementById('map-modal').style.display='none';}
+function mapStopList(){
+  var suffix=(document.getElementById('map-suffix').value||'').trim();
+  var stops=[];
+  document.querySelectorAll('#map-list .map-stop').forEach(function(inp){
+    var v=(inp.value||'').replace(/\s+/g,' ').trim();if(!v)return;
+    if(suffix&&v.toLowerCase().indexOf(suffix.toLowerCase())===-1)v=v+', '+suffix;
+    stops.push(v);
+  });
+  return stops;
+}
+function openMapsRoute(){
+  var stops=mapStopList();
+  if(!stops.length){showToast('Add at least one stop');return;}
+  var url;
+  if(stops.length===1){
+    url='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(stops[0]);
+  }else{
+    var dest=encodeURIComponent(stops[stops.length-1]);
+    var mids=stops.slice(0,-1).map(encodeURIComponent).join('|');
+    url='https://www.google.com/maps/dir/?api=1&travelmode=driving&destination='+dest+'&waypoints='+mids;
+    if(stops.length>10)showToast('Many stops — Google may cap waypoints (~9)');
+  }
+  var a=document.createElement('a');a.href=url;a.target='_blank';a.rel='noopener';document.body.appendChild(a);a.click();document.body.removeChild(a);
+}
+function copyMapStops(){
+  var stops=mapStopList();if(!stops.length){showToast('No stops');return;}
+  var text=stops.join('\n');
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(text).then(function(){showToast('List copied');}).catch(function(){fallbackCopy(text);});
+  else fallbackCopy(text);
 }
 
 initLogDate();

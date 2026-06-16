@@ -47,7 +47,7 @@
 <div id="page-route" class="page active">
 <div class="wrap">
   <div class="hdr">
-    <div class="vbadge">v5.7</div>
+    <div class="vbadge">v5.8</div>
     <h1 class="hdr-title">Locations for <span id="headingName">Jeremiah Flavin</span></h1>
   </div>
   <div id="uploadSection">
@@ -76,6 +76,7 @@
     <div class="gen-dlr-bar" id="genDlrBar">
       <div class="gen-dlr-info" id="genDlrInfo"></div>
       <button class="gen-dlr-btn" id="genDlrBtn">Generate DLR from Route Sheet →</button>
+      <button class="reset-btn" id="mapStopsBtn" style="margin-bottom:8px">🗺️ Map my stops (Google Maps)</button>
       <button class="reset-btn" id="resetBtn">↩ Load another file</button>
     </div>
     <div class="tabs" id="tabBar"></div>
@@ -152,7 +153,7 @@
   <div class="settings-section" style="margin-bottom:20px">
     <div class="settings-title">About</div>
     <div class="settings-card">
-      <div class="settings-row"><span style="font-size:15px">Field Log</span><span style="color:var(--ink-3);font-size:13px">v5.7</span></div>
+      <div class="settings-row"><span style="font-size:15px">Field Log</span><span style="color:var(--ink-3);font-size:13px">v5.8</span></div>
     </div>
   </div>
 </div>
@@ -274,6 +275,26 @@
         <button class="picker-close" onclick="closeDirPicker()">×</button>
       </div>
       <div class="picker-list" id="dir-picker-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MAP MY STOPS MODAL -->
+<div id="map-modal" style="display:none">
+  <div class="modal-overlay" onclick="closeMapModal(event)">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div class="modal-title">Map My Stops</div>
+        <button onclick="closeMapModal()" style="background:none;border:none;font-size:24px;color:var(--ink-3);cursor:pointer;line-height:1">×</button>
+      </div>
+      <div style="font-size:12px;color:var(--ink-3);margin-bottom:12px;font-weight:600;line-height:1.5">Edit, remove, or reorder stops — sheet data can be messy. Google Maps routes from your current location through the list, top to bottom.</div>
+      <div class="cont-field" style="margin-bottom:12px"><label>Area appended to each (for accuracy)</label><input id="map-suffix" class="field-input" value="Bronx, NY"></div>
+      <div id="map-list"></div>
+      <button type="button" class="add-fac-btn" style="margin-top:4px" onclick="addMapStop()">+ Add stop</button>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:16px">
+        <button type="button" class="btn btn-primary" style="justify-content:center" onclick="openMapsRoute()">Open route in Google Maps</button>
+        <button type="button" class="btn btn-secondary" style="justify-content:center" onclick="copyMapStops()">Copy list</button>
+      </div>
     </div>
   </div>
 </div>
