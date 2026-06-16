@@ -47,7 +47,7 @@
 <div id="page-route" class="page active">
 <div class="wrap">
   <div class="hdr">
-    <div class="vbadge">v5.6</div>
+    <div class="vbadge">v5.7</div>
     <h1 class="hdr-title">Locations for <span id="headingName">Jeremiah Flavin</span></h1>
   </div>
   <div id="uploadSection">
@@ -152,7 +152,7 @@
   <div class="settings-section" style="margin-bottom:20px">
     <div class="settings-title">About</div>
     <div class="settings-card">
-      <div class="settings-row"><span style="font-size:15px">Field Log</span><span style="color:var(--ink-3);font-size:13px">v5.6</span></div>
+      <div class="settings-row"><span style="font-size:15px">Field Log</span><span style="color:var(--ink-3);font-size:13px">v5.7</span></div>
     </div>
   </div>
 </div>
@@ -251,7 +251,10 @@
           <div id="cont-fac-list"></div>
           <button type="button" class="add-fac-btn" onclick="addFacRow()">+ Add another main</button>
         </div>
-        <div class="cont-field"><label>Additional comments</label><textarea id="cont-comments" class="field-input" rows="3" placeholder="Con Edison corrosion has been notified&#10;NO FURTHER EXCAVATION REQUIRED!"></textarea></div>
+        <div class="cont-field"><label>Additional comments</label>
+          <textarea id="cont-comments" class="field-input" rows="3" placeholder="Con Edison corrosion has been notified"></textarea>
+          <button type="button" class="add-fac-btn" style="margin-top:8px" onclick="addNoExcavation()">+ NO ADDITIONAL EXCAVATION REQUIRED!</button>
+        </div>
         <div class="cont-field"><label>Inspector / CR</label><input id="cont-inspector" class="field-input" autocapitalize="words"></div>
       </form>
       <div style="display:flex;flex-direction:column;gap:8px;margin-top:16px">

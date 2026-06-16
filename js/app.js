@@ -1058,13 +1058,23 @@ function buildContingencyBody(){
   L.push('Layout: '+layout);
   L.push('Code 753/811: '+code);
   L.push('');
+  L.push('────────────────────');
+  L.push('');
   L.push('Good morning,');
-  L.push('Con Edison contractor '+contractor+' will be '+scope+' at the following location');
-  L.push(locLine.replace(/[ \t]+/g,' ').trim());
+  L.push('Con Edison contractor '+contractor+' will be '+scope+' at the following location(s);');
+  L.push('1. '+locLine.replace(/[ \t]+/g,' ').trim());
   L.push('');
   if(comments){L.push(comments);L.push('');}
   L.push('I, '+insp+', am on location');
   return L.join('\n');
+}
+// Quick-insert the standard closing line into Additional comments (it renders bold).
+function addNoExcavation(){
+  var el=document.getElementById('cont-comments');if(!el)return;
+  var phrase='NO ADDITIONAL EXCAVATION REQUIRED!';
+  if(el.value.indexOf(phrase)!==-1){el.focus();return;}
+  var v=el.value.replace(/\s+$/,'');
+  el.value=v?(v+'\n'+phrase):phrase;
 }
 function composeContingencyEmail(){
   var subject=getContVal('cont-subject');
@@ -1114,18 +1124,15 @@ function buildContingencyHTML(){
   });
   var facHtml=facilityClauseHTML();
   var loc=(dims?B(dims)+' ':'')+'excavation'+(offs.length?' located '+offs.join(' &amp; '):'')+(facHtml?' – '+facHtml:'');
-  var lines=[];
-  lines.push('Contingency: '+bcEsc(num));
-  lines.push('Layout: '+bcEsc(layout));
-  lines.push('Code 753/811: '+bcEsc(code));
-  lines.push('');
-  lines.push('Good morning,');
-  lines.push('Con Edison contractor '+bcEsc(contractor)+' will be '+bcEsc(scope)+' at the following location');
-  lines.push(loc);
-  lines.push('');
-  if(comments){lines.push(bcEsc(comments).replace(/\n/g,'<br>'));lines.push('');}
-  lines.push('I, '+bcEsc(insp)+', am on location');
-  return lines.join('<br>');
+  var head=['<b>Contingency:</b> '+bcEsc(num),'<b>Layout:</b> '+bcEsc(layout),'<b>Code 753/811:</b> '+bcEsc(code)].join('<br>');
+  var body=[];
+  body.push('Good morning,');
+  body.push('Con Edison contractor '+bcEsc(contractor)+' will be '+bcEsc(scope)+' at the following location(s);');
+  body.push('<ol><li>'+loc+'</li></ol>');
+  if(comments)body.push('<b>'+bcEsc(comments).replace(/\n/g,'<br>')+'</b>');
+  body.push('');
+  body.push('I, '+bcEsc(insp)+', am on location');
+  return head+'<br><br>────────────────────<br><br>'+body.join('<br>');
 }
 function copyContingencyReport(){
   var subject=getContVal('cont-subject');
