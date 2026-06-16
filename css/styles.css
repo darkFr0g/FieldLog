@@ -146,6 +146,10 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
 .list-badges{display:flex;gap:4px;margin-top:7px;flex-wrap:wrap}
 .no-jobs{padding:32px;text-align:center;color:var(--ink-4);font-size:14px;font-weight:600}
 .reset-btn{width:100%;border-radius:var(--radius);padding:14px;font-family:var(--font);font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;-webkit-appearance:none;background:var(--surface);border:2px solid var(--border);color:var(--ink-3)}
+.map-btn{display:flex;align-items:center;justify-content:center;gap:8px}
+.map-btn svg{width:16px;height:16px;flex-shrink:0}
+.reset-alt{background:var(--surface-2);border-color:var(--border-mid);color:var(--ink-4)}
+.reset-alt:active{background:var(--border)}
 .gen-dlr-bar{display:none;background:var(--surface);border:2px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:12px}
 .gen-dlr-bar.visible{display:block}
 .gen-dlr-info{font-size:13px;color:var(--ink-3);margin-bottom:10px;line-height:1.5;font-weight:600}
