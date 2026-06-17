@@ -100,7 +100,7 @@ shared-note title and History.
 ## Text the foreman (assignment cards)
 
 The route sheet embeds the foreman's number in the **Contractor's Foreman**
-field, e.g. `566059- Ben Cramer (973-919-9700)`. `renderFlavinJobs` shows the
+field, e.g. `123456- Mike Jones (281-330-8004)`. `renderFlavinJobs` shows the
 cleaned name (`foremanName`) plus a green **"Text foreman"** button — an
 `sms:+1…&body=…` link (`extractPhone` / `normPhone` / `smsHref`) that opens
 iOS Messages prefilled with "Good morning, I'm covering you on `<Ticket #>`

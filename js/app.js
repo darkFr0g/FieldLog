@@ -149,7 +149,7 @@ function parseSummaryDate(wb){
 }
 
 // ── FOREMAN PHONE / SMS ──────────────────────────────────────────
-// The foreman field embeds the number, e.g. "566059- Ben Cramer (973-919-9700)".
+// The foreman field embeds the number, e.g. "123456- Mike Jones (281-330-8004)".
 function extractPhone(s){if(!s)return null;var m=String(s).match(/\(?\s*(\d{3})\s*[).\-\s]\s*(\d{3})\s*[.\-\s]\s*(\d{4})\b/);return m?(m[1]+m[2]+m[3]):null;}
 function normPhone(p){if(!p)return '';var d=String(p).replace(/\D/g,'');if(d.length===10)return '+1'+d;if(d.length===11&&d.charAt(0)==='1')return '+'+d;return '+'+d;}
 function smsHref(phone,msg){return 'sms:'+normPhone(phone)+'&body='+encodeURIComponent(msg);}
