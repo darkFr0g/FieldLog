@@ -109,7 +109,7 @@ function buildDefaultMileage(date){
   var prev=milePrevEntry(date);
   var e={date:date,shift:prev?(prev.shift||''):'',cci:prev?(prev.cci||''):'',poet:prev?(prev.poet||''):'',workCode:prev?(prev.workCode||'Field'):'Field',ot:'',expenses:'',expItems:'',notes:'',startOdo:mileEndOdo(prev),stops:[]};
   var tm=dlrTicketMap(date);
-  Object.keys(tm).forEach(function(loc){e.stops.push({loc:loc,ticket:tm[loc],mi:'',remarks:''});});
+  Object.keys(tm).forEach(function(loc){e.stops.push({loc:shortAddr(loc),ticket:tm[loc],mi:'',remarks:''});});
   if(e.stops.length===0)e.stops.push({loc:'',ticket:'',mi:'',remarks:''});
   return e;
 }
@@ -124,12 +124,19 @@ function mileLoadFromLog(){
   var e=currentMileEntry(),tm=dlrTicketMap(mileDate);
   if(!Object.keys(tm).length){showToast('No log for this day');return;}
   var have={};e.stops.forEach(function(s){if(s.loc)have[s.loc.trim()]=1;});var added=0;
-  Object.keys(tm).forEach(function(loc){if(!have[loc]){have[loc]=1;e.stops.push({loc:loc,ticket:tm[loc],mi:'',remarks:''});added++;}});
+  Object.keys(tm).forEach(function(loc){var sl=shortAddr(loc);if(!have[sl]){have[sl]=1;e.stops.push({loc:sl,ticket:tm[loc],mi:'',remarks:''});added++;}});
   saveMileageEntry(e);renderMileage();showToast(added?('Added '+added+' stop'+(added!==1?'s':'')):'Stops already loaded');
 }
 function mileMonthTotal(date){var ym=date.slice(0,7),m=allMileage(),t=0;Object.keys(m).forEach(function(k){if(k.slice(0,7)===ym)t+=mileTotal(m[k]);});return t;}
 function mileDaysWithStops(){var m=allMileage(),ym=mileDate.slice(0,7),out=[];Object.keys(m).sort().reverse().forEach(function(k){if(k!==mileDate&&k.slice(0,7)===ym&&(m[k].stops||[]).some(function(s){return s.loc;}))out.push(k);});return out;}
 function mileCopyFrom(date){var src=allMileage()[date];if(!src)return;var e=currentMileEntry();e.stops=(src.stops||[]).map(function(s){return {loc:s.loc||'',ticket:s.ticket||'',mi:'',remarks:s.remarks||''};});saveMileageEntry(e);renderMileage();showToast('Copied '+e.stops.length+' stops');}
+function mileMapStops(){
+  var e=currentMileEntry();
+  var stops=(e.stops||[]).map(function(s){return s.loc?shortAddr(s.loc):'';}).filter(Boolean)
+    .map(function(s){return /bronx|queens|brooklyn|manhattan|ny/i.test(s)?s:s+', Bronx, NY';});
+  if(!stops.length){showToast('Add stops first');return;}
+  openMapsWith(stops);
+}
 function renderMileage(){
   var disp=document.getElementById('mile-display'),di=document.getElementById('mile-date'),body=document.getElementById('mileage-body');
   if(!body)return;
@@ -140,7 +147,7 @@ function renderMileage(){
   function f(label,inner){return '<label class="mile-f"><span>'+label+'</span>'+inner+'</label>';}
   var h='<div class="mile-card">'+
       '<div class="mile-ot"><span class="mile-ot-l">Overtime Hours</span>'+
-        '<select class="mile-ot-sel" onchange="mileSetField(\'ot\',this.value)"><option value="">0</option>'+MILE_OT.map(function(o){return '<option'+(String(e.ot||'')===o?' selected':'')+'>'+o+'</option>';}).join('')+'</select></div>'+
+        '<input class="mile-ot-sel" inputmode="decimal" placeholder="0" value="'+escHtml(e.ot||'')+'" onchange="mileSetField(\'ot\',this.value)"></div>'+
       '<div class="mile-fields">'+
         f('Shift',sel('shift',MILE_SHIFTS,'—'))+
         f('Work Code',sel('workCode',MILE_WORKCODE,'—'))+
@@ -175,7 +182,7 @@ function renderMileage(){
   });
   var copyDays=mileDaysWithStops();
   var copySel=copyDays.length?('<select class="mile-sel mile-copy" onchange="mileCopyFrom(this.value);this.value=\'\'"><option value="">Copy stops from another day…</option>'+copyDays.map(function(k){return '<option value="'+k+'">'+new Date(k+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})+'</option>';}).join('')+'</select>'):'';
-  h+='<div class="mile-actions"><button class="btn btn-secondary btn-sm" onclick="mileAddStop()">+ Add stop</button><button class="btn btn-secondary btn-sm" onclick="mileLoadFromLog()">Load from log</button></div>'+
+  h+='<div class="mile-actions"><button class="btn btn-secondary btn-sm" onclick="mileAddStop()">+ Add stop</button><button class="btn btn-secondary btn-sm" onclick="mileLoadFromLog()">Load from log</button><button class="btn btn-green btn-sm" onclick="mileMapStops()">Map drive</button></div>'+
      (copySel?'<div style="margin-top:8px">'+copySel+'</div>':'')+
      '<div class="mile-total">'+mileTotal(e)+' mi today'+(mileEndOdo(e)!==''?' · ends '+mileEndOdo(e):'')+'</div></div>';
   var prevEnd=mileEndOdo(milePrevEntry(mileDate));
@@ -1595,9 +1602,9 @@ function mapStopList(){
   });
   return stops;
 }
-function openMapsRoute(){
-  var stops=mapStopList();
-  if(!stops.length){showToast('Add at least one stop');return;}
+function openMapsWith(stops){
+  stops=(stops||[]).filter(Boolean);
+  if(!stops.length){showToast('No stops to map');return;}
   var url;
   if(stops.length===1){
     url='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(stops[0]);
@@ -1609,6 +1616,7 @@ function openMapsRoute(){
   }
   var a=document.createElement('a');a.href=url;a.target='_blank';a.rel='noopener';document.body.appendChild(a);a.click();document.body.removeChild(a);
 }
+function openMapsRoute(){var stops=mapStopList();if(!stops.length){showToast('Add at least one stop');return;}openMapsWith(stops);}
 function copyMapStops(){
   var stops=mapStopList();if(!stops.length){showToast('No stops');return;}
   var text=stops.join('\n');
