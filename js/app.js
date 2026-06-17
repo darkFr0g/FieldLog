@@ -104,12 +104,21 @@ var MILE_OT=['0','0.5','1','1.5','2','2.5','3','3.5','4','4.5','5'];
 var MILE_POET=['XCMG - 216172870002','MP - 228728990001','BOTH'];
 var MILE_CCI=['K. Garcia','E. Kelly','V. Cornwall','J. Connors'];
 var MILE_WORKCODE=['Field','Training','Office','CFOR','WFH','Vacation','Holiday','NY-PFL'];
-function dlrTicketMap(date){var map={},log=logs.find(function(l){return l.date===date;});if(log)(log.crews||[]).forEach(function(c){var loc=(c.location||'').trim();if(loc&&!(loc in map))map[loc]=c.wo||'';});return map;}
+// Day's stops come from the loaded route sheet (available all day); fall back to a
+// submitted DLR log only for past dates whose route is no longer loaded.
+function mileStopSource(date){
+  var seen={},out=[];
+  function add(loc,tkt){loc=(loc||'').trim();if(!loc)return;var sl=shortAddr(loc);if(seen[sl])return;seen[sl]=1;out.push({loc:sl,ticket:tkt||''});}
+  if(allData&&allData.routeDate===date&&allData.flavin&&allData.headers){
+    var h=allData.headers;allData.flavin.forEach(function(row){add(gv(row,h,'Location'),gv(row,h,'Ticket #'));});
+  }
+  if(!out.length){var log=logs.find(function(l){return l.date===date;});if(log)(log.crews||[]).forEach(function(c){add(c.location,c.wo);});}
+  return out;
+}
 function buildDefaultMileage(date){
   var prev=milePrevEntry(date);
   var e={date:date,shift:prev?(prev.shift||''):'',cci:prev?(prev.cci||''):'',poet:prev?(prev.poet||''):'',workCode:prev?(prev.workCode||'Field'):'Field',ot:'',expenses:'',expItems:'',notes:'',startOdo:mileEndOdo(prev),stops:[]};
-  var tm=dlrTicketMap(date);
-  Object.keys(tm).forEach(function(loc){e.stops.push({loc:shortAddr(loc),ticket:tm[loc],mi:'',remarks:''});});
+  mileStopSource(date).forEach(function(s){e.stops.push({loc:s.loc,ticket:s.ticket,mi:'',remarks:''});});
   if(e.stops.length===0)e.stops.push({loc:'',ticket:'',mi:'',remarks:''});
   return e;
 }
@@ -121,10 +130,10 @@ function mileSetStop(i,field,val){var e=currentMileEntry();if(!e.stops[i])return
 function mileAddStop(){var e=currentMileEntry();e.stops.push({loc:'',ticket:'',mi:'',remarks:''});saveMileageEntry(e);renderMileage();}
 function mileDelStop(i){var e=currentMileEntry();e.stops.splice(i,1);if(e.stops.length===0)e.stops.push({loc:'',ticket:'',mi:'',remarks:''});saveMileageEntry(e);renderMileage();}
 function mileLoadFromLog(){
-  var e=currentMileEntry(),tm=dlrTicketMap(mileDate);
-  if(!Object.keys(tm).length){showToast('No log for this day');return;}
+  var e=currentMileEntry(),src=mileStopSource(mileDate);
+  if(!src.length){showToast('Load the route sheet for this day first');return;}
   var have={};e.stops.forEach(function(s){if(s.loc)have[s.loc.trim()]=1;});var added=0;
-  Object.keys(tm).forEach(function(loc){var sl=shortAddr(loc);if(!have[sl]){have[sl]=1;e.stops.push({loc:sl,ticket:tm[loc],mi:'',remarks:''});added++;}});
+  src.forEach(function(s){if(!have[s.loc]){have[s.loc]=1;e.stops.push({loc:s.loc,ticket:s.ticket,mi:'',remarks:''});added++;}});
   saveMileageEntry(e);renderMileage();showToast(added?('Added '+added+' stop'+(added!==1?'s':'')):'Stops already loaded');
 }
 function mileMonthTotal(date){var ym=date.slice(0,7),m=allMileage(),t=0;Object.keys(m).forEach(function(k){if(k.slice(0,7)===ym)t+=mileTotal(m[k]);});return t;}
@@ -182,7 +191,7 @@ function renderMileage(){
   });
   var copyDays=mileDaysWithStops();
   var copySel=copyDays.length?('<select class="mile-sel mile-copy" onchange="mileCopyFrom(this.value);this.value=\'\'"><option value="">Copy stops from another day…</option>'+copyDays.map(function(k){return '<option value="'+k+'">'+new Date(k+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})+'</option>';}).join('')+'</select>'):'';
-  h+='<div class="mile-actions"><button class="btn btn-secondary btn-sm" onclick="mileAddStop()">+ Add stop</button><button class="btn btn-secondary btn-sm" onclick="mileLoadFromLog()">Load from log</button><button class="btn btn-green btn-sm" onclick="mileMapStops()">Map drive</button></div>'+
+  h+='<div class="mile-actions"><button class="btn btn-secondary btn-sm" onclick="mileAddStop()">+ Add stop</button><button class="btn btn-secondary btn-sm" onclick="mileLoadFromLog()">Load from route</button><button class="btn btn-green btn-sm" onclick="mileMapStops()">Map drive</button></div>'+
      (copySel?'<div style="margin-top:8px">'+copySel+'</div>':'')+
      '<div class="mile-total">'+mileTotal(e)+' mi today'+(mileEndOdo(e)!==''?' · ends '+mileEndOdo(e):'')+'</div></div>';
   var prevEnd=mileEndOdo(milePrevEntry(mileDate));
