@@ -107,6 +107,8 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
 .status-off{background:var(--surface-2);color:var(--ink-4);font-weight:600;font-style:italic;border:1px dashed var(--border-mid)}
 .cont-chip{display:inline-flex;align-items:center;gap:5px;background:var(--amber-bg);color:var(--amber-text);font-size:12px;font-weight:800;padding:5px 12px;border-radius:var(--radius-xs);border:2px solid #f0d5a0;min-height:34px;cursor:pointer;font-family:var(--font);letter-spacing:.02em}
 .cont-chip:active{background:#f3e0c0}
+.hp-chip{display:inline-flex;align-items:center;gap:5px;background:var(--coral-bg);color:var(--coral-text);font-size:12px;font-weight:800;padding:5px 12px;border-radius:var(--radius-xs);border:2px solid var(--coral-text);min-height:34px;cursor:pointer;font-family:var(--font);letter-spacing:.02em}
+.hp-chip:active{opacity:.75}
 .cont-form{display:flex;flex-direction:column;gap:12px}
 .cont-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .cont-field label{font-size:10px;color:var(--ink-4);font-weight:800;text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:4px}

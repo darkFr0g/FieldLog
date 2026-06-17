@@ -186,7 +186,7 @@ function processFile(file){
     try{
       var wb=XLSX.read(new Uint8Array(e.target.result),{type:'array',cellDates:true});
       var ccis=parseCCIs(wb);
-      var sheetJobs={};var headers=null;
+      var sheetJobs={};var headers=null;var allJobsList=[];var allSeen={};
       var SHEETS=['CAC','Donofrio','EJ','Gianfia','MFM'];
       for(var si=0;si<wb.SheetNames.length;si++){
         var sn=wb.SheetNames[si];
@@ -205,6 +205,15 @@ function processFile(file){
           if(!row||row.every(function(c){return c===null||c==='';}))continue;
           var fv=row[0];if(fv&&String(fv).trim()!=='')lastF=String(fv).trim();
           var insp=row[ciIdx];
+          // Capture EVERY job (all inspectors) for the "All" list.
+          var aLoc=String(row[headers.indexOf('Location')]||'').trim();
+          var aTk=String(row[headers.indexOf('Ticket #')]||'').trim();
+          var aWo=String(row[headers.indexOf('Layout/CWORX Work Order #')]||'').trim();
+          var aIn=insp?String(insp).trim():'';
+          if(aLoc||aTk){
+            var aKey=aLoc+'|'+aTk+'|'+aIn;
+            if(!allSeen[aKey]){allSeen[aKey]=true;allJobsList.push({location:aLoc,contractor:company,ticket:aTk,wo:aWo,inspector:aIn});}
+          }
           if(insp&&String(insp).trim()===NAME){
             if(!row[0]||String(row[0]).trim()===''){row=row.slice();row[0]=lastF;}
             var wdI=headers.indexOf('Work Description');
@@ -248,8 +257,9 @@ function processFile(file){
           }
         });
       }
+      allJobsList.sort(function(a,b){return (a.inspector||'~~~').localeCompare(b.inspector||'~~~')||a.location.localeCompare(b.location);});
       var routeDate=parseDateFromName(file.name)||parseSummaryDate(wb)||null;
-      allData={headers:headers,flavin:myJobs,flavinCompany:myJobsCompany,owned:ownedJobs,sheets:sheetJobs,ccis:ccis,contractorSheets:SHEETS,name:NAME,routeDate:routeDate};
+      allData={headers:headers,flavin:myJobs,flavinCompany:myJobsCompany,owned:ownedJobs,sheets:sheetJobs,ccis:ccis,contractorSheets:SHEETS,name:NAME,routeDate:routeDate,allJobs:allJobsList};
       saveRoute();
       renderRouteResults();
     }catch(err){setStatus('err','Error: '+err.message);dropZone.style.display='';}
@@ -274,12 +284,13 @@ function renderRouteResults(){
   var lastName=allData.name.split(' ').pop();
   var tabs=[{id:'flavin',label:lastName,jobs:allData.flavin},{id:'owned',label:'Owned',jobs:allData.owned}];
   allData.contractorSheets.forEach(function(sn){var d=allData.sheets[sn];if(d)tabs.push({id:sn,label:sn,jobs:d.jobs});});
+  tabs.push({id:'all',label:'All jobs',jobs:allData.allJobs||[]});
   tabs.forEach(function(t,idx){
     var btn=document.createElement('button');btn.className='tab'+(idx===0?' active':'');
     btn.innerHTML=t.label+'<span class="tab-ct">'+t.jobs.length+'</span>';
     btn.addEventListener('click',function(){
       document.querySelectorAll('.tab').forEach(function(x){x.classList.remove('active');});btn.classList.add('active');
-      if(t.id==='flavin'||t.id==='owned')renderFlavinJobs(t.jobs);else renderListJobs(t.jobs);
+      if(t.id==='flavin'||t.id==='owned')renderFlavinJobs(t.jobs);else if(t.id==='all')renderAllJobs(t.jobs);else renderListJobs(t.jobs);
     });
     tabBar.appendChild(btn);
   });
@@ -297,7 +308,7 @@ function renderFlavinJobs(jobs){
   resultsHdr.style.display='flex';resultsCount.textContent=jobs.length+' job'+(jobs.length!==1?'s':'');
   jobsContainer.innerHTML='';if(!jobs||jobs.length===0){jobsContainer.innerHTML='<div class="no-jobs">No jobs assigned</div>';return;}
   var h=allData.headers;var grid=document.createElement('div');grid.className='jobs';
-  window._fmActions=[];window._contData=[];
+  window._fmActions=[];window._contData=[];window._hpData=[];
   jobs.forEach(function(row){
     var loc=gv(row,h,'Location')||'—',tw=gv(row,h,'Type Of Work')||'',wd=gv(row,h,'Work Description'),tk=gv(row,h,'Ticket #'),wo=gv(row,h,'Layout/CWORX Work Order #'),fm=gv(row,h,"Contractor's Foreman"),ph=gv(row,h,'Permit Hours'),psc=gv(row,h,'PSC File #'),cci=gv(row,h,'CCI'),jo=gv(row,h,'Job Owner'),cg=gv(row,h,'Contingency (Y/N)'),cn=gv(row,h,'Contingency #'),hp=gv(row,h,'Hold Point'),fz=gvRe(row,h,FUSE_RE),c7=gv(row,h,'Code 753'),co=row._co||'';
     var twl=tw.toLowerCase();var bc=twl.indexOf('major')!==-1?'tbadge t-major':twl.indexOf('new')!==-1?'tbadge t-new':'tbadge t-mrp';
@@ -315,7 +326,11 @@ function renderFlavinJobs(jobs){
       var contIdx=window._contData.push({num:cn||'',layout:wo||'',code:c7||'',contractor:co||'',location:(loc==='—'?'':loc),inspector:allData.name})-1;
       contTag='<button class="cont-chip" onclick="openContingencyRoute('+contIdx+')">⚠ '+escHtml(cn||'Contingency')+' →</button>';
     }
-    var hpTag=isActive(hp)?('<span class="b-hp">Hold Point: '+escHtml(hp)+'</span>'):'<span class="status-off">Hold Point: No</span>';
+    var hpTag;
+    if(isActive(hp)){
+      var hpIdx=window._hpData.push({date:allData.routeDate||today(),ticket:tk||'',wo:wo||'',location:(loc==='—'?'':loc),hp:hp})-1;
+      hpTag='<button class="hp-chip" onclick="holdPointAlbum('+hpIdx+')">📷 Hold Point: '+escHtml(hp)+'</button>';
+    }else hpTag='<span class="status-off">Hold Point: No</span>';
     var fuseTag=isActive(fz)?('<span class="b-fuse">Fusing Peer: '+escHtml(fz)+'</span>'):'<span class="status-off">Fusing Peer: No</span>';
     var card=document.createElement('div');card.className='job-card';
     card.innerHTML='<div class="card-head"><div class="loc">'+loc+'</div>'+(tw?'<span class="'+bc+'">'+tw+'</span>':'')+' </div>'+
@@ -343,6 +358,39 @@ function renderListJobs(jobs){
     list.appendChild(item);
   });
   jobsContainer.appendChild(list);
+}
+
+// All jobs across every inspector: location · contractor · work# · covering inspector.
+function renderAllJobs(jobs){
+  resultsHdr.style.display='flex';resultsCount.textContent=jobs.length+' job'+(jobs.length!==1?'s':'');
+  jobsContainer.innerHTML='';
+  if(!jobs||jobs.length===0){jobsContainer.innerHTML='<div class="no-jobs">No jobs found</div>';return;}
+  var list=document.createElement('div');list.className='list-jobs';
+  jobs.forEach(function(j){
+    var work=[j.ticket,j.wo].filter(Boolean).join(' · ')||'—';
+    var item=document.createElement('div');item.className='list-item';
+    item.innerHTML='<div class="list-loc">'+escHtml(j.location||'—')+'</div>'+
+      '<div class="list-meta">'+
+        (j.contractor?'<span class="lm">'+escHtml(j.contractor)+'</span>':'')+
+        '<span class="lm">Work <b>'+escHtml(work)+'</b></span>'+
+        '<span class="lm">Insp <b>'+escHtml(j.inspector||'—')+'</b></span>'+
+      '</div>';
+    list.appendChild(item);
+  });
+  jobsContainer.appendChild(list);
+}
+
+// Hold Point chip → copy a standardized Photos album name (date - job#s - location).
+// iOS web can't create an album directly; this makes naming one a paste away.
+function albumName(d){
+  var jobs=[d.ticket,d.wo].filter(Boolean).join(' ');
+  return [(d.date||today()),jobs,d.location].filter(Boolean).join(' - ');
+}
+function holdPointAlbum(i){
+  var d=window._hpData&&window._hpData[i];if(!d)return;
+  var name=albumName(d);
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(name).then(function(){showToast('Album name copied — Photos › New Album › paste');}).catch(function(){fallbackCopy(name);});
+  else fallbackCopy(name);
 }
 
 // ── GROUPING ─────────────────────────────────────────────────────
