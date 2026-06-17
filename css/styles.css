@@ -145,6 +145,22 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
 .update-banner{position:fixed;left:12px;right:12px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:300;background:var(--green);color:#fff;border-radius:10px;padding:13px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:14px;font-weight:800;box-shadow:0 8px 28px rgba(0,0,0,.28);cursor:pointer;animation:ubIn .25s ease}
 .update-banner .ub-go{font-weight:700;opacity:.95}
 @keyframes ubIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+/* Mileage */
+.mile-types{display:flex;gap:6px;padding:12px 12px 0}
+.mile-type{flex:1;padding:9px;border:2px solid var(--border);background:var(--surface);border-radius:8px;font-size:13px;font-weight:700;color:var(--ink-3);cursor:pointer;font-family:var(--font)}
+.mile-type.active{background:#111;border-color:#111;color:#fff}
+.mile-card{background:var(--surface);border:2px solid var(--border);border-radius:var(--radius-sm);margin:12px;padding:12px}
+.mile-rowhdr{display:flex;justify-content:space-between;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-4);padding:0 2px 6px}
+.mile-stop{margin-bottom:8px}
+.mile-stop-main{display:flex;gap:6px;align-items:center}
+.mile-loc{flex:1;min-width:0}
+.mile-odo{width:84px;flex-shrink:0;text-align:right;font-family:var(--font-mono)}
+.mile-x{width:30px;flex-shrink:0;border:none;background:var(--surface-2);color:var(--red);border-radius:6px;font-size:18px;line-height:1;cursor:pointer;padding:6px 0}
+.mile-leg{font-size:11px;color:var(--ink-4);font-weight:700;text-align:right;padding:2px 36px 0 0}
+.mile-actions{display:flex;gap:8px;margin-top:10px}
+.mile-total{margin-top:12px;text-align:right;font-size:16px;font-weight:800;letter-spacing:-.02em}
+.mile-foot{display:flex;justify-content:space-between;margin:0 12px;padding:12px;background:var(--surface-2);border-radius:var(--radius-sm);font-size:13px}
+.mile-foot-l{display:block;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-4);margin-bottom:2px}
 .co-filter{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
 .co-chip{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;padding:6px 11px;border-radius:999px;border:2px solid var(--border-mid);background:var(--surface);color:var(--ink-3);cursor:pointer;font-family:var(--font);white-space:nowrap}
 .co-chip-ct{font-size:10px;font-weight:800;opacity:.85}

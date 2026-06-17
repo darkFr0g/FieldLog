@@ -83,7 +83,87 @@ function showPage(p){
   document.getElementById('page-'+p).classList.add('active');
   document.getElementById('nav-'+p).classList.add('active');
   if(p==='history')renderHistory();
+  if(p==='mileage')renderMileage();
   if(p==='settings')updateSettingsCounts();
+}
+
+// ── MILEAGE ──────────────────────────────────────────────────────
+// Daily odometer capture. Stops pre-load from that date's DLR job locations;
+// miles = difference between consecutive odometer readings. Foundation for the
+// CI Mileage Form and Daily Log.
+var mileDate=today();
+function allMileage(){return getData('dlr_mileage',{});}
+function mileSetDate(d){if(d){mileDate=d;renderMileage();}}
+function mileStep(n){var dt=new Date(mileDate+'T12:00:00');dt.setDate(dt.getDate()+n);mileDate=dt.toISOString().split('T')[0];renderMileage();}
+function milePrevEntry(date){var m=allMileage(),best=null;Object.keys(m).forEach(function(k){if(k<date&&(!best||k>best))best=k;});return best?m[best]:null;}
+function mileLastOdo(e){if(!e||!e.stops)return '';for(var i=e.stops.length-1;i>=0;i--){var o=e.stops[i].odo;if(o!==''&&o!=null&&!isNaN(+o))return +o;}return '';}
+function buildDefaultMileage(date){
+  var prev=milePrevEntry(date);
+  var startLoc=(prev&&prev.stops&&prev.stops[0])?prev.stops[0].loc:'';
+  var startOdo=mileLastOdo(prev);
+  var e={date:date,type:'work',off:'',stops:[{loc:startLoc,odo:startOdo}]};
+  // pre-load that day's job locations from the submitted DLR log
+  var log=logs.find(function(l){return l.date===date;});
+  if(log){var seen={};(log.crews||[]).forEach(function(c){var loc=(c.location||'').trim();if(loc&&!seen[loc]){seen[loc]=1;e.stops.push({loc:loc,odo:''});}});}
+  return e;
+}
+function currentMileEntry(){var m=allMileage();return m[mileDate]?JSON.parse(JSON.stringify(m[mileDate])):buildDefaultMileage(mileDate);}
+function saveMileageEntry(e){e.savedAt=new Date().toISOString();var m=allMileage();m[e.date]=e;setData('dlr_mileage',m);syncPushMileage();}
+function mileTotal(e){
+  if(!e||e.type!=='work')return 0;
+  var odos=(e.stops||[]).filter(function(s){return s.odo!==''&&s.odo!=null&&!isNaN(+s.odo);}).map(function(s){return +s.odo;});
+  return odos.length<2?0:(odos[odos.length-1]-odos[0]);
+}
+function mileSetType(t){var e=currentMileEntry();e.type=t;saveMileageEntry(e);renderMileage();}
+function mileSetOff(v){var e=currentMileEntry();e.off=v;saveMileageEntry(e);}
+function mileSetStop(i,field,val){var e=currentMileEntry();if(!e.stops[i])return;if(field==='odo'){val=(''+val).trim();e.stops[i].odo=(val===''?'':(isNaN(+val)?e.stops[i].odo:+val));}else e.stops[i][field]=val;saveMileageEntry(e);renderMileage();}
+function mileAddStop(){var e=currentMileEntry();e.stops.push({loc:'',odo:''});saveMileageEntry(e);renderMileage();}
+function mileDelStop(i){var e=currentMileEntry();if(e.stops.length<=1)return;e.stops.splice(i,1);saveMileageEntry(e);renderMileage();}
+function mileLoadFromLog(){
+  var e=currentMileEntry();var log=logs.find(function(l){return l.date===mileDate;});
+  if(!log){showToast('No log for this day');return;}
+  var have={};e.stops.forEach(function(s){if(s.loc)have[s.loc.trim()]=1;});var added=0;
+  (log.crews||[]).forEach(function(c){var loc=(c.location||'').trim();if(loc&&!have[loc]){have[loc]=1;e.stops.push({loc:loc,odo:''});added++;}});
+  saveMileageEntry(e);renderMileage();showToast(added?('Added '+added+' stop'+(added!==1?'s':'')):'Stops already loaded');
+}
+function mileMonthTotal(date){
+  var ym=date.slice(0,7),m=allMileage(),t=0;
+  Object.keys(m).forEach(function(k){if(k.slice(0,7)===ym)t+=mileTotal(m[k]);});
+  return t;
+}
+function renderMileage(){
+  var disp=document.getElementById('mile-display'),di=document.getElementById('mile-date'),body=document.getElementById('mileage-body');
+  if(!body)return;
+  if(disp)disp.textContent=fmtDate(mileDate);
+  if(di)di.value=mileDate;
+  var e=currentMileEntry();
+  function tBtn(val,label){return '<button class="mile-type'+(e.type===val?' active':'')+'" onclick="mileSetType(\''+val+'\')">'+label+'</button>';}
+  var h='<div class="mile-types">'+tBtn('work','Work')+tBtn('off','Day Off')+tBtn('other','Other')+'</div>';
+  if(e.type!=='work'){
+    h+='<div class="mile-card"><input class="field-input" placeholder="Reason (e.g. NYPFL, Vacation)" value="'+escHtml(e.off||'')+'" oninput="mileSetOff(this.value)"><div class="mile-total">0 mi</div></div>';
+  }else{
+    h+='<div class="mile-card"><div class="mile-rowhdr"><span>Stop / Location</span><span>Odometer</span></div>';
+    e.stops.forEach(function(s,i){
+      var leg='';
+      if(i>0){var a=e.stops[i-1].odo,b=s.odo;if(a!==''&&b!==''&&!isNaN(+a)&&!isNaN(+b))leg=(+b-+a)+' mi';}
+      h+='<div class="mile-stop">'+
+        '<div class="mile-stop-main">'+
+          '<input class="field-input mile-loc" placeholder="'+(i===0?'Start location':'Location')+'" value="'+escHtml(s.loc||'')+'" oninput="mileSetStop('+i+',\'loc\',this.value)">'+
+          '<input class="field-input mile-odo" inputmode="numeric" placeholder="ODO" value="'+(s.odo===''||s.odo==null?'':s.odo)+'" onchange="mileSetStop('+i+',\'odo\',this.value)">'+
+          (e.stops.length>1?'<button class="mile-x" onclick="mileDelStop('+i+')" aria-label="Remove">×</button>':'')+
+        '</div>'+
+        (leg?'<div class="mile-leg">'+leg+'</div>':'')+
+      '</div>';
+    });
+    h+='<div class="mile-actions"><button class="btn btn-secondary btn-sm" onclick="mileAddStop()">+ Add stop</button><button class="btn btn-secondary btn-sm" onclick="mileLoadFromLog()">Load stops from log</button></div>';
+    h+='<div class="mile-total">'+mileTotal(e)+' mi today</div></div>';
+  }
+  var prevEnd=mileLastOdo(milePrevEntry(mileDate));
+  h+='<div class="mile-foot">'+
+       '<div><span class="mile-foot-l">Prev ODO end</span><b>'+(prevEnd===''?'—':prevEnd)+'</b></div>'+
+       '<div><span class="mile-foot-l">Month to date</span><b>'+mileMonthTotal(mileDate)+' mi</b></div>'+
+     '</div>';
+  body.innerHTML=h;
 }
 function showToast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2200);}
 function escHtml(s){if(!s)return '';return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
@@ -1633,12 +1713,21 @@ function syncMeta(){
   userCol('meta').doc('drafts').get().then(function(d){
     if(d.exists){var drafts=getData('dlr_drafts',{}),rd=d.data().drafts||{};Object.keys(rd).forEach(function(k){drafts[k]=rd[k];});setData('dlr_drafts',drafts);}
   }).catch(function(){});
+  userCol('meta').doc('mileage').get().then(function(d){
+    if(d.exists){
+      var local=allMileage(),rd=d.data().data||{},changed=false;
+      Object.keys(rd).forEach(function(k){if(!local[k]||!local[k].savedAt||(rd[k].savedAt&&rd[k].savedAt>local[k].savedAt)){local[k]=rd[k];changed=true;}});
+      if(changed){setData('dlr_mileage',local);if(document.getElementById('page-mileage').classList.contains('active'))renderMileage();}
+      syncPushMileage();
+    }else syncPushMileage();
+  }).catch(function(){});
 }
 function syncPushLog(entry){if(syncOn())userCol('logs').doc(entry.date).set(entry).catch(function(){});}
 function syncDeleteLog(date){if(syncOn())userCol('logs').doc(date).set({date:date,deleted:true,savedAt:new Date().toISOString()}).catch(function(){});}
 function syncPushDrafts(){if(syncOn())userCol('meta').doc('drafts').set({drafts:getData('dlr_drafts',{})}).catch(function(){});}
 function syncPushLists(){if(syncOn())userCol('meta').doc('lists').set({trades:trades,equipment:equipment}).catch(function(){});}
-function syncPushAll(){if(!syncOn())return;logs.forEach(function(l){syncPushLog(l);});syncPushDrafts();syncPushLists();}
+function syncPushMileage(){if(syncOn())userCol('meta').doc('mileage').set({data:allMileage()}).catch(function(){});}
+function syncPushAll(){if(!syncOn())return;logs.forEach(function(l){syncPushLog(l);});syncPushDrafts();syncPushLists();syncPushMileage();}
 
 function updateAccountUI(){
   var signedOut=document.getElementById('account-signedout');
