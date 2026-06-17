@@ -280,21 +280,46 @@ function renderRouteResults(){
   var grouped=groupByWOLocation(allData.flavin);var keys=Object.keys(grouped);
   document.getElementById('genDlrInfo').innerHTML='<b>'+allData.flavin.length+' job row'+(allData.flavin.length!==1?'s':'')+' → '+keys.length+' DLR block'+(keys.length!==1?'s':'')+' by WO / Location</b>';
   document.getElementById('genDlrBar').classList.add('visible');
-  tabBar.innerHTML='';
+  routeAll=false;routeMine='flavin';routeCo='';
+  buildRouteTabs();renderRouteBody();
+}
+
+// Route view state: my jobs (Covering / Owned) with a one-at-a-time contractor
+// filter, plus a separate All-jobs reference view.
+var routeAll=false,routeMine='flavin',routeCo='';
+function buildRouteTabs(){
   var lastName=allData.name.split(' ').pop();
-  var tabs=[{id:'flavin',label:lastName,jobs:allData.flavin},{id:'owned',label:'Owned',jobs:allData.owned}];
-  allData.contractorSheets.forEach(function(sn){var d=allData.sheets[sn];if(d)tabs.push({id:sn,label:sn,jobs:d.jobs});});
-  tabs.push({id:'all',label:'All jobs',jobs:allData.allJobs||[]});
-  tabs.forEach(function(t,idx){
-    var btn=document.createElement('button');btn.className='tab'+(idx===0?' active':'');
-    btn.innerHTML=t.label+'<span class="tab-ct">'+t.jobs.length+'</span>';
-    btn.addEventListener('click',function(){
-      document.querySelectorAll('.tab').forEach(function(x){x.classList.remove('active');});btn.classList.add('active');
-      if(t.id==='flavin'||t.id==='owned')renderFlavinJobs(t.jobs);else if(t.id==='all')renderAllJobs(t.jobs);else renderListJobs(t.jobs);
-    });
-    tabBar.appendChild(btn);
-  });
-  renderFlavinJobs(allData.flavin);
+  tabBar.innerHTML=
+    '<button class="tab'+(!routeAll&&routeMine==='flavin'?' active':'')+'" onclick="setMineTab(\'flavin\')">'+escHtml(lastName)+'<span class="tab-ct">'+allData.flavin.length+'</span></button>'+
+    '<button class="tab'+(!routeAll&&routeMine==='owned'?' active':'')+'" onclick="setMineTab(\'owned\')">Owned<span class="tab-ct">'+allData.owned.length+'</span></button>'+
+    '<button class="tab'+(routeAll?' active':'')+'" style="margin-left:auto" onclick="setRouteAll()">All jobs<span class="tab-ct">'+(allData.allJobs||[]).length+'</span></button>';
+}
+function setMineTab(w){routeAll=false;routeMine=w;routeCo='';buildRouteTabs();renderRouteBody();}
+function setRouteAll(){routeAll=true;routeCo='';buildRouteTabs();renderRouteBody();}
+function setRouteCo(co){routeCo=co;renderRouteBody();}
+function coChip(label,val,count,color){
+  var active=routeCo===val,style='';
+  if(active){var c=color||'#111';style='background:'+c+';border-color:'+c+';color:#fff';}
+  else if(color){style='color:'+color+';border-color:'+color;}
+  return '<button class="co-chip'+(active?' active':'')+'" style="'+style+'" onclick="setRouteCo(\''+String(val).replace(/'/g,"\\'")+'\')">'+escHtml(label)+'<span class="co-chip-ct">'+count+'</span></button>';
+}
+function renderRouteBody(){
+  var row=document.getElementById('coFilterRow');
+  if(routeAll){if(row)row.style.display='none';renderAllJobs(allData.allJobs);return;}
+  var jobs=(routeMine==='owned')?allData.owned:allData.flavin;
+  var counts={},order=[];
+  jobs.forEach(function(j){var c=j._co||'';if(!c)return;if(!(c in counts)){counts[c]=0;order.push(c);}counts[c]++;});
+  order.sort(function(a,b){var ia=allData.contractorSheets.indexOf(a),ib=allData.contractorSheets.indexOf(b);ia=ia<0?99:ia;ib=ib<0?99:ib;return ia-ib||a.localeCompare(b);});
+  if(routeCo&&!counts[routeCo])routeCo='';
+  if(row){
+    if(order.length>1){
+      var html=coChip('All','',jobs.length,'');
+      order.forEach(function(c){html+=coChip(c,c,counts[c],contractorColor(c));});
+      row.innerHTML=html;row.style.display='flex';
+    }else{row.innerHTML='';row.style.display='none';}
+  }
+  var filtered=routeCo?jobs.filter(function(j){return (j._co||'')===routeCo;}):jobs;
+  renderFlavinJobs(filtered);
 }
 
 function gv(row,h,name){var i=h.indexOf(name);if(i===-1||row[i]==null||row[i]==='')return null;return String(row[i]).trim();}

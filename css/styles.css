@@ -142,6 +142,9 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
 .map-move{width:26px;height:34px;border-radius:var(--radius-sm);border:2px solid var(--border);background:var(--surface);color:var(--ink-3);font-size:12px;font-weight:800;cursor:pointer;flex-shrink:0;line-height:1;display:flex;align-items:center;justify-content:center}
 .map-move:active{background:var(--border)}
 .list-jobs{display:flex;flex-direction:column;gap:6px}
+.co-filter{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.co-chip{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;padding:6px 11px;border-radius:999px;border:2px solid var(--border-mid);background:var(--surface);color:var(--ink-3);cursor:pointer;font-family:var(--font);white-space:nowrap}
+.co-chip-ct{font-size:10px;font-weight:800;opacity:.85}
 .aj-controls{display:flex;gap:6px;margin-bottom:8px}
 .aj-count{font-size:11px;color:var(--ink-3);font-weight:700;margin-bottom:8px;letter-spacing:.02em}
 .list-item{background:var(--surface);border:2px solid var(--border);border-radius:var(--radius-sm);padding:11px 14px;animation:slideIn .2s ease forwards;opacity:0;transform:translateY(5px)}
