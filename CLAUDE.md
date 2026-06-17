@@ -12,20 +12,42 @@ screen as a PWA. **Primary device is an iPhone** — optimize for that.
 **Live:** https://darkfr0g.github.io/FieldLog/
 **Repo:** https://github.com/darkFr0g/FieldLog
 
-### Two tools inside the app
+### Tools inside the app (5 nav tabs: Route / DLR / Mileage / History / Settings)
 - **Route Sheet Extractor** — parses `.xlsx` route sheets (SheetJS), shows the
-  inspector's assigned jobs grouped by WO# / Location, and shows CCI staffing
-  status. Inspector name defaults to "Jeremiah Flavin".
+  inspector's assigned jobs and CCI staffing status. Inspector name defaults to
+  "Jeremiah Flavin". Tabs: **Covering** / **Owned** (your jobs) + a one-at-a-time
+  **contractor filter** chip row (themed per contractor logo color) + an **All
+  jobs** view (everyone's jobs: location · contractor · WR#/WO# · inspector, with
+  filter + sort). Job cards show 3 status pills — Contingency (yellow) / Hold
+  Point (blue) / Fusing Peer (red) — colored when active, grayed when not.
+  **Hold Point** chip copies a standardized Photos album name (and can fire an
+  iOS Shortcut named `FieldLog Album` when the Settings → Photos toggle is on).
+  **Map my stops / Map drive** open Google Maps routed through the day's stops,
+  cleaned by the smart address shortener (`shortAddr`).
 - **DLR (Daily Log Report)** — generates crew blocks from the route sheet
   (grouped by WO# / Location), pre-filled with the standard crew
   (Foreman 1, Operating Engineer 1, Laborers 4, Flagger 2, Pick Up Truck 1,
   Backhoe 1, Compressor Truck 1). Add/remove trades & equipment per block,
-  Comments, optional T&E section. Saves to `localStorage`; exports CSV / text;
-  shares to iOS Notes / OneNote. History tab lists submitted logs (Edit / Share
-  / Delete). One log per date — re-submitting the same date overwrites it.
+  Comments, optional T&E. Saves to `localStorage`; exports CSV / text; **shares
+  plain-text** to iOS Notes/OneNote and **"Copy formatted (table)"** copies rich
+  `text/html` with a real table. ⌘S/Ctrl+S saves a draft on desktop.
+- **Mileage** — daily odometer/mileage capture, the foundation for replacing the
+  monthly Excel workbook (see below). Per day: Shift / OT (prominent) / Contact
+  (CCI) / POET# / Work Code / Expenses / Notes (header carries from the previous
+  day), plus stops pre-loaded from the **loaded route sheet** (location + ticket #).
+  You enter **miles driven** per stop; one Start odometer carries the running
+  total; computes per-leg + daily miles and the rolling end odometer. "Copy stops
+  from another day", "Load from route", and "Map drive" buttons.
+- **History** — lists submitted logs (Edit / Duplicate / Copy / Share / Delete),
+  with search + sort (log date / created / last-edited) and an EDITED badge +
+  saved timestamp. One log per date — re-submitting overwrites it.
+- **Settings** — Sync & Account, master lists, Photos shortcut toggle, Data
+  (backup/restore + clear), Check for updates.
 
-All data (logs, drafts, master lists) lives in the browser `localStorage` on the
-device. Nothing is sent to a server.
+Data (logs, drafts, master lists, mileage) lives in the browser `localStorage`.
+**Optional cloud sync** mirrors it to the user's private Firebase so the user's
+4 devices share one dataset (see "Cloud sync" below); with sync off, nothing
+leaves the device.
 
 ## Architecture / conventions
 
@@ -34,13 +56,18 @@ device. Nothing is sent to a server.
 - **Vanilla JS**, ES5-style (`var`, `function`), matching the existing code.
   No modules, no TypeScript. Keep new code in the same idiom.
 - Files:
-  - `index.html` — markup only (nav, 4 pages, modals, picker sheet)
+  - `index.html` — markup only (nav, 5 pages, modals, picker sheet). Loads the
+    Firebase **compat** SDK (app/auth/firestore) from the gstatic CDN before
+    `app.js` — these are plain globals, so still no build step.
   - `css/styles.css` — all styles (CSS variables in `:root`)
-  - `js/app.js` — all logic (route parsing, DLR, history, export, share)
+  - `js/app.js` — all logic (route parsing, DLR, mileage, history, export, share,
+    cloud sync)
   - `vendor/xlsx.full.min.js` — SheetJS, **vendored locally** for offline use
     (do NOT switch back to a CDN — offline parsing in the field depends on this)
   - `manifest.json`, `sw.js` — PWA
   - `icons/` — app icons; regenerate all sizes from `icons/icon-source.png`
+- **Version badge** lives in `index.html` (`.vbadge`) and is bumped every ship;
+  keep it in sync with `CACHE_VERSION` mentions here.
 - **Relative paths everywhere** (`./...`). The site is served from the
   `/FieldLog/` Pages subpath, so absolute `/` paths break it.
 
@@ -57,11 +84,34 @@ device. Nothing is sent to a server.
 
 - `sw.js`: **network-first** for the app shell (HTML/CSS/JS/manifest) so deploys
   go live when the device is online; **cache-first** for static heavy assets
-  (`vendor/xlsx`, icons); runtime cache for Google Fonts.
+  (`vendor/xlsx`, icons, **Firebase SDK from gstatic**); runtime cache for Google
+  Fonts. Firebase backend calls (googleapis/firebaseio) are never intercepted.
 - When you change icons or other cache-first assets, **bump `CACHE_VERSION`** in
-  `sw.js` (currently `fieldlog-v2`) so devices re-fetch them.
+  `sw.js` (currently `fieldlog-v4`) so devices re-fetch them.
 - iOS home-screen icons do NOT auto-update — the user must delete and re-add the
   home-screen shortcut to get a new icon.
+- **Home-screen PWAs can't be hard-refreshed.** App auto-checks for a new SW on
+  launch and shows a "New version ready — tap to refresh" banner; Settings →
+  About → "Check for updates" forces it. Bump the version badge every ship.
+
+## Cloud sync (Firebase — Firestore + email/password Auth)
+
+Local-first: `localStorage` stays the on-device source of truth and the app works
+fully offline; when signed in & online it mirrors to the user's **own private
+Firebase project** (`bullfrog-field-log`). One inspector across 4 devices (2
+iPhones + 2 Surface laptops).
+- **Auth:** email + password (in-app, no Safari redirect — works in the iOS
+  standalone PWA; magic links do **not**, due to Safari/PWA storage split). First
+  sign-in auto-creates the account; session persists.
+- **Data model:** `users/{uid}/logs/{date}` (one doc per DLR log, live `onSnapshot`),
+  `users/{uid}/meta/{drafts|lists|mileage}` (single docs). Config + security
+  rules were set up in the Firebase console (rules lock each user to their own
+  `users/{uid}/**`).
+- **Conflicts:** newest `savedAt` wins per record. **Deletes use tombstones**
+  (`{deleted:true, savedAt}`) so a delete sticks across devices and never
+  resurrects (a stale device re-syncing won't re-upload it).
+- **Backup/Restore** (Settings → Data): export/import all data as JSON; restore
+  merges logs/drafts (backup wins on same date) and replaces master lists.
 
 ## iOS Notes / OneNote share format (`buildLogText` in app.js)
 
@@ -121,13 +171,38 @@ Dump Truck, Boom Truck, Flatbed Truck, Attenuator Truck, Crane, Excavator,
 Vacuum Truck, Van, Zim Mixer, Light Tower, Plate Tamper, Port Compressor, Pumps,
 Rocksplitter, Sawcut Equipment, Other.
 
+## Big project: replace the monthly Excel mileage workbook
+
+The user keeps a macro-heavy `.xlsm` (`3-Mileage <Month> top dog.xlsm`, built with
+a separate "Claude-in-Excel" agent — it has its own `Claude Log` sheet) that is
+the monthly system of record: **INPUT** (daily mileage hand-entry), **CI Mileage
+Form** (CI-660-1 reimbursement), **Daily Log** (per-stop PDF), **TI-1** (truck
+inspection), Payroll, Records, plus a **`#DLR`** sheet whose columns exactly match
+Field Log's CSV export. Goal: **Field Log absorbs capture + generates the
+submission PDFs, retiring the workbook.** Incremental, keep Excel as the safety
+net until each PDF is faithful.
+- **Done:** Mileage capture tab (step 1).
+- **Next:** (2) generate **CI Mileage Form PDF** (only needs each day's start/end
+  odometer + total), (3) **Daily Log PDF**, (4) **TI-1** as a stored template, plus
+  a one-time **Profile** (employee #, plate, vehicle, roll/dept) for form headers.
+- Workbook dropdown master values to reuse: Shift (`2 - 07:00-15:00` / `3 -
+  15:00-23:00` / `1 - 23:00-07:00`), POET# (`XCMG - 216172870002` / `MP -
+  228728990001` / `BOTH`), CCI (K. Garcia / E. Kelly / V. Cornwall / J. Connors),
+  Work Code (Field/Training/Office/CFOR/WFH/Vacation/Holiday/NY-PFL), OT 0–5 by
+  0.5. Rates: mileage 0.7/mi, car wash 48/mo, boots 200/yr, meal 18, vehicle
+  bonus 1000/yr.
+
 ## Open ideas / backlog
 
-- **"Copy formatted (real tables)" button** — copy rich `text/html` (with a real
-  `<table>`) to the clipboard so pasting into Notes/OneNote produces an actual
-  table + bold (the only way to get true tables; share sheet can't). Would work
-  into both Notes and OneNote. Not yet built.
-- Possible: "Edited" indicator / last-modified timestamp on History entries.
+- **iOS Shortcut for Hold Point album** — app already fires
+  `shortcuts://run-shortcut?name=FieldLog%20Album&text=<album name>` when the
+  Settings → Photos toggle is on; user still needs to build the `FieldLog Album`
+  shortcut (Take Photos → Save to Photo Album = Shortcut Input). Paused.
+- **Custom domain** `log.<domain>` on GitHub Pages — domain bought via iCloud+
+  (email-only on Apple's side; registered at Cloudflare/GoDaddy where DNS is
+  managed). Not set up yet.
+- **(shipped)** Copy formatted (real tables); History "Edited" indicator +
+  sort; backup/restore; locked deletes; per-contractor themes.
 
 ## Local development
 
