@@ -156,6 +156,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
 .mile-stop-main{display:flex;gap:6px;align-items:center}
 .mile-loc{flex:1;min-width:0}
 .mile-odo{width:78px;flex-shrink:0;text-align:right;font-family:var(--font-mono)}
+.mile-odochip{width:78px;flex-shrink:0;text-align:center;font-size:10px;font-weight:800;letter-spacing:.08em;color:var(--ink-4);align-self:center}
 .mile-x{width:30px;flex-shrink:0;border:none;background:var(--surface-2);color:var(--red);border-radius:6px;font-size:18px;line-height:1;cursor:pointer;padding:6px 0}
 .mile-stop-sub{display:flex;gap:6px;align-items:center;margin-top:5px;padding-right:36px}
 .mile-tkt{width:108px;flex-shrink:0;font-family:var(--font-mono);font-size:12px}
