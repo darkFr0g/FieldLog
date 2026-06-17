@@ -1657,6 +1657,13 @@ renderCrews();updateSettingsCounts();updateHpShortcutState();
 restoreRoute();
 setupContKeyboard();
 initSync();
+// Desktop: Cmd+S / Ctrl+S saves the DLR draft (instead of the browser Save dialog).
+document.addEventListener('keydown',function(e){
+  if((e.metaKey||e.ctrlKey)&&!e.altKey&&(e.key==='s'||e.key==='S')){
+    var dlr=document.getElementById('page-dlr');
+    if(dlr&&dlr.classList.contains('active')){e.preventDefault();saveDraft();}
+  }
+});
 function showUpdateBanner(){
   if(document.getElementById('update-banner'))return;
   var b=document.createElement('div');b.id='update-banner';b.className='update-banner';
