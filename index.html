@@ -47,7 +47,7 @@
 <div id="page-route" class="page active">
 <div class="wrap">
   <div class="hdr">
-    <div class="vbadge">v6.6</div>
+    <div class="vbadge">v6.7</div>
     <h1 class="hdr-title">Locations for <span id="headingName">Jeremiah Flavin</span></h1>
   </div>
   <div id="uploadSection">
@@ -125,6 +125,16 @@
 <div id="page-history" class="page">
   <div class="page-header"><h1>Log History</h1><button class="btn btn-secondary btn-sm" onclick="showExportModal()">Export</button></div>
   <div class="search-bar"><input class="search-input" placeholder="Search date, WO/WR#, location…" id="search-input" oninput="renderHistory()"></div>
+  <div class="search-bar" style="border-bottom:2px solid var(--border)">
+    <select id="history-sort" onchange="renderHistory()" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px;color:var(--ink);font-family:var(--font);outline:none">
+      <option value="date-desc">Log date — newest first</option>
+      <option value="date-asc">Log date — oldest first</option>
+      <option value="created-desc">Created — newest first</option>
+      <option value="created-asc">Created — oldest first</option>
+      <option value="updated-desc">Last edited — newest first</option>
+      <option value="updated-asc">Last edited — oldest first</option>
+    </select>
+  </div>
   <div id="history-list"></div>
 </div>
 
@@ -186,7 +196,7 @@
   <div class="settings-section" style="margin-bottom:20px">
     <div class="settings-title">About</div>
     <div class="settings-card">
-      <div class="settings-row"><span style="font-size:15px">Field Log</span><span style="color:var(--ink-3);font-size:13px">v6.6</span></div>
+      <div class="settings-row"><span style="font-size:15px">Field Log</span><span style="color:var(--ink-3);font-size:13px">v6.7</span></div>
     </div>
   </div>
 </div>

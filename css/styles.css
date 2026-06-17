@@ -139,6 +139,8 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
 .map-move{width:26px;height:34px;border-radius:var(--radius-sm);border:2px solid var(--border);background:var(--surface);color:var(--ink-3);font-size:12px;font-weight:800;cursor:pointer;flex-shrink:0;line-height:1;display:flex;align-items:center;justify-content:center}
 .map-move:active{background:var(--border)}
 .list-jobs{display:flex;flex-direction:column;gap:6px}
+.aj-controls{display:flex;gap:6px;margin-bottom:8px}
+.aj-count{font-size:11px;color:var(--ink-3);font-weight:700;margin-bottom:8px;letter-spacing:.02em}
 .list-item{background:var(--surface);border:2px solid var(--border);border-radius:var(--radius-sm);padding:11px 14px;animation:slideIn .2s ease forwards;opacity:0;transform:translateY(5px)}
 .list-loc{font-size:14px;font-weight:800;line-height:1.3;margin-bottom:4px;letter-spacing:-.01em}
 .list-work{font-size:13px;font-weight:600;margin-bottom:6px}

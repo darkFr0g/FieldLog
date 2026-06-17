@@ -360,19 +360,45 @@ function renderListJobs(jobs){
   jobsContainer.appendChild(list);
 }
 
-// All jobs across every inspector: location · contractor · work# · covering inspector.
+// All jobs across every inspector: location · contractor · WR#/WO# · covering inspector.
+var ajCo='',ajInsp='',ajSort='inspector';
+function ajChange(kind,val){if(kind==='co')ajCo=val;else if(kind==='insp')ajInsp=val;else ajSort=val;renderAllJobs(allData.allJobs);}
 function renderAllJobs(jobs){
-  resultsHdr.style.display='flex';resultsCount.textContent=jobs.length+' job'+(jobs.length!==1?'s':'');
-  jobsContainer.innerHTML='';
-  if(!jobs||jobs.length===0){jobsContainer.innerHTML='<div class="no-jobs">No jobs found</div>';return;}
+  jobs=jobs||[];resultsHdr.style.display='none';jobsContainer.innerHTML='';
+  if(jobs.length===0){jobsContainer.innerHTML='<div class="no-jobs">No jobs found</div>';return;}
+  var cos={},insps={};
+  jobs.forEach(function(j){if(j.contractor)cos[j.contractor]=1;insps[j.inspector||'—']=1;});
+  var coList=Object.keys(cos).sort(),inspList=Object.keys(insps).sort();
+  if(ajCo&&!cos[ajCo])ajCo='';if(ajInsp&&!insps[ajInsp])ajInsp='';
+  var filtered=jobs.filter(function(j){return (!ajCo||j.contractor===ajCo)&&(!ajInsp||(j.inspector||'—')===ajInsp);});
+  filtered=filtered.slice().sort(function(a,b){
+    if(ajSort==='contractor')return (a.contractor||'~').localeCompare(b.contractor||'~')||(a.location||'').localeCompare(b.location||'');
+    if(ajSort==='location')  return (a.location||'~').localeCompare(b.location||'~');
+    return (a.inspector||'~~~').localeCompare(b.inspector||'~~~')||(a.location||'').localeCompare(b.location||'');
+  });
+  function opts(arr,sel,allLabel){return '<option value="">'+allLabel+'</option>'+arr.map(function(v){return '<option value="'+escHtml(v)+'"'+(v===sel?' selected':'')+'>'+escHtml(v)+'</option>';}).join('');}
+  var ss='background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:7px 8px;font-size:12px;color:var(--ink);font-family:var(--font);outline:none;flex:1;min-width:0';
+  var bar=document.createElement('div');bar.className='aj-controls';
+  bar.innerHTML=
+    '<select style="'+ss+'" onchange="ajChange(\'co\',this.value)">'+opts(coList,ajCo,'All contractors')+'</select>'+
+    '<select style="'+ss+'" onchange="ajChange(\'insp\',this.value)">'+opts(inspList,ajInsp,'All inspectors')+'</select>'+
+    '<select style="'+ss+'" onchange="ajChange(\'sort\',this.value)">'+
+      '<option value="inspector"'+(ajSort==='inspector'?' selected':'')+'>Sort: Inspector</option>'+
+      '<option value="contractor"'+(ajSort==='contractor'?' selected':'')+'>Sort: Contractor</option>'+
+      '<option value="location"'+(ajSort==='location'?' selected':'')+'>Sort: Location</option>'+
+    '</select>';
+  jobsContainer.appendChild(bar);
+  var cnt=document.createElement('div');cnt.className='aj-count';cnt.textContent=filtered.length+' of '+jobs.length+' job'+(jobs.length!==1?'s':'');
+  jobsContainer.appendChild(cnt);
+  if(filtered.length===0){var nf=document.createElement('div');nf.className='no-jobs';nf.textContent='No matching jobs';jobsContainer.appendChild(nf);return;}
   var list=document.createElement('div');list.className='list-jobs';
-  jobs.forEach(function(j){
-    var work=[j.ticket,j.wo].filter(Boolean).join(' · ')||'—';
+  filtered.forEach(function(j){
     var item=document.createElement('div');item.className='list-item';
     item.innerHTML='<div class="list-loc">'+escHtml(j.location||'—')+'</div>'+
       '<div class="list-meta">'+
         (j.contractor?'<span class="lm">'+escHtml(j.contractor)+'</span>':'')+
-        '<span class="lm">Work <b>'+escHtml(work)+'</b></span>'+
+        (j.ticket?'<span class="lm">WR# <b>'+escHtml(j.ticket)+'</b></span>':'')+
+        (j.wo?'<span class="lm">WO# <b>'+escHtml(j.wo)+'</b></span>':'')+
         '<span class="lm">Insp <b>'+escHtml(j.inspector||'—')+'</b></span>'+
       '</div>';
     list.appendChild(item);
@@ -783,6 +809,17 @@ function renderHistory(){
   var filtered=logs;
   if(q)filtered=logs.filter(function(l){return l.date.includes(q)||fmtDate(l.date).toLowerCase().includes(q)||l.crews.some(function(c){return(c.location||'').toLowerCase().includes(q)||(c.wo||'').toLowerCase().includes(q)||(c.foremen||[]).join(' ').toLowerCase().includes(q);});});
   if(filtered.length===0){list.innerHTML='<div class="empty-state"><p>'+(logs.length===0?'No logs submitted yet':'No results found')+'</p></div>';return;}
+  var sort=(document.getElementById('history-sort')||{}).value||'date-desc';
+  filtered=filtered.slice().sort(function(a,b){
+    switch(sort){
+      case 'date-asc':    return a.date.localeCompare(b.date);
+      case 'created-desc':return (b.createdAt||b.savedAt||b.date).localeCompare(a.createdAt||a.savedAt||a.date);
+      case 'created-asc': return (a.createdAt||a.savedAt||a.date).localeCompare(b.createdAt||b.savedAt||b.date);
+      case 'updated-desc':return (b.savedAt||b.date).localeCompare(a.savedAt||a.date);
+      case 'updated-asc': return (a.savedAt||a.date).localeCompare(b.savedAt||b.date);
+      default:            return b.date.localeCompare(a.date);
+    }
+  });
   list.innerHTML=filtered.map(function(log){
     var tw=log.crews.reduce(function(s,c){return s+(c.trades||[]).reduce(function(a,t){return a+(t.c||0);},0);},0);
     var crewsHTML=log.crews.map(function(c){
