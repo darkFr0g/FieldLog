@@ -97,72 +97,75 @@ function mileSetDate(d){if(d){mileDate=d;renderMileage();}}
 function mileStep(n){var dt=new Date(mileDate+'T12:00:00');dt.setDate(dt.getDate()+n);mileDate=dt.toISOString().split('T')[0];renderMileage();}
 function milePrevEntry(date){var m=allMileage(),best=null;Object.keys(m).forEach(function(k){if(k<date&&(!best||k>best))best=k;});return best?m[best]:null;}
 function mileLastOdo(e){if(!e||!e.stops)return '';for(var i=e.stops.length-1;i>=0;i--){var o=e.stops[i].odo;if(o!==''&&o!=null&&!isNaN(+o))return +o;}return '';}
+var MILE_SHIFTS=['2 - 07:00-15:00','3 - 15:00-23:00','1 - 23:00-07:00'];
+var MILE_OT=['0','0.5','1','1.5','2','2.5','3','3.5','4','4.5','5'];
+var MILE_POET=['XCMG - 216172870002','MP - 228728990001','BOTH'];
+var MILE_CCI=['K. Garcia','E. Kelly','V. Cornwall','J. Connors'];
+var MILE_WORKCODE=['Field','Training','Office','CFOR','WFH','Vacation','Holiday','NY-PFL'];
+function dlrTicketMap(date){var map={},log=logs.find(function(l){return l.date===date;});if(log)(log.crews||[]).forEach(function(c){var loc=(c.location||'').trim();if(loc&&!(loc in map))map[loc]=c.wo||'';});return map;}
 function buildDefaultMileage(date){
   var prev=milePrevEntry(date);
-  var startLoc=(prev&&prev.stops&&prev.stops[0])?prev.stops[0].loc:'';
-  var startOdo=mileLastOdo(prev);
-  var e={date:date,type:'work',off:'',stops:[{loc:startLoc,odo:startOdo}]};
-  // pre-load that day's job locations from the submitted DLR log
-  var log=logs.find(function(l){return l.date===date;});
-  if(log){var seen={};(log.crews||[]).forEach(function(c){var loc=(c.location||'').trim();if(loc&&!seen[loc]){seen[loc]=1;e.stops.push({loc:loc,odo:''});}});}
+  var e={date:date,shift:prev?(prev.shift||''):'',cci:prev?(prev.cci||''):'',poet:prev?(prev.poet||''):'',workCode:prev?(prev.workCode||'Field'):'Field',ot:'',expenses:'',expItems:'',notes:'',stops:[]};
+  var tm=dlrTicketMap(date);
+  Object.keys(tm).forEach(function(loc){e.stops.push({loc:loc,ticket:tm[loc],odo:'',remarks:''});});
+  if(e.stops.length===0)e.stops.push({loc:'',ticket:'',odo:'',remarks:''});
+  e.stops[0].odo=mileLastOdo(prev); // carry running odometer into the first stop
   return e;
 }
 function currentMileEntry(){var m=allMileage();return m[mileDate]?JSON.parse(JSON.stringify(m[mileDate])):buildDefaultMileage(mileDate);}
 function saveMileageEntry(e){e.savedAt=new Date().toISOString();var m=allMileage();m[e.date]=e;setData('dlr_mileage',m);syncPushMileage();}
-function mileTotal(e){
-  if(!e||e.type!=='work')return 0;
-  var odos=(e.stops||[]).filter(function(s){return s.odo!==''&&s.odo!=null&&!isNaN(+s.odo);}).map(function(s){return +s.odo;});
-  return odos.length<2?0:(odos[odos.length-1]-odos[0]);
-}
-function mileSetType(t){var e=currentMileEntry();e.type=t;saveMileageEntry(e);renderMileage();}
-function mileSetOff(v){var e=currentMileEntry();e.off=v;saveMileageEntry(e);}
+function mileTotal(e){var odos=((e&&e.stops)||[]).filter(function(s){return s.odo!==''&&s.odo!=null&&!isNaN(+s.odo);}).map(function(s){return +s.odo;});return odos.length<2?0:(odos[odos.length-1]-odos[0]);}
+function mileSetField(field,val){var e=currentMileEntry();e[field]=val;saveMileageEntry(e);renderMileage();}
 function mileSetStop(i,field,val){var e=currentMileEntry();if(!e.stops[i])return;if(field==='odo'){val=(''+val).trim();e.stops[i].odo=(val===''?'':(isNaN(+val)?e.stops[i].odo:+val));}else e.stops[i][field]=val;saveMileageEntry(e);renderMileage();}
-function mileAddStop(){var e=currentMileEntry();e.stops.push({loc:'',odo:''});saveMileageEntry(e);renderMileage();}
-function mileDelStop(i){var e=currentMileEntry();if(e.stops.length<=1)return;e.stops.splice(i,1);saveMileageEntry(e);renderMileage();}
+function mileAddStop(){var e=currentMileEntry();e.stops.push({loc:'',ticket:'',odo:'',remarks:''});saveMileageEntry(e);renderMileage();}
+function mileDelStop(i){var e=currentMileEntry();e.stops.splice(i,1);if(e.stops.length===0)e.stops.push({loc:'',ticket:'',odo:'',remarks:''});saveMileageEntry(e);renderMileage();}
 function mileLoadFromLog(){
-  var e=currentMileEntry();var log=logs.find(function(l){return l.date===mileDate;});
-  if(!log){showToast('No log for this day');return;}
+  var e=currentMileEntry(),tm=dlrTicketMap(mileDate);
+  if(!Object.keys(tm).length){showToast('No log for this day');return;}
   var have={};e.stops.forEach(function(s){if(s.loc)have[s.loc.trim()]=1;});var added=0;
-  (log.crews||[]).forEach(function(c){var loc=(c.location||'').trim();if(loc&&!have[loc]){have[loc]=1;e.stops.push({loc:loc,odo:''});added++;}});
+  Object.keys(tm).forEach(function(loc){if(!have[loc]){have[loc]=1;e.stops.push({loc:loc,ticket:tm[loc],odo:'',remarks:''});added++;}});
   saveMileageEntry(e);renderMileage();showToast(added?('Added '+added+' stop'+(added!==1?'s':'')):'Stops already loaded');
 }
-function mileMonthTotal(date){
-  var ym=date.slice(0,7),m=allMileage(),t=0;
-  Object.keys(m).forEach(function(k){if(k.slice(0,7)===ym)t+=mileTotal(m[k]);});
-  return t;
-}
+function mileMonthTotal(date){var ym=date.slice(0,7),m=allMileage(),t=0;Object.keys(m).forEach(function(k){if(k.slice(0,7)===ym)t+=mileTotal(m[k]);});return t;}
 function renderMileage(){
   var disp=document.getElementById('mile-display'),di=document.getElementById('mile-date'),body=document.getElementById('mileage-body');
   if(!body)return;
   if(disp)disp.textContent=fmtDate(mileDate);
   if(di)di.value=mileDate;
   var e=currentMileEntry();
-  function tBtn(val,label){return '<button class="mile-type'+(e.type===val?' active':'')+'" onclick="mileSetType(\''+val+'\')">'+label+'</button>';}
-  var h='<div class="mile-types">'+tBtn('work','Work')+tBtn('off','Day Off')+tBtn('other','Other')+'</div>';
-  if(e.type!=='work'){
-    h+='<div class="mile-card"><input class="field-input" placeholder="Reason (e.g. NYPFL, Vacation)" value="'+escHtml(e.off||'')+'" oninput="mileSetOff(this.value)"><div class="mile-total">0 mi</div></div>';
-  }else{
-    h+='<div class="mile-card"><div class="mile-rowhdr"><span>Stop / Location</span><span>Odometer</span></div>';
-    e.stops.forEach(function(s,i){
-      var leg='';
-      if(i>0){var a=e.stops[i-1].odo,b=s.odo;if(a!==''&&b!==''&&!isNaN(+a)&&!isNaN(+b))leg=(+b-+a)+' mi';}
-      h+='<div class="mile-stop">'+
-        '<div class="mile-stop-main">'+
-          '<input class="field-input mile-loc" placeholder="'+(i===0?'Start location':'Location')+'" value="'+escHtml(s.loc||'')+'" oninput="mileSetStop('+i+',\'loc\',this.value)">'+
-          '<input class="field-input mile-odo" inputmode="numeric" placeholder="ODO" value="'+(s.odo===''||s.odo==null?'':s.odo)+'" onchange="mileSetStop('+i+',\'odo\',this.value)">'+
-          (e.stops.length>1?'<button class="mile-x" onclick="mileDelStop('+i+')" aria-label="Remove">×</button>':'')+
-        '</div>'+
-        (leg?'<div class="mile-leg">'+leg+'</div>':'')+
-      '</div>';
-    });
-    h+='<div class="mile-actions"><button class="btn btn-secondary btn-sm" onclick="mileAddStop()">+ Add stop</button><button class="btn btn-secondary btn-sm" onclick="mileLoadFromLog()">Load stops from log</button></div>';
-    h+='<div class="mile-total">'+mileTotal(e)+' mi today</div></div>';
-  }
+  function sel(field,list,ph){return '<select class="mile-sel" onchange="mileSetField(\''+field+'\',this.value)"><option value="">'+ph+'</option>'+list.map(function(o){return '<option'+(String(e[field]||'')===o?' selected':'')+'>'+escHtml(o)+'</option>';}).join('')+'</select>';}
+  function f(label,inner){return '<label class="mile-f"><span>'+label+'</span>'+inner+'</label>';}
+  var h='<div class="mile-card"><div class="mile-fields">'+
+      f('Shift',sel('shift',MILE_SHIFTS,'—'))+
+      f('O.T. Hours',sel('ot',MILE_OT,'—'))+
+      f('Contact (CCI)',sel('cci',MILE_CCI,'—'))+
+      f('POET #',sel('poet',MILE_POET,'—'))+
+      f('Work Code',sel('workCode',MILE_WORKCODE,'—'))+
+      f('Expenses ($)','<input class="mile-sel" inputmode="decimal" value="'+escHtml(e.expenses||'')+'" onchange="mileSetField(\'expenses\',this.value)">')+
+    '</div>'+
+    '<input class="field-input" style="margin-top:8px" placeholder="Expensed items" value="'+escHtml(e.expItems||'')+'" onchange="mileSetField(\'expItems\',this.value)">'+
+    '<input class="field-input" style="margin-top:8px" placeholder="Notes" value="'+escHtml(e.notes||'')+'" onchange="mileSetField(\'notes\',this.value)">'+
+  '</div>';
+  h+='<div class="mile-card"><div class="mile-rowhdr"><span>Stops — odometer on arrival</span><span>'+mileTotal(e)+' mi</span></div>';
+  e.stops.forEach(function(s,i){
+    var leg='';if(i>0){var a=e.stops[i-1].odo,b=s.odo;if(a!==''&&b!==''&&!isNaN(+a)&&!isNaN(+b))leg=(+b-+a)+' mi';}
+    h+='<div class="mile-stop">'+
+      '<div class="mile-stop-main">'+
+        '<input class="field-input mile-loc" placeholder="'+(i===0?'Start (first job)':'Location')+'" value="'+escHtml(s.loc||'')+'" onchange="mileSetStop('+i+',\'loc\',this.value)">'+
+        '<input class="field-input mile-odo" inputmode="numeric" placeholder="ODO" value="'+(s.odo===''||s.odo==null?'':s.odo)+'" onchange="mileSetStop('+i+',\'odo\',this.value)">'+
+        '<button class="mile-x" onclick="mileDelStop('+i+')" aria-label="Remove">×</button>'+
+      '</div>'+
+      '<div class="mile-stop-sub">'+
+        '<input class="field-input mile-tkt" placeholder="Ticket #" value="'+escHtml(s.ticket||'')+'" onchange="mileSetStop('+i+',\'ticket\',this.value)">'+
+        '<input class="field-input mile-rmk" placeholder="Remarks" value="'+escHtml(s.remarks||'')+'" onchange="mileSetStop('+i+',\'remarks\',this.value)">'+
+        (leg?'<span class="mile-leg2">'+leg+'</span>':'')+
+      '</div>'+
+    '</div>';
+  });
+  h+='<div class="mile-actions"><button class="btn btn-secondary btn-sm" onclick="mileAddStop()">+ Add stop</button><button class="btn btn-secondary btn-sm" onclick="mileLoadFromLog()">Load stops from log</button></div>'+
+     '<div class="mile-total">'+mileTotal(e)+' mi today</div></div>';
   var prevEnd=mileLastOdo(milePrevEntry(mileDate));
-  h+='<div class="mile-foot">'+
-       '<div><span class="mile-foot-l">Prev ODO end</span><b>'+(prevEnd===''?'—':prevEnd)+'</b></div>'+
-       '<div><span class="mile-foot-l">Month to date</span><b>'+mileMonthTotal(mileDate)+' mi</b></div>'+
-     '</div>';
+  h+='<div class="mile-foot"><div><span class="mile-foot-l">Prev ODO end</span><b>'+(prevEnd===''?'—':prevEnd)+'</b></div><div><span class="mile-foot-l">Month to date</span><b>'+mileMonthTotal(mileDate)+' mi</b></div></div>';
   body.innerHTML=h;
 }
 function showToast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2200);}
