@@ -382,9 +382,23 @@ function renderAllJobs(jobs){
 
 // Hold Point chip → copy a standardized Photos album name (date - job#s - location).
 // iOS web can't create an album directly; this makes naming one a paste away.
+function albumDate(iso){
+  iso=iso||today();var p=String(iso).split('-');
+  return p.length===3?((+p[1])+'/'+(+p[2])+'/'+p[0].slice(-2)):iso; // YYYY-MM-DD → M/D/YY
+}
+function abbrevLoc(loc){
+  if(!loc)return '';
+  // Drop cross-streets ("btw Adee Ave and Knapp St", "between…", "& …") — the address pins it.
+  var s=String(loc).replace(/\s*(?:\bbtwn?\b|\bbetween\b|\bbet\.?\b|\bb\/w\b|&).*$/i,'');
+  [[/\bRoad\b/gi,'Rd'],[/\bStreet\b/gi,'St'],[/\bAvenue\b/gi,'Ave'],[/\bBoulevard\b/gi,'Blvd'],
+   [/\bDrive\b/gi,'Dr'],[/\bLane\b/gi,'Ln'],[/\bPlace\b/gi,'Pl'],[/\bCourt\b/gi,'Ct'],
+   [/\bTerrace\b/gi,'Ter'],[/\bParkway\b/gi,'Pkwy'],[/\bExpressway\b/gi,'Expwy'],
+   [/\bHighway\b/gi,'Hwy'],[/\bSquare\b/gi,'Sq']].forEach(function(m){s=s.replace(m[0],m[1]);});
+  return s.replace(/\s+/g,' ').trim();
+}
 function albumName(d){
-  var jobs=[d.ticket,d.wo].filter(Boolean).join(' ');
-  return [(d.date||today()),jobs,d.location].filter(Boolean).join(' - ');
+  var jobs=[d.wo,d.ticket].filter(Boolean).join(' - ');
+  return [albumDate(d.date),jobs,abbrevLoc(d.location)].filter(Boolean).join(' - ');
 }
 function holdPointAlbum(i){
   var d=window._hpData&&window._hpData[i];if(!d)return;
