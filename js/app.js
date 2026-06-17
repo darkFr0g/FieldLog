@@ -396,9 +396,15 @@ function abbrevLoc(loc){
    [/\bHighway\b/gi,'Hwy'],[/\bSquare\b/gi,'Sq']].forEach(function(m){s=s.replace(m[0],m[1]);});
   return s.replace(/\s+/g,' ').trim();
 }
+// Strip the company "X<year>" prefix (e.g. X26-101623765 → 101623765; lone "X26" dropped).
+function stripJobPrefix(s){
+  s=String(s||'').trim().replace(/^X\d{2}\s*-\s*/i,'');
+  return /^X\d{2}$/i.test(s)?'':s;
+}
 function albumName(d){
-  var jobs=[d.wo,d.ticket].filter(Boolean).join(' - ');
-  return [albumDate(d.date),jobs,abbrevLoc(d.location)].filter(Boolean).join(' - ');
+  var seen={},jobs=[];
+  [d.wo,d.ticket].forEach(function(v){v=stripJobPrefix(v);if(v&&!seen[v]){seen[v]=true;jobs.push(v);}});
+  return [albumDate(d.date),jobs.join(' - '),abbrevLoc(d.location)].filter(Boolean).join(' - ');
 }
 function holdPointAlbum(i){
   var d=window._hpData&&window._hpData[i];if(!d)return;
