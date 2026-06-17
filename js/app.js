@@ -128,6 +128,8 @@ function mileLoadFromLog(){
   saveMileageEntry(e);renderMileage();showToast(added?('Added '+added+' stop'+(added!==1?'s':'')):'Stops already loaded');
 }
 function mileMonthTotal(date){var ym=date.slice(0,7),m=allMileage(),t=0;Object.keys(m).forEach(function(k){if(k.slice(0,7)===ym)t+=mileTotal(m[k]);});return t;}
+function mileDaysWithStops(){var m=allMileage(),ym=mileDate.slice(0,7),out=[];Object.keys(m).sort().reverse().forEach(function(k){if(k!==mileDate&&k.slice(0,7)===ym&&(m[k].stops||[]).some(function(s){return s.loc;}))out.push(k);});return out;}
+function mileCopyFrom(date){var src=allMileage()[date];if(!src)return;var e=currentMileEntry();e.stops=(src.stops||[]).map(function(s){return {loc:s.loc||'',ticket:s.ticket||'',mi:'',remarks:s.remarks||''};});saveMileageEntry(e);renderMileage();showToast('Copied '+e.stops.length+' stops');}
 function renderMileage(){
   var disp=document.getElementById('mile-display'),di=document.getElementById('mile-date'),body=document.getElementById('mileage-body');
   if(!body)return;
@@ -136,16 +138,21 @@ function renderMileage(){
   var e=currentMileEntry();
   function sel(field,list,ph){return '<select class="mile-sel" onchange="mileSetField(\''+field+'\',this.value)"><option value="">'+ph+'</option>'+list.map(function(o){return '<option'+(String(e[field]||'')===o?' selected':'')+'>'+escHtml(o)+'</option>';}).join('')+'</select>';}
   function f(label,inner){return '<label class="mile-f"><span>'+label+'</span>'+inner+'</label>';}
-  var h='<div class="mile-card"><div class="mile-fields">'+
-      f('Shift',sel('shift',MILE_SHIFTS,'—'))+
-      f('O.T. Hours',sel('ot',MILE_OT,'—'))+
-      f('Contact (CCI)',sel('cci',MILE_CCI,'—'))+
-      f('POET #',sel('poet',MILE_POET,'—'))+
-      f('Work Code',sel('workCode',MILE_WORKCODE,'—'))+
-      f('Expenses ($)','<input class="mile-sel" inputmode="decimal" value="'+escHtml(e.expenses||'')+'" onchange="mileSetField(\'expenses\',this.value)">')+
-    '</div>'+
-    '<input class="field-input" style="margin-top:8px" placeholder="Expensed items" value="'+escHtml(e.expItems||'')+'" onchange="mileSetField(\'expItems\',this.value)">'+
-    '<input class="field-input" style="margin-top:8px" placeholder="Notes" value="'+escHtml(e.notes||'')+'" onchange="mileSetField(\'notes\',this.value)">'+
+  var h='<div class="mile-card">'+
+      '<div class="mile-ot"><span class="mile-ot-l">Overtime Hours</span>'+
+        '<select class="mile-ot-sel" onchange="mileSetField(\'ot\',this.value)"><option value="">0</option>'+MILE_OT.map(function(o){return '<option'+(String(e.ot||'')===o?' selected':'')+'>'+o+'</option>';}).join('')+'</select></div>'+
+      '<div class="mile-fields">'+
+        f('Shift',sel('shift',MILE_SHIFTS,'—'))+
+        f('Work Code',sel('workCode',MILE_WORKCODE,'—'))+
+        f('Contact',sel('cci',MILE_CCI,'—'))+
+        f('POET #',sel('poet',MILE_POET,'—'))+
+      '</div>'+
+      '<div class="mile-extra">'+
+        '<input class="field-input mile-mini" inputmode="decimal" placeholder="Expenses $" value="'+escHtml(e.expenses||'')+'" onchange="mileSetField(\'expenses\',this.value)">'+
+        '<input class="field-input mile-mini" placeholder="Expensed items" value="'+escHtml(e.expItems||'')+'" onchange="mileSetField(\'expItems\',this.value)">'+
+      '</div>'+
+      '<input class="field-input mile-mini" style="margin-top:6px" placeholder="Notes" value="'+escHtml(e.notes||'')+'" onchange="mileSetField(\'notes\',this.value)">'+
+      '<div class="mile-carry">Header carried from your last day — change a field to set just today</div>'+
   '</div>';
   h+='<div class="mile-card"><div class="mile-rowhdr"><span>Stops — miles driven</span><span>'+mileTotal(e)+' mi</span></div>';
   h+='<label class="mile-f" style="margin-bottom:12px"><span>Start odometer (first stop)</span><input class="mile-sel" inputmode="numeric" placeholder="e.g. 72388" value="'+(e.startOdo===''||e.startOdo==null?'':e.startOdo)+'" onchange="mileSetStart(this.value)"></label>';
@@ -166,7 +173,10 @@ function renderMileage(){
       '</div>'+
     '</div>';
   });
-  h+='<div class="mile-actions"><button class="btn btn-secondary btn-sm" onclick="mileAddStop()">+ Add stop</button><button class="btn btn-secondary btn-sm" onclick="mileLoadFromLog()">Load stops from log</button></div>'+
+  var copyDays=mileDaysWithStops();
+  var copySel=copyDays.length?('<select class="mile-sel mile-copy" onchange="mileCopyFrom(this.value);this.value=\'\'"><option value="">Copy stops from another day…</option>'+copyDays.map(function(k){return '<option value="'+k+'">'+new Date(k+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})+'</option>';}).join('')+'</select>'):'';
+  h+='<div class="mile-actions"><button class="btn btn-secondary btn-sm" onclick="mileAddStop()">+ Add stop</button><button class="btn btn-secondary btn-sm" onclick="mileLoadFromLog()">Load from log</button></div>'+
+     (copySel?'<div style="margin-top:8px">'+copySel+'</div>':'')+
      '<div class="mile-total">'+mileTotal(e)+' mi today'+(mileEndOdo(e)!==''?' · ends '+mileEndOdo(e):'')+'</div></div>';
   var prevEnd=mileEndOdo(milePrevEntry(mileDate));
   h+='<div class="mile-foot"><div><span class="mile-foot-l">Prev ODO end</span><b>'+(prevEnd===''?'—':prevEnd)+'</b></div><div><span class="mile-foot-l">Month to date</span><b>'+mileMonthTotal(mileDate)+' mi</b></div></div>';
@@ -533,16 +543,26 @@ function albumDate(iso){
   iso=iso||today();var p=String(iso).split('-');
   return p.length===3?((+p[1])+'/'+(+p[2])+'/'+p[0].slice(-2)):iso; // YYYY-MM-DD → M/D/YY
 }
-function abbrevLoc(loc){
-  if(!loc)return '';
-  // Drop cross-streets ("btw Adee Ave and Knapp St", "between…", "& …") — the address pins it.
-  var s=String(loc).replace(/\s*(?:\bbtwn?\b|\bbetween\b|\bbet\.?\b|\bb\/w\b|&).*$/i,'');
-  [[/\bRoad\b/gi,'Rd'],[/\bStreet\b/gi,'St'],[/\bAvenue\b/gi,'Ave'],[/\bBoulevard\b/gi,'Blvd'],
+function abbrevStreet(s){
+  s=s.replace(/\bEast\b/gi,'E').replace(/\bWest\b/gi,'W').replace(/\bNorth\b/gi,'N').replace(/\bSouth\b/gi,'S');
+  [[/\bStreet\b/gi,'St'],[/\bAvenue\b/gi,'Ave'],[/\bRoad\b/gi,'Rd'],[/\bBoulevard\b/gi,'Blvd'],
    [/\bDrive\b/gi,'Dr'],[/\bLane\b/gi,'Ln'],[/\bPlace\b/gi,'Pl'],[/\bCourt\b/gi,'Ct'],
    [/\bTerrace\b/gi,'Ter'],[/\bParkway\b/gi,'Pkwy'],[/\bExpressway\b/gi,'Expwy'],
-   [/\bHighway\b/gi,'Hwy'],[/\bSquare\b/gi,'Sq']].forEach(function(m){s=s.replace(m[0],m[1]);});
-  return s.replace(/\s+/g,' ').trim();
+   [/\bHighway\b/gi,'Hwy'],[/\bSquare\b/gi,'Sq'],[/\bPlaza\b/gi,'Plz']].forEach(function(m){s=s.replace(m[0],m[1]);});
+  return s.replace(/\s+/g,' ').replace(/\s+,/g,',').trim();
 }
+// Smart shorten: street address w/ house # drops cross-streets ("3003 Eastchester
+// Rd"); a plain intersection keeps just the FIRST cross street ("E 166th St & Brook Ave").
+function shortAddr(loc){
+  if(!loc)return '';
+  var s=String(loc).replace(/\s+/g,' ').trim();
+  var hasNum=/^\d+\s/.test(s);
+  var parts=s.split(/\s+(?:btwn?|between|bet\.?|b\/w|&|and)\s+/i);
+  var out=parts[0];
+  if(!hasNum&&parts.length>1&&parts[1])out=parts[0]+' & '+parts[1];
+  return abbrevStreet(out);
+}
+function abbrevLoc(loc){return shortAddr(loc);}
 // Strip the company "X<year>" prefix (e.g. X26-101623765 → 101623765; lone "X26" dropped).
 function stripJobPrefix(s){
   s=String(s||'').trim().replace(/^X\d{2}\s*-\s*/i,'');
@@ -1561,7 +1581,7 @@ function openMapModal(){
   if(!allData||!allData.flavin){showToast('Load a route sheet first');return;}
   var locs=uniqueRouteLocations();
   var sfx=document.getElementById('map-suffix');if(sfx&&!sfx.value.trim())sfx.value='Bronx, NY';
-  document.getElementById('map-list').innerHTML=(locs.length?locs:['']).map(function(l){return mapRowHTML(l);}).join('');
+  document.getElementById('map-list').innerHTML=(locs.length?locs:['']).map(function(l){return mapRowHTML(shortAddr(l));}).join('');
   document.getElementById('map-modal').style.display='block';
 }
 function closeMapModal(e){if(!e||e.target.classList.contains('modal-overlay'))document.getElementById('map-modal').style.display='none';}
