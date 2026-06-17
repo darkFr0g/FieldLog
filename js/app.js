@@ -674,7 +674,7 @@ function saveDraft(){
   var date=document.getElementById('log-date').value;
   var drafts=getData('dlr_drafts',{});
   drafts[date]={date:date,crews:JSON.parse(JSON.stringify(currentCrews)),savedAt:new Date().toISOString()};
-  setData('dlr_drafts',drafts);showToast('Draft saved');
+  setData('dlr_drafts',drafts);syncPushDrafts();showToast('Draft saved');
 }
 
 function submitLog(){
@@ -687,7 +687,8 @@ function submitLog(){
   if(idx>=0)logs[idx]=entry;else logs.unshift(entry);
   logs.sort(function(a,b){return b.date.localeCompare(a.date);});
   setData('dlr_logs',logs);
-  var drafts=getData('dlr_drafts',{});delete drafts[date];setData('dlr_drafts',drafts);
+  syncPushLog(entry);
+  var drafts=getData('dlr_drafts',{});delete drafts[date];setData('dlr_drafts',drafts);syncPushDrafts();
   clearWorkingDLR();
   showToast('Log submitted');currentCrews=[];initLogDate();renderCrews();
 }
@@ -749,7 +750,7 @@ function duplicateLog(date){
 
 function toggleDay(date){var el=document.getElementById('daylog-'+date);var ch=document.getElementById('daychev-'+date);if(el)el.classList.toggle('open');if(ch)ch.classList.toggle('open');}
 function loadLogForEdit(date){var log=logs.find(function(l){return l.date===date;});if(!log)return;currentCrews=JSON.parse(JSON.stringify(log.crews));document.getElementById('log-date').value=date;updateDateDisplay();saveWorkingDLR();renderCrews();showPage('dlr');showToast('Log loaded for editing');}
-function deleteLog(date){if(!confirm('Delete log for '+fmtDate(date)+'?'))return;logs=logs.filter(function(l){return l.date!==date;});setData('dlr_logs',logs);renderHistory();updateSettingsCounts();showToast('Log deleted');}
+function deleteLog(date){if(!confirm('Delete log for '+fmtDate(date)+'?'))return;logs=logs.filter(function(l){return l.date!==date;});setData('dlr_logs',logs);syncDeleteLog(date);renderHistory();updateSettingsCounts();showToast('Log deleted');}
 
 // ── SETTINGS ─────────────────────────────────────────────────────
 function showListEditor(type){
@@ -763,8 +764,8 @@ function renderListItems(items){
     return '<div class="master-list-item"><span>'+item+'</span><button class="btn btn-danger btn-sm" onclick="removeListItem('+i+')" style="width:28px;height:28px;padding:0;font-size:14px;font-weight:800;display:flex;align-items:center;justify-content:center">×</button></div>';
   }).join('');
 }
-function addListItem(){var input=document.getElementById('new-item-input');var val=input.value.trim();if(!val)return;if(editingList==='trade'){trades.push(val);setData('dlr_trades',trades);renderListItems(trades);}else{equipment.push(val);setData('dlr_equipment',equipment);renderListItems(equipment);}input.value='';updateSettingsCounts();}
-function removeListItem(i){if(editingList==='trade'){trades.splice(i,1);setData('dlr_trades',trades);renderListItems(trades);}else{equipment.splice(i,1);setData('dlr_equipment',equipment);renderListItems(equipment);}updateSettingsCounts();}
+function addListItem(){var input=document.getElementById('new-item-input');var val=input.value.trim();if(!val)return;if(editingList==='trade'){trades.push(val);setData('dlr_trades',trades);renderListItems(trades);}else{equipment.push(val);setData('dlr_equipment',equipment);renderListItems(equipment);}input.value='';updateSettingsCounts();syncPushLists();}
+function removeListItem(i){if(editingList==='trade'){trades.splice(i,1);setData('dlr_trades',trades);renderListItems(trades);}else{equipment.splice(i,1);setData('dlr_equipment',equipment);renderListItems(equipment);}updateSettingsCounts();syncPushLists();}
 function closeListModal(e){if(!e||e.target.classList.contains('modal-overlay'))document.getElementById('list-modal').style.display='none';}
 function updateSettingsCounts(){document.getElementById('trade-count').textContent=trades.length+' items';document.getElementById('equip-count').textContent=equipment.length+' items';document.getElementById('log-count-display').textContent=logs.length;}
 function clearAllData(){if(!confirm('Delete ALL logs and settings? Cannot be undone.'))return;localStorage.clear();trades=CWORX_TRADES.slice();equipment=CWORX_EQUIPMENT.slice();logs=[];currentCrews=[];setData('dlr_trades',trades);setData('dlr_equipment',equipment);updateSettingsCounts();showToast('All data cleared');}
@@ -804,7 +805,7 @@ function restoreFromFile(input){
       Object.keys(impD).forEach(function(k){curD[k]=impD[k];});setData('dlr_drafts',curD);
       if(data.trades&&data.trades.length){trades=data.trades.slice();setData('dlr_trades',trades);}
       if(data.equipment&&data.equipment.length){equipment=data.equipment.slice();setData('dlr_equipment',equipment);}
-      updateSettingsCounts();renderHistory();
+      updateSettingsCounts();renderHistory();syncPushAll();
       showToast('Restored — '+logs.length+' logs total');
     }catch(err){showToast('Restore failed: '+err.message);}
     input.value='';
@@ -1348,9 +1349,136 @@ function copyMapStops(){
   else fallbackCopy(text);
 }
 
+// ── CLOUD SYNC (Firebase: Firestore + email-link Auth) ───────────
+// Local-first: localStorage stays the on-device source of truth and the app
+// works fully offline; when signed in & online we mirror logs/drafts/lists to
+// the user's private Firestore so the 4 devices share one dataset. Conflicts
+// resolve by newest savedAt (same rule as backup/restore).
+var FIREBASE_CONFIG = {
+  apiKey: "AIzaSyAsoT_pJfMr1Zlxg5d0F3w_D4Yk1esJNbI",
+  authDomain: "bullfrog-field-log.firebaseapp.com",
+  projectId: "bullfrog-field-log",
+  storageBucket: "bullfrog-field-log.firebasestorage.app",
+  messagingSenderId: "1061730210243",
+  appId: "1:1061730210243:web:a300f274241c7f5b752d76"
+};
+var fbDb=null,fbUser=null,fbUnsub=null;
+function syncAvailable(){return !!(window.firebase&&firebase.apps&&firebase.firestore);}
+function syncOn(){return !!(fbDb&&fbUser);}
+function userCol(name){return fbDb.collection('users').doc(fbUser.uid).collection(name);}
+
+function initSync(){
+  if(!window.firebase||!firebase.initializeApp){updateAccountUI();return;}
+  try{
+    if(!firebase.apps.length)firebase.initializeApp(FIREBASE_CONFIG);
+    fbDb=firebase.firestore();
+    fbDb.enablePersistence({synchronizeTabs:true}).catch(function(){});
+    firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(function(){});
+    firebase.auth().onAuthStateChanged(onAuthChange);
+  }catch(e){}
+  updateAccountUI();
+}
+function onAuthChange(user){fbUser=user;updateAccountUI();if(user)startSync();else stopSync();}
+
+// Email + password sign-in. Stays inside the app (no Safari redirect), so it
+// works in the iOS home-screen PWA. First sign-in for an email auto-creates the
+// account; after that it just logs in and the session persists indefinitely.
+function authMsg(err){
+  var c=err&&err.code||'';
+  if(c==='auth/invalid-email')return'That email looks invalid';
+  if(c==='auth/wrong-password'||c==='auth/invalid-credential')return'Wrong password';
+  if(c==='auth/weak-password')return'Password must be 6+ characters';
+  if(c==='auth/network-request-failed')return'No connection — try again online';
+  return (err&&err.message)||'Sign-in failed';
+}
+function doSignIn(){
+  if(!syncAvailable()){showToast('Connect to the internet first');return;}
+  var em=document.getElementById('account-email'),pw=document.getElementById('account-pass');
+  var email=(em&&em.value||'').trim(),pass=(pw&&pw.value||'');
+  if(!email||!pass){showToast('Enter email and password');return;}
+  if(pass.length<6){showToast('Password must be 6+ characters');return;}
+  var auth=firebase.auth();
+  auth.signInWithEmailAndPassword(email,pass).catch(function(err){
+    var c=err&&err.code||'';
+    if(c==='auth/user-not-found'||c==='auth/invalid-credential'){
+      return auth.createUserWithEmailAndPassword(email,pass).catch(function(e2){
+        if(e2&&e2.code==='auth/email-already-in-use')throw{code:'auth/wrong-password'};
+        throw e2;
+      });
+    }
+    throw err;
+  }).then(function(){if(pw)pw.value='';showToast('Signed in — syncing');}).catch(function(err){showToast(authMsg(err));});
+}
+function signOutSync(){if(window.firebase&&firebase.auth)firebase.auth().signOut();}
+
+function startSync(){
+  if(!syncOn())return;
+  pushLocalLogs().then(function(){
+    if(fbUnsub)fbUnsub();
+    fbUnsub=userCol('logs').onSnapshot(function(snap){
+      var changed=false;
+      snap.docChanges().forEach(function(ch){
+        var data=ch.doc.data();
+        if(ch.type==='removed'){
+          var i=logs.findIndex(function(l){return l.date===data.date;});
+          if(i>=0){logs.splice(i,1);changed=true;}
+        }else{changed=mergeRemoteLog(data)||changed;}
+      });
+      if(changed){logs.sort(function(a,b){return b.date.localeCompare(a.date);});setData('dlr_logs',logs);renderHistory();updateSettingsCounts();}
+    },function(){});
+  });
+  syncMeta();
+}
+function stopSync(){if(fbUnsub){fbUnsub();fbUnsub=null;}}
+function mergeRemoteLog(r){
+  if(!r||!r.date)return false;
+  var i=logs.findIndex(function(l){return l.date===r.date;});
+  if(i<0){logs.push(r);return true;}
+  if(!logs[i].savedAt||(r.savedAt&&r.savedAt>logs[i].savedAt)){logs[i]=r;return true;}
+  return false;
+}
+function pushLocalLogs(){
+  if(!syncOn())return Promise.resolve();
+  return userCol('logs').get().then(function(snap){
+    var remote={};snap.forEach(function(d){var x=d.data();if(x&&x.date)remote[x.date]=x;});
+    var batch=fbDb.batch(),n=0;
+    logs.forEach(function(l){var r=remote[l.date];if(!r||!r.savedAt||(l.savedAt&&l.savedAt>r.savedAt)){batch.set(userCol('logs').doc(l.date),l);n++;}});
+    var changed=false;Object.keys(remote).forEach(function(k){changed=mergeRemoteLog(remote[k])||changed;});
+    if(changed){logs.sort(function(a,b){return b.date.localeCompare(a.date);});setData('dlr_logs',logs);renderHistory();updateSettingsCounts();}
+    return n>0?batch.commit():null;
+  }).catch(function(){});
+}
+function syncMeta(){
+  if(!syncOn())return;
+  userCol('meta').doc('lists').get().then(function(d){
+    if(d.exists){var x=d.data();if(x.trades&&x.trades.length){trades=x.trades;setData('dlr_trades',trades);}if(x.equipment&&x.equipment.length){equipment=x.equipment;setData('dlr_equipment',equipment);}updateSettingsCounts();}
+    else syncPushLists();
+  }).catch(function(){});
+  userCol('meta').doc('drafts').get().then(function(d){
+    if(d.exists){var drafts=getData('dlr_drafts',{}),rd=d.data().drafts||{};Object.keys(rd).forEach(function(k){drafts[k]=rd[k];});setData('dlr_drafts',drafts);}
+  }).catch(function(){});
+}
+function syncPushLog(entry){if(syncOn())userCol('logs').doc(entry.date).set(entry).catch(function(){});}
+function syncDeleteLog(date){if(syncOn())userCol('logs').doc(date)['delete']().catch(function(){});}
+function syncPushDrafts(){if(syncOn())userCol('meta').doc('drafts').set({drafts:getData('dlr_drafts',{})}).catch(function(){});}
+function syncPushLists(){if(syncOn())userCol('meta').doc('lists').set({trades:trades,equipment:equipment}).catch(function(){});}
+function syncPushAll(){if(!syncOn())return;logs.forEach(function(l){syncPushLog(l);});syncPushDrafts();syncPushLists();}
+
+function updateAccountUI(){
+  var signedOut=document.getElementById('account-signedout');
+  var signedIn=document.getElementById('account-signedin');
+  var unavail=document.getElementById('account-unavailable');
+  if(!signedOut||!signedIn||!unavail)return;
+  if(!syncAvailable()){signedOut.style.display='none';signedIn.style.display='none';unavail.style.display='';return;}
+  unavail.style.display='none';
+  if(fbUser){signedOut.style.display='none';signedIn.style.display='';var who=document.getElementById('account-who');if(who)who.textContent=fbUser.email||'Signed in';}
+  else{signedIn.style.display='none';signedOut.style.display='';}
+}
+
 initLogDate();
 if(!restoreWorkingDLR())loadTodayDraft();
 renderCrews();updateSettingsCounts();
 restoreRoute();
 setupContKeyboard();
+initSync();
 if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('./sw.js').catch(function(){});});}

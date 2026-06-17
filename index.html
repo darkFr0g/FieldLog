@@ -47,7 +47,7 @@
 <div id="page-route" class="page active">
 <div class="wrap">
   <div class="hdr">
-    <div class="vbadge">v6.0</div>
+    <div class="vbadge">v6.1</div>
     <h1 class="hdr-title">Locations for <span id="headingName">Jeremiah Flavin</span></h1>
   </div>
   <div id="uploadSection">
@@ -132,6 +132,24 @@
 <div id="page-settings" class="page">
   <div class="page-header"><h1>Settings</h1></div>
   <div class="settings-section">
+    <div class="settings-title">Sync &amp; Account</div>
+    <div class="settings-card">
+      <div id="account-unavailable" class="settings-row" style="display:none"><span style="font-size:14px;color:var(--ink-3)">Sync needs internet — reconnect to sign in.</span></div>
+      <div id="account-signedout" style="display:none;padding:14px 16px">
+        <div style="font-size:14px;color:var(--ink-2);margin-bottom:10px;line-height:1.4">Sign in to sync your logs across all your devices. First time? Just pick a password — it creates your account automatically.</div>
+        <input type="email" id="account-email" placeholder="you@email.com" autocomplete="username" inputmode="email" spellcheck="false" style="width:100%;box-sizing:border-box;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:15px;color:var(--ink);font-family:var(--font);outline:none;margin-bottom:8px">
+        <input type="password" id="account-pass" placeholder="Password (6+ characters)" autocomplete="current-password" style="width:100%;box-sizing:border-box;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:15px;color:var(--ink);font-family:var(--font);outline:none;margin-bottom:8px">
+        <button class="btn btn-green btn-sm" style="width:100%;justify-content:center" onclick="doSignIn()">Sign in / Create account</button>
+        <div id="account-note" style="font-size:12px;color:var(--ink-3);margin-top:8px"></div>
+      </div>
+      <div id="account-signedin" style="display:none">
+        <div class="settings-row"><span style="font-size:15px">Signed in</span><span style="color:var(--green);font-size:13px;font-weight:600" id="account-who"></span></div>
+        <div class="settings-row"><span style="font-size:13px;color:var(--ink-3)">Logs sync automatically across your devices.</span></div>
+        <div class="settings-row" style="cursor:pointer" onclick="signOutSync()"><span style="font-size:15px;color:var(--red)">Sign out</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="settings-section">
     <div class="settings-title">Master Lists</div>
     <div class="settings-card">
       <div class="settings-row" style="cursor:pointer" onclick="showListEditor('trade')">
@@ -156,7 +174,7 @@
   <div class="settings-section" style="margin-bottom:20px">
     <div class="settings-title">About</div>
     <div class="settings-card">
-      <div class="settings-row"><span style="font-size:15px">Field Log</span><span style="color:var(--ink-3);font-size:13px">v6.0</span></div>
+      <div class="settings-row"><span style="font-size:15px">Field Log</span><span style="color:var(--ink-3);font-size:13px">v6.1</span></div>
     </div>
   </div>
 </div>
@@ -305,6 +323,12 @@
 <div id="toast" class="toast"></div>
 
 <script src="./vendor/xlsx.full.min.js"></script>
+<!-- Firebase (Firestore + Auth) for cross-device sync. Loaded from Google's
+     CDN and runtime-cached by the service worker so the app still opens offline.
+     compat builds = plain globals, no build step (matches the project). -->
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 <script src="./js/app.js"></script>
 </body>
 </html>

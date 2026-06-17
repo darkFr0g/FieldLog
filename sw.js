@@ -5,9 +5,10 @@
         opens with no signal in the field.
    - Static heavy assets (vendored xlsx, icons): cache-first.
    - Google Fonts: cache-first runtime cache (degrades to system fonts if never cached).
+   - Firebase SDK (gstatic CDN): cache-first runtime cache so sync code loads offline.
    Bump CACHE_VERSION to force-evict everything on the next load.
 */
-var CACHE_VERSION = 'fieldlog-v3';
+var CACHE_VERSION = 'fieldlog-v4';
 var SHELL_CACHE   = CACHE_VERSION + '-shell';
 var STATIC_CACHE  = CACHE_VERSION + '-static';
 var FONT_CACHE    = CACHE_VERSION + '-fonts';
@@ -52,6 +53,9 @@ function isFontRequest(url) {
   return url.indexOf('fonts.googleapis.com') !== -1 ||
          url.indexOf('fonts.gstatic.com') !== -1;
 }
+function isFirebaseSDK(url) {
+  return url.indexOf('gstatic.com/firebasejs') !== -1;
+}
 
 self.addEventListener('fetch', function (event) {
   var req = event.request;
@@ -73,6 +77,27 @@ self.addEventListener('fetch', function (event) {
     );
     return;
   }
+
+  // Firebase SDK from gstatic — cache-first, populate on first online hit so the
+  // sync code is available offline (Firestore itself caches data separately).
+  if (isFirebaseSDK(url)) {
+    event.respondWith(
+      caches.open(STATIC_CACHE).then(function (cache) {
+        return cache.match(req).then(function (hit) {
+          if (hit) return hit;
+          return fetch(req).then(function (res) {
+            if (res && (res.ok || res.type === 'opaque')) cache.put(req, res.clone());
+            return res;
+          }).catch(function () { return hit; });
+        });
+      })
+    );
+    return;
+  }
+
+  // Firebase backend calls (Firestore/Auth) must always hit the network — never
+  // cache or intercept them, or sync silently breaks.
+  if (url.indexOf('googleapis.com') !== -1 || url.indexOf('firebaseio.com') !== -1) return;
 
   // Only manage our own origin beyond this point.
   if (new URL(url).origin !== self.location.origin) return;
