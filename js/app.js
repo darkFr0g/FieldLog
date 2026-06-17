@@ -312,7 +312,7 @@ function renderRouteBody(){
   order.sort(function(a,b){var ia=allData.contractorSheets.indexOf(a),ib=allData.contractorSheets.indexOf(b);ia=ia<0?99:ia;ib=ib<0?99:ib;return ia-ib||a.localeCompare(b);});
   if(routeCo&&!counts[routeCo])routeCo='';
   if(row){
-    if(order.length>1){
+    if(order.length>=1){
       var html=coChip('All','',jobs.length,'');
       order.forEach(function(c){html+=coChip(c,c,counts[c],contractorColor(c));});
       row.innerHTML=html;row.style.display='flex';
