@@ -55,3 +55,9 @@ python -m http.server 8000
 ## Offline behaviour
 
 The service worker precaches the app shell and the xlsx library, so the app and route-sheet parsing work with no signal. App shell files use a network-first strategy, so deploys go live as soon as the device is back online. To force a hard refresh of all cached assets, bump `CACHE_VERSION` in [`sw.js`](sw.js).
+
+## Related projects
+
+- **[Field Hub (workFr0g)](https://github.com/darkFr0g/workFr0g)** — sibling PWA
+  with XCMG item search and gas field-reference tools.
+- _Retired:_ **RouteExtractor** — its route-sheet parsing was folded into Field Log.
