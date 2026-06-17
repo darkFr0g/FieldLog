@@ -875,7 +875,7 @@ function renderHistory(){
     var savedTxt=log.savedAt?(' · saved '+fmtShortStamp(log.savedAt)):'';
     return '<div class="log-day">'+
       '<div class="log-day-header" onclick="toggleDay(\''+log.date+'\')">'+
-        '<div><div class="log-day-title">'+fmtDate(log.date)+editedBadge+'</div><div class="log-day-meta">'+log.crews.length+' block'+(log.crews.length!==1?'s':'')+' · '+tw+' workers'+savedTxt+'</div></div>'+
+        '<div><div class="log-day-title">'+fmtDate(log.date)+editedBadge+'</div><div class="log-day-meta">'+log.crews.length+' crew'+(log.crews.length!==1?'s':'')+savedTxt+'</div></div>'+
         '<span class="chevron" id="daychev-'+log.date+'">⌄</span></div>'+
       '<div class="log-expanded" id="daylog-'+log.date+'">'+crewsHTML+
         '<div style="padding:10px 16px;display:flex;gap:8px;flex-wrap:wrap">'+
@@ -918,6 +918,17 @@ function removeListItem(i){if(editingList==='trade'){trades.splice(i,1);setData(
 function closeListModal(e){if(!e||e.target.classList.contains('modal-overlay'))document.getElementById('list-modal').style.display='none';}
 function updateSettingsCounts(){document.getElementById('trade-count').textContent=trades.length+' items';document.getElementById('equip-count').textContent=equipment.length+' items';document.getElementById('log-count-display').textContent=logs.length;}
 function clearAllData(){if(!confirm('Delete ALL logs and settings? Cannot be undone.'))return;localStorage.clear();trades=CWORX_TRADES.slice();equipment=CWORX_EQUIPMENT.slice();logs=[];currentCrews=[];setData('dlr_trades',trades);setData('dlr_equipment',equipment);updateSettingsCounts();showToast('All data cleared');}
+
+// Home-screen PWAs can't be hard-refreshed; this pulls the newest service
+// worker and reloads (network-first shell then serves the fresh files).
+function checkForUpdate(){
+  showToast('Checking for updates…');
+  if('serviceWorker' in navigator&&navigator.serviceWorker.getRegistrations){
+    navigator.serviceWorker.getRegistrations().then(function(regs){
+      return Promise.all(regs.map(function(r){return r.update();}));
+    })['catch'](function(){}).then(function(){setTimeout(function(){location.reload();},500);});
+  }else location.reload();
+}
 
 // ── BACKUP / RESTORE (all data lives in localStorage on this device only) ──
 function backupData(){
