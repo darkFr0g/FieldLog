@@ -1648,4 +1648,24 @@ renderCrews();updateSettingsCounts();updateHpShortcutState();
 restoreRoute();
 setupContKeyboard();
 initSync();
-if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('./sw.js').catch(function(){});});}
+function showUpdateBanner(){
+  if(document.getElementById('update-banner'))return;
+  var b=document.createElement('div');b.id='update-banner';b.className='update-banner';
+  b.innerHTML='<span>New version ready</span><span class="ub-go">Tap to refresh →</span>';
+  b.onclick=function(){checkForUpdate();};
+  document.body.appendChild(b);
+}
+if('serviceWorker' in navigator){
+  window.addEventListener('load',function(){
+    navigator.serviceWorker.register('./sw.js').then(function(reg){
+      try{reg.update();}catch(e){}
+      reg.addEventListener('updatefound',function(){
+        var nw=reg.installing;if(!nw)return;
+        nw.addEventListener('statechange',function(){
+          // 'installed' + an existing controller = an update (not first install)
+          if(nw.state==='installed'&&navigator.serviceWorker.controller)showUpdateBanner();
+        });
+      });
+    })['catch'](function(){});
+  });
+}
