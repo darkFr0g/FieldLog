@@ -136,3 +136,26 @@ no-dependency PowerShell static server at `.claude/serve.ps1` (gitignored) wired
 into `.claude/launch.json` for the preview tool on port 8123. Node/Python are not
 installed on the dev machine (Windows); icon generation uses .NET `System.Drawing`
 via PowerShell.
+
+## How we work together (sessions & memory)
+
+This brief is written here on purpose: **`CLAUDE.md` is committed to the repo, so
+it syncs across every device through GitHub** — including the user's iPhone, which
+is the primary device. It is the one piece of context guaranteed to load in any
+session, on any device.
+
+- **`memory/` does NOT sync across devices.** It lives in the local `.claude`
+  folder of whichever machine wrote it (desktop). iOS sessions can't see it. So
+  anything durable that the iPhone needs to know belongs **here in `CLAUDE.md`**,
+  not in a memory note.
+- **Organize chats by workstream, not by device.** One working chat per repo:
+  - *Field Log* work → the iOS chat (primary device); the older desktop "v1"
+    thread is kept only as origin/history.
+  - *Field Hub (workFr0g)* work → its own chat, rooted in the `workFr0g` repo so
+    that repo's `CLAUDE.md` loads. Separate repo = separate memory.
+  - *Cross-repo / GitHub / setup* work → a general desktop chat.
+- A fresh chat loses nothing important as long as durable facts live in this file
+  (and the code itself). Don't rely on reading old conversations — write the
+  decision down here instead.
+- **Related repo:** [Field Hub / workFr0g](https://github.com/darkFr0g/workFr0g)
+  carries its own `CLAUDE.md` with the same convention.
