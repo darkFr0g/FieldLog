@@ -47,7 +47,7 @@
 <div id="page-route" class="page active">
 <div class="wrap">
   <div class="hdr">
-    <div class="vbadge">v6.5</div>
+    <div class="vbadge">v6.6</div>
     <h1 class="hdr-title">Locations for <span id="headingName">Jeremiah Flavin</span></h1>
   </div>
   <div id="uploadSection">
@@ -138,7 +138,12 @@
       <div id="account-signedout" style="display:none;padding:14px 16px">
         <div style="font-size:14px;color:var(--ink-2);margin-bottom:10px;line-height:1.4">Sign in to sync your logs across all your devices. First time? Just pick a password — it creates your account automatically.</div>
         <input type="email" id="account-email" placeholder="you@email.com" autocomplete="username" inputmode="email" spellcheck="false" style="width:100%;box-sizing:border-box;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:15px;color:var(--ink);font-family:var(--font);outline:none;margin-bottom:8px">
-        <input type="password" id="account-pass" placeholder="Password (6+ characters)" autocomplete="current-password" style="width:100%;box-sizing:border-box;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:15px;color:var(--ink);font-family:var(--font);outline:none;margin-bottom:8px">
+        <div style="position:relative;margin-bottom:8px">
+          <input type="password" id="account-pass" placeholder="Password (6+ characters)" autocomplete="current-password" style="width:100%;box-sizing:border-box;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:10px 44px 10px 12px;font-size:15px;color:var(--ink);font-family:var(--font);outline:none">
+          <button type="button" onclick="togglePass()" aria-label="Show password" style="position:absolute;right:4px;top:0;height:100%;width:38px;display:flex;align-items:center;justify-content:center;background:none;border:0;color:var(--ink-3);cursor:pointer;padding:0">
+            <svg id="eye-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
         <button class="btn btn-green btn-sm" style="width:100%;justify-content:center" onclick="doSignIn()">Sign in / Create account</button>
         <div id="account-note" style="font-size:12px;color:var(--ink-3);margin-top:8px"></div>
       </div>
@@ -181,7 +186,7 @@
   <div class="settings-section" style="margin-bottom:20px">
     <div class="settings-title">About</div>
     <div class="settings-card">
-      <div class="settings-row"><span style="font-size:15px">Field Log</span><span style="color:var(--ink-3);font-size:13px">v6.5</span></div>
+      <div class="settings-row"><span style="font-size:15px">Field Log</span><span style="color:var(--ink-3);font-size:13px">v6.6</span></div>
     </div>
   </div>
 </div>
