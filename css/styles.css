@@ -8,6 +8,9 @@
   --green:#1D9E75;--red:#c0392b;
   --amber-bg:#FAEEDA;--amber-text:#633806;--coral-bg:#FAECE7;--coral-text:#4A1B0C;
   --green-bg:#e8f7f1;--green-text:#0F6E56;
+  /* Job pills: Contingency=yellow, Hold Point=blue, Fusing Peer=red */
+  --blue-bg:#E8F0FE;--blue-text:#1A56C4;--blue-bd:#A9C5F5;
+  --rose-bg:#FDEAEA;--rose-text:#B3261E;--rose-bd:#F0B6B2;
   /* Crew accent colors - left border + subtle bg tint */
   --c0:#2563EB;--c0bg:#EFF6FF;
   --c1:#D97706;--c1bg:#FFFBEB;
@@ -102,12 +105,12 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
 /* Status tags share one box shape so Contingency / Hold Point / Fusing Peer line up. */
 .b-cont,.b-hp,.b-fuse,.status-off{display:inline-flex;align-items:center;min-height:34px;font-size:11px;font-weight:700;padding:5px 10px;border-radius:var(--radius-xs)}
 .b-cont{background:var(--amber-bg);color:var(--amber-text)}
-.b-hp{background:var(--coral-bg);color:var(--coral-text)}
-.b-fuse{background:var(--green-bg);color:var(--green-text)}
+.b-hp{background:var(--blue-bg);color:var(--blue-text)}
+.b-fuse{background:var(--rose-bg);color:var(--rose-text)}
 .status-off{background:var(--surface-2);color:var(--ink-4);font-weight:600;font-style:italic;border:1px dashed var(--border-mid)}
 .cont-chip{display:inline-flex;align-items:center;gap:5px;background:var(--amber-bg);color:var(--amber-text);font-size:12px;font-weight:800;padding:5px 12px;border-radius:var(--radius-xs);border:2px solid #f0d5a0;min-height:34px;cursor:pointer;font-family:var(--font);letter-spacing:.02em}
 .cont-chip:active{background:#f3e0c0}
-.hp-chip{display:inline-flex;align-items:center;gap:5px;background:var(--coral-bg);color:var(--coral-text);font-size:12px;font-weight:800;padding:5px 12px;border-radius:var(--radius-xs);border:2px solid var(--coral-text);min-height:34px;cursor:pointer;font-family:var(--font);letter-spacing:.02em}
+.hp-chip{display:inline-flex;align-items:center;gap:5px;background:var(--blue-bg);color:var(--blue-text);font-size:12px;font-weight:800;padding:5px 12px;border-radius:var(--radius-xs);border:2px solid var(--blue-bd);min-height:34px;cursor:pointer;font-family:var(--font);letter-spacing:.02em}
 .hp-chip:active{opacity:.75}
 .cont-form{display:flex;flex-direction:column;gap:12px}
 .cont-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}

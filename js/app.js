@@ -304,6 +304,13 @@ function gvRe(row,h,re){for(var i=0;i<h.length;i++){if(h[i]&&re.test(String(h[i]
 // A Contingency / Hold Point / Fusing Peer value counts as "active" unless it's blank or a negative.
 function isActive(v){if(!v)return false;var s=String(v).trim().toLowerCase();return s!==''&&s!=='no'&&s!=='n'&&s!=='n/a'&&s!=='none'&&s!=='0'&&s!=='false';}
 
+// Subtle per-contractor accent (from their logo colors). Matched loosely on name.
+var CONTRACTOR_THEME=[['cac','#1F7A4D'],['onofrio','#C1272D'],['ej','#E0322E'],['gianfia','#2B4A9B'],['mfm','#7A1F2B']];
+function contractorColor(name){
+  if(!name)return '';var s=String(name).toLowerCase();
+  for(var i=0;i<CONTRACTOR_THEME.length;i++){if(s.indexOf(CONTRACTOR_THEME[i][0])!==-1)return CONTRACTOR_THEME[i][1];}
+  return '';
+}
 function renderFlavinJobs(jobs){
   resultsHdr.style.display='flex';resultsCount.textContent=jobs.length+' job'+(jobs.length!==1?'s':'');
   jobsContainer.innerHTML='';if(!jobs||jobs.length===0){jobsContainer.innerHTML='<div class="no-jobs">No jobs assigned</div>';return;}
@@ -332,10 +339,12 @@ function renderFlavinJobs(jobs){
       hpTag='<button class="hp-chip" onclick="holdPointAlbum('+hpIdx+')">📷 Hold Point: '+escHtml(hp)+'</button>';
     }else hpTag='<span class="status-off">Hold Point: No</span>';
     var fuseTag=isActive(fz)?('<span class="b-fuse">Fusing Peer: '+escHtml(fz)+'</span>'):'<span class="status-off">Fusing Peer: No</span>';
+    var coColor=contractorColor(co);
     var card=document.createElement('div');card.className='job-card';
+    if(coColor)card.style.borderLeft='3px solid '+coColor;
     card.innerHTML='<div class="card-head"><div class="loc">'+loc+'</div>'+(tw?'<span class="'+bc+'">'+tw+'</span>':'')+' </div>'+
       '<div class="card-primary"><div class="pf"><span class="fl">Ticket #</span><span class="fv'+(tk?'':' mt')+'">'+(tk||'N/A')+'</span></div><div class="pf"><span class="fl">Contingency</span><span class="fv pl'+(cgf?'':' mt')+'">'+(cgf||'No')+'</span></div></div>'+
-      '<div class="card-foreman">'+(co?'<div class="co-tag">'+co+'</div>':'')+' <div class="fm-name'+(fm?'':' mt')+'">'+(fmDisp||'N/A')+'</div>'+fmLink+'</div>'+
+      '<div class="card-foreman">'+(co?'<div class="co-tag"'+(coColor?' style="color:'+coColor+'"':'')+'>'+co+'</div>':'')+' <div class="fm-name'+(fm?'':' mt')+'">'+(fmDisp||'N/A')+'</div>'+fmLink+'</div>'+
       '<div class="card-fields"><div class="cf"><span class="fl">Work</span><span class="cfv pl'+(wd?'':' mt')+'">'+(wd||'N/A')+'</span></div><div class="cf"><span class="fl">Work order</span><span class="cfv'+(wo?'':' mt')+'">'+(wo||'N/A')+'</span></div><div class="cf"><span class="fl">Permit hrs</span><span class="cfv'+(ph?'':' mt')+'">'+(ph||'N/A')+'</span></div><div class="cf"><span class="fl">PSC</span><span class="cfv pl'+(psc?'':' mt')+'">'+(psc||'N/A')+'</span></div><div class="cf"><span class="fl">CCI</span><span class="cfv pl'+(cci?'':' mt')+'">'+(cci||'N/A')+'</span></div><div class="cf"><span class="fl">Job owner</span><span class="cfv pl'+(jo?'':' mt')+'">'+(jo||'N/A')+'</span></div><div class="cf"><span class="fl">Code 753</span><span class="cfv'+(c7?'':' mt')+'">'+(c7||'N/A')+'</span></div></div>'+
       '<div class="badges">'+contTag+hpTag+fuseTag+'</div>';
     grid.appendChild(card);
@@ -396,7 +405,7 @@ function renderAllJobs(jobs){
     var item=document.createElement('div');item.className='list-item';
     item.innerHTML='<div class="list-loc">'+escHtml(j.location||'—')+'</div>'+
       '<div class="list-meta">'+
-        (j.contractor?'<span class="lm">'+escHtml(j.contractor)+'</span>':'')+
+        (j.contractor?'<span class="lm" style="font-weight:800'+(contractorColor(j.contractor)?';color:'+contractorColor(j.contractor):'')+'">'+escHtml(j.contractor)+'</span>':'')+
         (j.ticket?'<span class="lm">WR# <b>'+escHtml(j.ticket)+'</b></span>':'')+
         (j.wo?'<span class="lm">WO# <b>'+escHtml(j.wo)+'</b></span>':'')+
         '<span class="lm">Insp <b>'+escHtml(j.inspector||'—')+'</b></span>'+
