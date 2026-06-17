@@ -409,9 +409,19 @@ function albumName(d){
 function holdPointAlbum(i){
   var d=window._hpData&&window._hpData[i];if(!d)return;
   var name=albumName(d);
-  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(name).then(function(){showToast('Album name copied — Photos › New Album › paste');}).catch(function(){fallbackCopy(name);});
-  else fallbackCopy(name);
+  // Always copy the name first — reliable fallback (desktop, or shortcut not set up).
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(name).catch(function(){});
+  if(getData('dlr_hp_shortcut',false)&&isIOS()){
+    showToast('Opening Photos shortcut…');
+    window.location.href='shortcuts://run-shortcut?name='+encodeURIComponent(HP_SHORTCUT_NAME)+'&input=text&text='+encodeURIComponent(name);
+  }else{
+    showToast('Album name copied — Photos › New Album › paste');
+  }
 }
+var HP_SHORTCUT_NAME='FieldLog Album';
+function isIOS(){return /iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);}
+function toggleHpShortcut(){var v=!getData('dlr_hp_shortcut',false);setData('dlr_hp_shortcut',v);updateHpShortcutState();showToast(v?'Hold Point will open the "FieldLog Album" shortcut':'Hold Point will copy the album name');}
+function updateHpShortcutState(){var el=document.getElementById('hp-shortcut-state');if(el)el.textContent=getData('dlr_hp_shortcut',false)?'On':'Off';}
 
 // ── GROUPING ─────────────────────────────────────────────────────
 
@@ -1545,7 +1555,7 @@ function updateAccountUI(){
 
 initLogDate();
 if(!restoreWorkingDLR())loadTodayDraft();
-renderCrews();updateSettingsCounts();
+renderCrews();updateSettingsCounts();updateHpShortcutState();
 restoreRoute();
 setupContKeyboard();
 initSync();
