@@ -1600,6 +1600,10 @@ function stopSync(){if(fbUnsub){fbUnsub();fbUnsub=null;}}
 function mergeRemoteLog(r){
   if(!r||!r.date)return false;
   var i=logs.findIndex(function(l){return l.date===r.date;});
+  if(r.deleted){ // tombstone — drop locally unless our copy is newer than the delete
+    if(i>=0&&(!logs[i].savedAt||!r.savedAt||r.savedAt>=logs[i].savedAt)){logs.splice(i,1);return true;}
+    return false;
+  }
   if(i<0){logs.push(r);return true;}
   if(!logs[i].savedAt||(r.savedAt&&r.savedAt>logs[i].savedAt)){logs[i]=r;return true;}
   return false;
@@ -1609,7 +1613,12 @@ function pushLocalLogs(){
   return userCol('logs').get().then(function(snap){
     var remote={};snap.forEach(function(d){var x=d.data();if(x&&x.date)remote[x.date]=x;});
     var batch=fbDb.batch(),n=0;
-    logs.forEach(function(l){var r=remote[l.date];if(!r||!r.savedAt||(l.savedAt&&l.savedAt>r.savedAt)){batch.set(userCol('logs').doc(l.date),l);n++;}});
+    logs.forEach(function(l){
+      var r=remote[l.date];
+      if(!r){batch.set(userCol('logs').doc(l.date),l);n++;}                              // new locally
+      else if(r.deleted){if(l.savedAt&&r.savedAt&&l.savedAt>r.savedAt){batch.set(userCol('logs').doc(l.date),l);n++;}} // honor tombstone unless local edit is newer
+      else if(!r.savedAt||(l.savedAt&&l.savedAt>r.savedAt)){batch.set(userCol('logs').doc(l.date),l);n++;}            // local newer
+    });
     var changed=false;Object.keys(remote).forEach(function(k){changed=mergeRemoteLog(remote[k])||changed;});
     if(changed){logs.sort(function(a,b){return b.date.localeCompare(a.date);});setData('dlr_logs',logs);renderHistory();updateSettingsCounts();}
     return n>0?batch.commit():null;
@@ -1626,7 +1635,7 @@ function syncMeta(){
   }).catch(function(){});
 }
 function syncPushLog(entry){if(syncOn())userCol('logs').doc(entry.date).set(entry).catch(function(){});}
-function syncDeleteLog(date){if(syncOn())userCol('logs').doc(date)['delete']().catch(function(){});}
+function syncDeleteLog(date){if(syncOn())userCol('logs').doc(date).set({date:date,deleted:true,savedAt:new Date().toISOString()}).catch(function(){});}
 function syncPushDrafts(){if(syncOn())userCol('meta').doc('drafts').set({drafts:getData('dlr_drafts',{})}).catch(function(){});}
 function syncPushLists(){if(syncOn())userCol('meta').doc('lists').set({trades:trades,equipment:equipment}).catch(function(){});}
 function syncPushAll(){if(!syncOn())return;logs.forEach(function(l){syncPushLog(l);});syncPushDrafts();syncPushLists();}
