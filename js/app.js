@@ -680,8 +680,10 @@ function saveDraft(){
 function submitLog(){
   var date=document.getElementById('log-date').value;
   if(currentCrews.length===0){showToast('Add at least one crew');return;}
-  var entry={date:date,crews:JSON.parse(JSON.stringify(currentCrews)),submitted:true,savedAt:new Date().toISOString()};
   var idx=logs.findIndex(function(l){return l.date===date;});
+  var now=new Date().toISOString();
+  var createdAt=(idx>=0&&logs[idx].createdAt)||now;
+  var entry={date:date,crews:JSON.parse(JSON.stringify(currentCrews)),submitted:true,createdAt:createdAt,savedAt:now};
   if(idx>=0)logs[idx]=entry;else logs.unshift(entry);
   logs.sort(function(a,b){return b.date.localeCompare(a.date);});
   setData('dlr_logs',logs);
@@ -718,17 +720,31 @@ function renderHistory(){
           (c.te?'T&E: '+(c.teHours||'')+(c.teReason?' · '+c.teReason:''):'')+
         '</div></div>';
     }).join('');
+    var edited=(log.createdAt&&log.savedAt&&log.savedAt!==log.createdAt);
+    var editedBadge=edited?' <span class="edited-tag">EDITED</span>':'';
+    var savedTxt=log.savedAt?(' · saved '+fmtShortStamp(log.savedAt)):'';
     return '<div class="log-day">'+
       '<div class="log-day-header" onclick="toggleDay(\''+log.date+'\')">'+
-        '<div><div class="log-day-title">'+fmtDate(log.date)+'</div><div class="log-day-meta">'+log.crews.length+' block'+(log.crews.length!==1?'s':'')+' · '+tw+' workers</div></div>'+
+        '<div><div class="log-day-title">'+fmtDate(log.date)+editedBadge+'</div><div class="log-day-meta">'+log.crews.length+' block'+(log.crews.length!==1?'s':'')+' · '+tw+' workers'+savedTxt+'</div></div>'+
         '<span class="chevron" id="daychev-'+log.date+'">⌄</span></div>'+
       '<div class="log-expanded" id="daylog-'+log.date+'">'+crewsHTML+
-        '<div style="padding:10px 16px;display:flex;gap:8px">'+
+        '<div style="padding:10px 16px;display:flex;gap:8px;flex-wrap:wrap">'+
           '<button class="btn btn-secondary btn-sm" onclick="loadLogForEdit(\''+log.date+'\')">Edit</button>'+
+          '<button class="btn btn-secondary btn-sm" onclick="duplicateLog(\''+log.date+'\')">Duplicate</button>'+
+          '<button class="btn btn-secondary btn-sm" onclick="copyLogFormatted(\''+log.date+'\')">Copy</button>'+
           '<button class="btn btn-secondary btn-sm" onclick="shareLog(\''+log.date+'\')">Share</button>'+
           '<button class="btn btn-danger btn-sm" onclick="deleteLog(\''+log.date+'\')">Delete</button>'+
         '</div></div></div>';
   }).join('');
+}
+function fmtShortStamp(iso){var d=new Date(iso);if(isNaN(d))return '';return d.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' '+d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});}
+function duplicateLog(date){
+  var log=logs.find(function(l){return l.date===date;});if(!log)return;
+  currentCrews=JSON.parse(JSON.stringify(log.crews));
+  var d=today();
+  document.getElementById('log-date').value=d;
+  updateDateDisplay();saveWorkingDLR();renderCrews();showPage('dlr');
+  showToast('Copied to today — edit & submit');
 }
 
 function toggleDay(date){var el=document.getElementById('daylog-'+date);var ch=document.getElementById('daychev-'+date);if(el)el.classList.toggle('open');if(ch)ch.classList.toggle('open');}
@@ -752,6 +768,50 @@ function removeListItem(i){if(editingList==='trade'){trades.splice(i,1);setData(
 function closeListModal(e){if(!e||e.target.classList.contains('modal-overlay'))document.getElementById('list-modal').style.display='none';}
 function updateSettingsCounts(){document.getElementById('trade-count').textContent=trades.length+' items';document.getElementById('equip-count').textContent=equipment.length+' items';document.getElementById('log-count-display').textContent=logs.length;}
 function clearAllData(){if(!confirm('Delete ALL logs and settings? Cannot be undone.'))return;localStorage.clear();trades=CWORX_TRADES.slice();equipment=CWORX_EQUIPMENT.slice();logs=[];currentCrews=[];setData('dlr_trades',trades);setData('dlr_equipment',equipment);updateSettingsCounts();showToast('All data cleared');}
+
+// ── BACKUP / RESTORE (all data lives in localStorage on this device only) ──
+function backupData(){
+  var data={app:'FieldLog',version:1,exportedAt:new Date().toISOString(),
+    logs:getData('dlr_logs',[]),drafts:getData('dlr_drafts',{}),
+    trades:getData('dlr_trades',CWORX_TRADES),equipment:getData('dlr_equipment',CWORX_EQUIPMENT)};
+  var json=JSON.stringify(data,null,2);
+  var name='FieldLog_Backup_'+today()+'.json';
+  if(navigator.share&&navigator.canShare){
+    try{
+      var file=new File([json],name,{type:'application/json'});
+      if(navigator.canShare({files:[file]})){
+        navigator.share({files:[file],title:name}).catch(function(err){if(err&&err.name!=='AbortError')downloadFile(name,json,'application/json');});
+        return;
+      }
+    }catch(e){}
+  }
+  downloadFile(name,json,'application/json');
+}
+function restoreFromFile(input){
+  var f=input.files&&input.files[0];if(!f){return;}
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      var data=JSON.parse(e.target.result);
+      if(!data||(!data.logs&&!data.trades))throw new Error('not a Field Log backup');
+      var n=(data.logs||[]).length;
+      if(!confirm('Restore this backup ('+n+' log'+(n!==1?'s':'')+')? Logs & drafts are merged (backup wins on the same date); master lists are replaced.')){input.value='';return;}
+      var byDate={};getData('dlr_logs',[]).forEach(function(l){byDate[l.date]=l;});
+      (data.logs||[]).forEach(function(l){var ex=byDate[l.date];if(!ex||!ex.savedAt||(l.savedAt&&l.savedAt>=ex.savedAt))byDate[l.date]=l;});
+      logs=Object.keys(byDate).map(function(k){return byDate[k];}).sort(function(a,b){return b.date.localeCompare(a.date);});
+      setData('dlr_logs',logs);
+      var curD=getData('dlr_drafts',{}),impD=data.drafts||{};
+      Object.keys(impD).forEach(function(k){curD[k]=impD[k];});setData('dlr_drafts',curD);
+      if(data.trades&&data.trades.length){trades=data.trades.slice();setData('dlr_trades',trades);}
+      if(data.equipment&&data.equipment.length){equipment=data.equipment.slice();setData('dlr_equipment',equipment);}
+      updateSettingsCounts();renderHistory();
+      showToast('Restored — '+logs.length+' logs total');
+    }catch(err){showToast('Restore failed: '+err.message);}
+    input.value='';
+  };
+  reader.onerror=function(){showToast('Could not read file');input.value='';};
+  reader.readAsText(f);
+}
 
 function showExportModal(){var d=today();var ago=new Date(Date.now()-30*24*60*60*1000).toISOString().split('T')[0];document.getElementById('export-from').value=ago;document.getElementById('export-to').value=d;document.getElementById('export-filter').value='';document.getElementById('export-modal').style.display='block';}
 function closeExportModal(e){if(!e||e.target.classList.contains('modal-overlay'))document.getElementById('export-modal').style.display='none';}
@@ -900,6 +960,73 @@ function shareCurrentDLR(){
 function shareLog(date){
   var log=logs.find(function(l){return l.date===date;});if(!log)return;
   shareText('DLR — '+fmtDate(date),buildLogText(log));
+}
+
+// ── DLR rich copy (real table + bold for Notes / OneNote) ────────
+// Plain share can't carry a table; this puts text/html on the clipboard so a
+// paste into Notes becomes an actual crew/equipment table with bold labels.
+function copyRich(plain,html,msg){
+  msg=msg||'Copied — paste into Notes';
+  if(window.ClipboardItem&&navigator.clipboard&&navigator.clipboard.write){
+    try{
+      var item=new ClipboardItem({'text/html':new Blob([html],{type:'text/html'}),'text/plain':new Blob([plain],{type:'text/plain'})});
+      navigator.clipboard.write([item]).then(function(){showToast(msg);}).catch(function(){fallbackCopy(plain);});
+      return;
+    }catch(e){}
+  }
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(plain).then(function(){showToast(msg);}).catch(function(){fallbackCopy(plain);});
+  else fallbackCopy(plain);
+}
+function buildLogHTML(log){
+  var d=new Date(log.date+'T12:00:00');
+  var dateLine=d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+  var out=['<b>Daily Log Report — '+bcEsc(dateLine)+'</b>'];
+  log.crews.forEach(function(c){
+    out.push('<br>');
+    out.push('<b>CREW '+c.num+'</b>');
+    var meta=[];
+    var lead=(c.foremen||[]).join(', ');
+    if(lead)meta.push('<b>Crew Lead:</b> '+bcEsc(lead));
+    if(c.contractor)meta.push('<b>Contractor:</b> '+bcEsc(c.contractor));
+    if(c.location)meta.push('<b>Location:</b> '+bcEsc(c.location));
+    var wr=[c.wo,c.cworxWO].filter(Boolean).join('  ');
+    if(wr)meta.push('<b>WO/WR#:</b> '+bcEsc(wr));
+    if(meta.length)out.push(meta.join('<br>'));
+    var crewList=(c.trades||[]).filter(function(t){return t.c>0;});
+    var equipList=(c.equip||[]).filter(function(e){return e.c>0;});
+    if(crewList.length||equipList.length){
+      var rowN=Math.max(crewList.length,equipList.length);
+      var tbl='<table border="1" cellspacing="0" cellpadding="5" style="border-collapse:collapse"><tr><td><b>CREW</b></td><td><b>#</b></td><td><b>EQUIPMENT</b></td><td><b>#</b></td></tr>';
+      for(var i=0;i<rowN;i++){
+        var L=crewList[i],R=equipList[i];
+        tbl+='<tr><td>'+(L?bcEsc(L.n):'')+'</td><td>'+(L?L.c:'')+'</td><td>'+(R?bcEsc(R.n):'')+'</td><td>'+(R?R.c:'')+'</td></tr>';
+      }
+      out.push(tbl+'</table>');
+    }
+    var hasLab=crewList.some(function(t){return t.n==='Laborers';});
+    var hasMech=crewList.some(function(t){return t.n==='Maintenance Engineer';});
+    var hasWeld=crewList.some(function(t){return t.n==='Welders';});
+    var lines=['<b>Task:</b>','<b>Description:</b>'+((c.comments&&!hasLab)?(' '+bcEsc(c.comments)):'')];
+    if(hasLab)lines.push('<b>Labor Crew:</b>'+(c.comments?(' '+bcEsc(c.comments)):''));
+    if(hasMech)lines.push('<b>Mechanic:</b>');
+    if(hasWeld)lines.push('<b>Welders:</b>');
+    if(c.te){
+      lines.push('<b>T&amp;E:</b> '+bcEsc(c.teHours||'')+'   <b>OT:</b>');
+      var teNote=[c.teReason,c.teRemarks].filter(Boolean).join(' — ');
+      if(teNote)lines.push(bcEsc(teNote));
+    }
+    out.push(lines.join('<br>'));
+  });
+  return out.join('<br>');
+}
+function copyCurrentDLRFormatted(){
+  if(currentCrews.length===0){showToast('No crews to copy');return;}
+  var log={date:document.getElementById('log-date').value,crews:currentCrews};
+  copyRich(buildLogText(log),buildLogHTML(log));
+}
+function copyLogFormatted(date){
+  var log=logs.find(function(l){return l.date===date;});if(!log)return;
+  copyRich(buildLogText(log),buildLogHTML(log));
 }
 
 // ── CONTINGENCY REPORT (tap a contingency # → prefilled email) ───

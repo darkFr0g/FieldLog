@@ -47,7 +47,7 @@
 <div id="page-route" class="page active">
 <div class="wrap">
   <div class="hdr">
-    <div class="vbadge">v5.9</div>
+    <div class="vbadge">v6.0</div>
     <h1 class="hdr-title">Locations for <span id="headingName">Jeremiah Flavin</span></h1>
   </div>
   <div id="uploadSection">
@@ -117,6 +117,7 @@
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
       Share to Notes / OneNote
     </button>
+    <button class="btn btn-secondary" style="width:100%;justify-content:center" onclick="copyCurrentDLRFormatted()">Copy formatted (table) — paste into Notes</button>
   </div>
 </div>
 
@@ -147,13 +148,15 @@
     <div class="settings-title">Data</div>
     <div class="settings-card">
       <div class="settings-row"><span style="font-size:15px">Total logs saved</span><span style="color:var(--ink-3);font-size:13px" id="log-count-display"></span></div>
+      <div class="settings-row" style="cursor:pointer" onclick="backupData()"><span style="font-size:15px">Back up all data</span><span style="color:var(--ink-3);font-size:13px">Export .json →</span></div>
+      <label class="settings-row" style="cursor:pointer"><span style="font-size:15px">Restore from backup</span><span style="color:var(--ink-3);font-size:13px">Import .json</span><input type="file" accept="application/json,.json" onchange="restoreFromFile(this)" style="display:none"></label>
       <div class="settings-row" style="cursor:pointer" onclick="clearAllData()"><span style="font-size:15px;color:var(--red)">Clear all data</span></div>
     </div>
   </div>
   <div class="settings-section" style="margin-bottom:20px">
     <div class="settings-title">About</div>
     <div class="settings-card">
-      <div class="settings-row"><span style="font-size:15px">Field Log</span><span style="color:var(--ink-3);font-size:13px">v5.9</span></div>
+      <div class="settings-row"><span style="font-size:15px">Field Log</span><span style="color:var(--ink-3);font-size:13px">v6.0</span></div>
     </div>
   </div>
 </div>

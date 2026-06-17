@@ -239,6 +239,7 @@ textarea.field-input{resize:none;min-height:70px;line-height:1.5}
 .log-day{background:var(--surface);border-bottom:2px solid var(--border)}
 .log-day-header{padding:13px 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer}
 .log-day-title{font-size:16px;font-weight:800;letter-spacing:-.02em}
+.edited-tag{font-size:9px;font-weight:800;letter-spacing:.08em;color:var(--amber-text);background:var(--amber-bg);border:1px solid #f0d5a0;padding:1px 6px;border-radius:var(--radius-xs);vertical-align:middle;margin-left:6px}
 .log-day-meta{font-size:11px;color:var(--ink-3);margin-top:2px;font-weight:700;text-transform:uppercase;letter-spacing:.06em}
 .log-crew-row{padding:10px 16px;border-top:2px solid var(--border);background:var(--surface-2)}
 .log-crew-name{font-size:13px;font-weight:800;margin-bottom:4px;text-transform:uppercase;letter-spacing:.03em}
