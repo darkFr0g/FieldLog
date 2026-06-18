@@ -1620,17 +1620,17 @@ function mapStopList(){
   });
   return stops;
 }
+function homeAddr(){return getData('dlr_home','93 Hyatt Pl, Yonkers, NY');}
 function openMapsWith(stops){
   stops=(stops||[]).filter(Boolean);
   if(!stops.length){showToast('No stops to map');return;}
-  var url;
+  var origin=encodeURIComponent(homeAddr());
+  var url='https://www.google.com/maps/dir/?api=1&travelmode=driving&origin='+origin;
   if(stops.length===1){
-    url='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(stops[0]);
+    url+='&destination='+encodeURIComponent(stops[0]);
   }else{
-    var dest=encodeURIComponent(stops[stops.length-1]);
-    var mids=stops.slice(0,-1).map(encodeURIComponent).join('|');
-    url='https://www.google.com/maps/dir/?api=1&travelmode=driving&destination='+dest+'&waypoints='+mids;
-    if(stops.length>10)showToast('Many stops — Google may cap waypoints (~9)');
+    url+='&destination='+encodeURIComponent(stops[stops.length-1])+'&waypoints='+stops.slice(0,-1).map(encodeURIComponent).join('|');
+    if(stops.length>9)showToast('Many stops — Google may cap waypoints (~9)');
   }
   var a=document.createElement('a');a.href=url;a.target='_blank';a.rel='noopener';document.body.appendChild(a);a.click();document.body.removeChild(a);
 }
