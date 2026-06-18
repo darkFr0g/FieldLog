@@ -157,6 +157,17 @@ cleaned name (`foremanName`) plus a green **"Text foreman"** button — an
 iOS Messages prefilled with "Good morning, I'm covering you on `<Ticket #>`
 `<Location>` today".
 
+## Foreman / lead classification (DLR crew blocks)
+
+Each DLR block lists its lead(s) ordered **Labor → Mechanic → Welder**. Type is
+derived from the job's **Work Description (col J)** via `foremanType()`: `weld*`
+→ welder; `cut out / service transfer / install dead main / pressure test / main
+cut` → mechanic; `excavate / backfill / restoration / test pit / cathodic` →
+labor; anything else (e.g. Support) → other (sorts last). Names come from col A
+**Contractor's Foreman** + col B **Mechanics/Fusers/Welders** (deduped). The
+crew block also has interactive **Contingency** (opens the contingency email) and
+**Hold Point** (copies the album name / fires the Shortcut) chips, same as Route.
+
 ## Master lists (exact cWorx/Maximo names — keep exact)
 
 Defined as `CWORX_TRADES` (19) and `CWORX_EQUIPMENT` (21) in `app.js`; users can

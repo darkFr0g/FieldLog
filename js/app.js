@@ -638,17 +638,18 @@ function albumName(d){
   [d.wo,d.ticket].forEach(function(v){v=stripJobPrefix(v);if(v&&!seen[v]){seen[v]=true;jobs.push(v);}});
   return [albumDate(d.date),jobs.join(' - '),abbrevLoc(d.location)].filter(Boolean).join(' - ');
 }
-function holdPointAlbum(i){
-  var d=window._hpData&&window._hpData[i];if(!d)return;
+function copyAlbumName(d){
   var name=albumName(d);
-  // Always copy the name first — reliable fallback (desktop, or shortcut not set up).
-  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(name).catch(function(){});
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(name).catch(function(){}); // reliable fallback
   if(getData('dlr_hp_shortcut',false)&&isIOS()){
     showToast('Opening Photos shortcut…');
     window.location.href='shortcuts://run-shortcut?name='+encodeURIComponent(HP_SHORTCUT_NAME)+'&input=text&text='+encodeURIComponent(name);
-  }else{
-    showToast('Album name copied — Photos › New Album › paste');
-  }
+  }else showToast('Album name copied — Photos › New Album › paste');
+}
+function holdPointAlbum(i){var d=window._hpData&&window._hpData[i];if(d)copyAlbumName(d);}
+function holdPointAlbumCrew(cid){
+  var c=currentCrews.find(function(x){return x.id===cid;});if(!c)return;
+  copyAlbumName({date:(document.getElementById('log-date')||{}).value||today(),ticket:c.wo||'',wo:c.cworxWO||'',location:c.location||''});
 }
 var HP_SHORTCUT_NAME='FieldLog Album';
 function isIOS(){return /iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);}
@@ -675,6 +676,19 @@ function getContractorForRow(row){
   }
   return '';
 }
+// Foreman/lead type from the job's Work Description (col J). Labor → Mechanic →
+// Welder ordering on the crew block; "other" (e.g. Support) sorts last.
+function foremanType(wd){
+  var d=(wd||'').toLowerCase();
+  if(d.indexOf('weld')!==-1)return 'welder';
+  if(/cut ?out|service transfer|install dead main|pressure test|main cut/.test(d))return 'mechanic';
+  if(/excavat|backfill|restoration|test pit|cathodic/.test(d))return 'labor';
+  return 'other';
+}
+function LEAD_RANK(t){return t==='labor'?0:t==='mechanic'?1:t==='welder'?2:3;}
+function leadTypeLabel(t){return t==='labor'?'Labor':t==='mechanic'?'Mech':t==='welder'?'Weld':'';}
+function cleanLeadName(s){return String(s||'').replace(/^\d+[-\s]+/,'').replace(/\s*\(.*?\)\s*$/,'').replace(/\s+/g,' ').trim();}
+function addLead(g,name,type){if(!name)return;for(var i=0;i<g.leads.length;i++){if(g.leads[i].name.toLowerCase()===name.toLowerCase())return;}g.leads.push({name:name,type:type});}
 function groupByWOLocation(jobs){
   var h=allData.headers;var groups={};var order=[];
   var isMainJobs=(jobs===allData.flavin);
@@ -683,15 +697,19 @@ function groupByWOLocation(jobs){
     var tk=gv(row,h,'Ticket #')||'';
     var key=tk.replace(/\s/g,'').toUpperCase()+'||'+loc;
     if(!groups[key]){
-      groups[key]={location:gv(row,h,'Location')||'',wo:tk,cworxWO:gv(row,h,'Layout/CWORX Work Order #')||'',contractor:(isMainJobs&&allData.flavinCompany&&allData.flavinCompany[rowIdx])||row._co||'',foremen:[],workDescs:[],permitHours:gv(row,h,'Permit Hours')||'',psc:gv(row,h,'PSC File #')||'',contingency:gv(row,h,'Contingency (Y/N)')||'',contingencyNum:gv(row,h,'Contingency #')||'',code753:gv(row,h,'Code 753')||'',holdPoint:gv(row,h,'Hold Point')||'',fusingPeer:gvRe(row,h,FUSE_RE)||''};
+      groups[key]={location:gv(row,h,'Location')||'',wo:tk,cworxWO:gv(row,h,'Layout/CWORX Work Order #')||'',contractor:(isMainJobs&&allData.flavinCompany&&allData.flavinCompany[rowIdx])||row._co||'',foremen:[],leads:[],workDescs:[],permitHours:gv(row,h,'Permit Hours')||'',psc:gv(row,h,'PSC File #')||'',contingency:gv(row,h,'Contingency (Y/N)')||'',contingencyNum:gv(row,h,'Contingency #')||'',code753:gv(row,h,'Code 753')||'',holdPoint:gv(row,h,'Hold Point')||'',fusingPeer:gvRe(row,h,FUSE_RE)||''};
       order.push(key);
     }
     var g=groups[key];
-    var fm=gv(row,h,"Contractor's Foreman");
-    if(fm){var cf=fm.replace(/^\d+[-\s]+/,'').trim();if(g.foremen.indexOf(cf)===-1)g.foremen.push(cf);}
-    var wd=gv(row,h,'Work Description');
+    var wd=gv(row,h,'Work Description')||'';
     if(wd&&g.workDescs.indexOf(wd)===-1)g.workDescs.push(wd);
+    var t=foremanType(wd);
+    var fm=gv(row,h,"Contractor's Foreman");
+    if(fm)addLead(g,cleanLeadName(fm),t);
+    var mech=gv(row,h,'Mechanics/Fusers/Welders');
+    if(mech)String(mech).split(/[\n;]+/).forEach(function(nm){nm=cleanLeadName(nm);if(nm)addLead(g,nm,t==='welder'?'welder':'mechanic');});
   });
+  order.forEach(function(k){var g=groups[k];g.leads.sort(function(a,b){return LEAD_RANK(a.type)-LEAD_RANK(b.type);});g.foremen=g.leads.map(function(l){return l.name;});});
   var result={};order.forEach(function(k){result[k]=groups[k];});return result;
 }
 
@@ -705,7 +723,7 @@ function generateDLR(){
     currentCrews.push({
       id:Date.now()+idx,num:idx+1,
       location:g.location,wo:g.wo,cworxWO:g.cworxWO,contractor:g.contractor,
-      foremen:g.foremen,workDescs:g.workDescs,
+      foremen:g.foremen,leads:g.leads,workDescs:g.workDescs,
       permitHours:g.permitHours,psc:g.psc,
       contingency:g.contingency,contingencyNum:g.contingencyNum,code753:g.code753||'',holdPoint:g.holdPoint,fusingPeer:g.fusingPeer||'',
       trades:DEFAULT_TRADES.map(function(t){return {n:t.n,c:t.c};}),
@@ -805,8 +823,10 @@ function crewHTML(crew){
     '<button class="cont-chip" onclick="openContingencyCrew('+crew.id+')">⚠ '+escHtml(crew.contingencyNum||'Contingency')+' →</button>':
     '<span class="status-off">Contingency: No</span>';
   var hpBadge=isActive(crew.holdPoint)?
-    '<span class="b-hp">Hold Point: '+escHtml(crew.holdPoint)+'</span>':
+    '<button class="hp-chip" onclick="event.stopPropagation();holdPointAlbumCrew('+crew.id+')">📷 Hold Point: '+escHtml(crew.holdPoint)+'</button>':
     '<span class="status-off">Hold Point: No</span>';
+  var leadLine=(crew.leads&&crew.leads.length)?
+    '<div class="crew-leads">'+crew.leads.map(function(l){var lbl=leadTypeLabel(l.type);return '<span class="lead-tag lead-'+l.type+'">'+escHtml(l.name)+(lbl?'<i>'+lbl+'</i>':'')+'</span>';}).join('')+'</div>':'';
   var fuseBadge=isActive(crew.fusingPeer)?
     '<span class="b-fuse">Fusing Peer: '+escHtml(crew.fusingPeer)+'</span>':
     '<span class="status-off">Fusing Peer: No</span>';
@@ -814,9 +834,10 @@ function crewHTML(crew){
 
   return '<div class="crew-card" id="crew-'+crew.id+'">'+
     '<div class="crew-card-header" onclick="toggleCrew('+crew.id+')">'+
-      '<div style="display:flex;align-items:center;flex:1;min-width:0">'+
-        '<h2>Crew '+crew.num+'</h2>'+routeTag+
-        (crew.location?'<span class="crew-loc-preview">'+escHtml(crew.location.substring(0,45))+'</span>':'')+
+      '<div style="flex:1;min-width:0">'+
+        '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><h2>Crew '+crew.num+'</h2>'+routeTag+
+          (crew.location?'<span class="crew-loc-preview">'+escHtml(crew.location.substring(0,40))+'</span>':'')+'</div>'+
+        leadLine+
       '</div>'+
       '<div style="display:flex;align-items:center;gap:8px;flex-shrink:0">'+
         '<button class="btn btn-danger btn-sm" onclick="event.stopPropagation();removeCrew('+crew.id+')" style="width:28px;height:28px;padding:0;font-size:14px;font-weight:800;display:flex;align-items:center;justify-content:center">×</button>'+

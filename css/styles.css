@@ -201,6 +201,13 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
 .ci-tbl tfoot td{font-weight:800;background:#f3f3f3}
 .ci-decl{margin-top:10px;font-size:9px;font-weight:700}
 .ci-sig{display:flex;justify-content:space-between;margin-top:16px;font-size:10px}
+.crew-leads{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}
+.lead-tag{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--surface-2);color:var(--ink-2);display:inline-flex;align-items:center;gap:5px;line-height:1.5}
+.lead-tag i{font-style:normal;font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;opacity:.75}
+.lead-labor{background:#EFF6FF;color:#1A56C4}
+.lead-mechanic{background:#FBEBD2;color:#8A4B00}
+.lead-welder{background:#FDEAEA;color:#B3261E}
+.lead-other{background:var(--surface-2);color:var(--ink-3)}
 .co-filter{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
 .co-chip{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;padding:6px 11px;border-radius:999px;border:2px solid var(--border-mid);background:var(--surface);color:var(--ink-3);cursor:pointer;font-family:var(--font);white-space:nowrap}
 .co-chip-ct{font-size:10px;font-weight:800;opacity:.85}
