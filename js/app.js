@@ -108,7 +108,7 @@ var MILE_WORKCODE=['Field','Training','Office','CFOR','WFH','Vacation','Holiday'
 // submitted DLR log only for past dates whose route is no longer loaded.
 function mileStopSource(date){
   var seen={},out=[];
-  function add(loc,tkt){loc=(loc||'').trim();if(!loc)return;var sl=shortAddr(loc);if(seen[sl])return;seen[sl]=1;out.push({loc:sl,ticket:tkt||''});}
+  function add(loc,tkt){loc=(loc||'').trim();if(!loc)return;var sl=shortAddr(loc);if(seen[sl])return;seen[sl]=1;out.push({loc:sl,ticket:cleanTicket(tkt)});}
   if(allData&&allData.routeDate===date&&allData.flavin&&allData.headers){
     var h=allData.headers;allData.flavin.forEach(function(row){add(gv(row,h,'Location'),gv(row,h,'Ticket #'));});
   }
@@ -122,7 +122,12 @@ function buildDefaultMileage(date){
   if(e.stops.length===0)e.stops.push({loc:'',ticket:'',mi:'',remarks:''});
   return e;
 }
-function currentMileEntry(){var m=allMileage();return m[mileDate]?JSON.parse(JSON.stringify(m[mileDate])):buildDefaultMileage(mileDate);}
+function currentMileEntry(){
+  var m=allMileage();
+  var e=m[mileDate]?JSON.parse(JSON.stringify(m[mileDate])):buildDefaultMileage(mileDate);
+  (e.stops||[]).forEach(function(s){s.loc=shortAddr(s.loc||'');s.ticket=cleanTicket(s.ticket||'');}); // clean old saved data too
+  return e;
+}
 function saveMileageEntry(e){e.savedAt=new Date().toISOString();var m=allMileage();m[e.date]=e;setData('dlr_mileage',m);syncPushMileage();}
 function mileTotal(e){return mileSum(e);}
 function mileSetField(field,val){var e=currentMileEntry();e[field]=val;saveMileageEntry(e);renderMileage();}
@@ -581,6 +586,8 @@ function shortAddr(loc){
   return abbrevStreet(out);
 }
 function abbrevLoc(loc){return shortAddr(loc);}
+// Tickets sometimes carry a trailing " - QIAS" tag that's irrelevant here.
+function cleanTicket(t){return String(t||'').replace(/\s*-\s*QIAS\b/ig,'').replace(/\bQIAS\b/ig,'').replace(/\s+/g,' ').trim();}
 // Strip the company "X<year>" prefix (e.g. X26-101623765 → 101623765; lone "X26" dropped).
 function stripJobPrefix(s){
   s=String(s||'').trim().replace(/^X\d{2}\s*-\s*/i,'');
