@@ -572,6 +572,8 @@ function abbrevStreet(s){
 function shortAddr(loc){
   if(!loc)return '';
   var s=String(loc).replace(/\s+/g,' ').trim();
+  // strip a leading WR job prefix the route sheet jams on, e.g. "WR100170592-P2 – "
+  s=s.replace(/^WR\s*\d+(?:\s*-\s*P?\d+)?\s*[–-]?\s*/i,'').trim();
   var hasNum=/^\d+\s/.test(s);
   var parts=s.split(/\s+(?:btwn?|between|bet\.?|b\/w|&|and)\s+/i);
   var out=parts[0];
