@@ -51,7 +51,7 @@
 <div id="page-route" class="page active">
 <div class="wrap">
   <div class="hdr">
-    <div class="vbadge">v8.4</div>
+    <div class="vbadge">v8.5</div>
     <h1 class="hdr-title">Locations for <span id="headingName">Jeremiah Flavin</span></h1>
   </div>
   <div id="uploadSection">
@@ -186,6 +186,20 @@
     </div>
   </div>
   <div class="settings-section">
+    <div class="settings-title">Profile (for forms)</div>
+    <div class="settings-card" style="padding:12px">
+      <div class="prof-grid">
+        <label class="mile-f"><span>Name</span><input class="mile-sel" id="prof-name" onchange="setProfileField('name',this.value)"></label>
+        <label class="mile-f"><span>Employee #</span><input class="mile-sel" id="prof-empNo" inputmode="numeric" onchange="setProfileField('empNo',this.value)"></label>
+        <label class="mile-f"><span>Roll / Dept</span><input class="mile-sel" id="prof-roll" onchange="setProfileField('roll',this.value)"></label>
+        <label class="mile-f"><span>Vehicle</span><input class="mile-sel" id="prof-vehicle" onchange="setProfileField('vehicle',this.value)"></label>
+        <label class="mile-f"><span>License Plate</span><input class="mile-sel" id="prof-plate" onchange="setProfileField('plate',this.value)"></label>
+        <label class="mile-f"><span>Phone</span><input class="mile-sel" id="prof-phone" inputmode="tel" onchange="setProfileField('phone',this.value)"></label>
+      </div>
+      <label class="mile-f" style="margin-top:8px"><span>Home address (Maps start)</span><input class="mile-sel" id="prof-home" onchange="setProfileField('home',this.value)"></label>
+    </div>
+  </div>
+  <div class="settings-section">
     <div class="settings-title">Master Lists</div>
     <div class="settings-card">
       <div class="settings-row" style="cursor:pointer" onclick="showListEditor('trade')">
@@ -217,7 +231,7 @@
   <div class="settings-section" style="margin-bottom:20px">
     <div class="settings-title">About</div>
     <div class="settings-card">
-      <div class="settings-row"><span style="font-size:15px">Field Log</span><span style="color:var(--ink-3);font-size:13px">v8.4</span></div>
+      <div class="settings-row"><span style="font-size:15px">Field Log</span><span style="color:var(--ink-3);font-size:13px">v8.5</span></div>
       <div class="settings-row" style="cursor:pointer" onclick="checkForUpdate()"><span style="font-size:15px;color:var(--green);font-weight:600">Check for updates</span><span style="color:var(--ink-3);font-size:13px">Reload latest →</span></div>
     </div>
   </div>
@@ -376,6 +390,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<div id="printArea"></div>
 <script src="./js/app.js"></script>
 </body>
 </html>

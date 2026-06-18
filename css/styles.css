@@ -173,6 +173,27 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
 .mile-total{margin-top:10px;text-align:right;font-size:15px;font-weight:800;letter-spacing:-.02em}
 .mile-foot{display:flex;justify-content:space-between;margin:0 12px 16px;padding:11px;background:var(--surface-2);border-radius:var(--radius-sm);font-size:13px}
 .mile-foot-l{display:block;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-4);margin-bottom:2px}
+.prof-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+/* Print: CI Mileage Form */
+#printArea{display:none}
+@media print{
+  nav.nav,.page,#toast,#update-banner{display:none!important}
+  #printArea{display:block!important}
+  body{background:#fff}
+  @page{margin:0.4in}
+}
+.ci-form{font-family:var(--font);color:#000}
+.ci-t1{font-weight:800;font-size:13px}
+.ci-t2{font-weight:700;font-size:12px;margin-bottom:8px}
+.ci-hd{width:100%;border-collapse:collapse;margin-bottom:10px}
+.ci-hd td{border:1px solid #000;padding:4px 6px;font-size:9px;vertical-align:top;width:33.3%}
+.ci-hd td span{display:block;font-size:12px;font-weight:700;margin-bottom:2px}
+.ci-tbl{width:100%;border-collapse:collapse}
+.ci-tbl th,.ci-tbl td{border:1px solid #000;padding:2px 3px;font-size:8.5px;text-align:center}
+.ci-tbl th{background:#e8e8e8;font-size:8px}
+.ci-tbl tfoot td{font-weight:800;background:#f3f3f3}
+.ci-decl{margin-top:10px;font-size:9px;font-weight:700}
+.ci-sig{display:flex;justify-content:space-between;margin-top:16px;font-size:10px}
 .co-filter{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
 .co-chip{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;padding:6px 11px;border-radius:999px;border:2px solid var(--border-mid);background:var(--surface);color:var(--ink-3);cursor:pointer;font-family:var(--font);white-space:nowrap}
 .co-chip-ct{font-size:10px;font-weight:800;opacity:.85}

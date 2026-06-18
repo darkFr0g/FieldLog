@@ -41,8 +41,9 @@ screen as a PWA. **Primary device is an iPhone** — optimize for that.
 - **History** — lists submitted logs (Edit / Duplicate / Copy / Share / Delete),
   with search + sort (log date / created / last-edited) and an EDITED badge +
   saved timestamp. One log per date — re-submitting overwrites it.
-- **Settings** — Sync & Account, master lists, Photos shortcut toggle, Data
-  (backup/restore + clear), Check for updates.
+- **Settings** — Sync & Account, **Profile** (name/employee #/roll/vehicle/plate/
+  phone/home address — seeds form headers + the Maps start), master lists, Photos
+  shortcut toggle, Data (backup/restore + clear), Check for updates.
 
 Data (logs, drafts, master lists, mileage) lives in the browser `localStorage`.
 **Optional cloud sync** mirrors it to the user's private Firebase so the user's
@@ -181,10 +182,21 @@ inspection), Payroll, Records, plus a **`#DLR`** sheet whose columns exactly mat
 Field Log's CSV export. Goal: **Field Log absorbs capture + generates the
 submission PDFs, retiring the workbook.** Incremental, keep Excel as the safety
 net until each PDF is faithful.
-- **Done:** Mileage capture tab (step 1).
-- **Next:** (2) generate **CI Mileage Form PDF** (only needs each day's start/end
-  odometer + total), (3) **Daily Log PDF**, (4) **TI-1** as a stored template, plus
-  a one-time **Profile** (employee #, plate, vehicle, roll/dept) for form headers.
+- **Done:** (1) Mileage capture tab — odometer-on-arrival per stop is actually
+  **miles driven per leg** + one Start odometer that carries the running total;
+  stops pre-load from the loaded route (shortened address + ticket, QIAS stripped);
+  day fields Shift/OT/CCI/POET#/Work Code/Expenses/Notes carry forward; "Copy
+  stops from another day" + "Map drive". (Profile) seeded form-header profile.
+  (2) **CI Mileage Form PDF** — `buildCIMileageHTML` renders the user's CI-660-1
+  layout for the month from the mileage data; `exportCIMileage` prints via
+  `window.print()` (print-only `#printArea`, `@media print` isolates it → Save as
+  PDF / email).
+- **Next:** (3) **Daily Log PDF** (per-stop detail), (4) **TI-1** as a stored
+  template — must be **pixel-identical** to the user's version (re-share when building).
+- **Maps:** `openMapsWith` round-trips home → stops → home (origin/dest = Profile
+  home); `shortAddr` cleans addresses (drops cross-streets when a house # exists,
+  else keeps first cross street; strips `WR…` job prefix); "Smart order" does a
+  free north→south street-number sweep (true optimization would need a paid API).
 - Workbook dropdown master values to reuse: Shift (`2 - 07:00-15:00` / `3 -
   15:00-23:00` / `1 - 23:00-07:00`), POET# (`XCMG - 216172870002` / `MP -
   228728990001` / `BOTH`), CCI (K. Garcia / E. Kelly / V. Cornwall / J. Connors),

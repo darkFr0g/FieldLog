@@ -84,7 +84,7 @@ function showPage(p){
   document.getElementById('nav-'+p).classList.add('active');
   if(p==='history')renderHistory();
   if(p==='mileage')renderMileage();
-  if(p==='settings')updateSettingsCounts();
+  if(p==='settings'){updateSettingsCounts();renderProfile();}
 }
 
 // ── MILEAGE ──────────────────────────────────────────────────────
@@ -142,6 +142,34 @@ function mileLoadFromLog(){
   saveMileageEntry(e);renderMileage();showToast(added?('Added '+added+' stop'+(added!==1?'s':'')):'Stops already loaded');
 }
 function mileMonthTotal(date){var ym=date.slice(0,7),m=allMileage(),t=0;Object.keys(m).forEach(function(k){if(k.slice(0,7)===ym)t+=mileTotal(m[k]);});return t;}
+// ── CI MILEAGE FORM (CI-660-1) — print/PDF, the user's own layout ──
+function monthDayCount(ym){return new Date(+ym.slice(0,4),+ym.slice(5,7),0).getDate();}
+function buildCIMileageHTML(ym){
+  var p=getProfile(),m=allMileage(),days=monthDayCount(ym);
+  var monthName=new Date(ym+'-01T12:00:00').toLocaleDateString('en-US',{month:'long',year:'numeric'});
+  var rows='',gTotal=0;
+  for(var d=1;d<=days;d++){
+    var ds=ym+'-'+('0'+d).slice(-2),e=m[ds],start='',end='',tot='';
+    if(e){var so=(e.startOdo===''||e.startOdo==null||isNaN(+e.startOdo))?'':+e.startOdo;var eo=mileEndOdo(e);var t=mileTotal(e);start=so;end=(eo===''?'':eo);tot=t;gTotal+=t;}
+    rows+='<tr><td>'+d+'</td><td>'+(start===''?'':start)+'</td><td>'+(end===''?'':end)+'</td><td>'+(tot===''?'':tot)+'</td><td>NRQ</td><td>0</td><td>'+(tot===''?'':tot)+'</td><td>See Daily Log Sheet</td></tr>';
+  }
+  return '<div class="ci-form">'+
+    '<div class="ci-t1">CI-660-1 — Reimbursement for Use of Personal Automobile</div>'+
+    '<div class="ci-t2">Daily Mileage Report</div>'+
+    '<table class="ci-hd"><tr>'+
+      '<td><span>'+escHtml(p.name||'')+'</span>Employee&#39;s Name</td><td><span>'+escHtml(p.empNo||'')+'</span>Employee No.</td><td><span>'+escHtml(p.roll||'')+'</span>Roll No. &amp; Dept.</td></tr><tr>'+
+      '<td><span>'+escHtml(p.vehicle||'')+'</span>Auto Make &amp; Year</td><td><span>'+escHtml(p.plate||'')+'</span>License Plate</td><td><span>'+escHtml(monthName)+'</span>Month / Year</td></tr></table>'+
+    '<table class="ci-tbl"><thead><tr><th>Date</th><th>ODO Start</th><th>ODO End</th><th>Total Miles</th><th>Home&#8596;Work</th><th>Other Non-Bus.</th><th>Company Business</th><th>Explanation</th></tr></thead><tbody>'+rows+'</tbody>'+
+    '<tfoot><tr><td colspan="3">GRAND TOTALS</td><td>'+gTotal+'</td><td>NRQ</td><td>0</td><td>'+gTotal+'</td><td></td></tr></tfoot></table>'+
+    '<div class="ci-decl">I declare the information on this report is correct.</div>'+
+    '<div class="ci-sig"><span>Date: '+new Date().toLocaleDateString('en-US')+'</span><span>Print name: '+escHtml(p.name||'')+'</span><span>Signature: ______________</span></div>'+
+  '</div>';
+}
+function exportCIMileage(){
+  var pa=document.getElementById('printArea');if(!pa)return;
+  pa.innerHTML=buildCIMileageHTML(mileDate.slice(0,7));
+  setTimeout(function(){window.print();},60);
+}
 function mileDaysWithStops(){var m=allMileage(),ym=mileDate.slice(0,7),out=[];Object.keys(m).sort().reverse().forEach(function(k){if(k!==mileDate&&k.slice(0,7)===ym&&(m[k].stops||[]).some(function(s){return s.loc;}))out.push(k);});return out;}
 function mileCopyFrom(date){var src=allMileage()[date];if(!src)return;var e=currentMileEntry();e.stops=(src.stops||[]).map(function(s){return {loc:s.loc||'',ticket:s.ticket||'',mi:'',remarks:s.remarks||''};});saveMileageEntry(e);renderMileage();showToast('Copied '+e.stops.length+' stops');}
 function mileMapStops(){
@@ -201,6 +229,7 @@ function renderMileage(){
      '<div class="mile-total">'+mileTotal(e)+' mi today'+(mileEndOdo(e)!==''?' · ends '+mileEndOdo(e):'')+'</div></div>';
   var prevEnd=mileEndOdo(milePrevEntry(mileDate));
   h+='<div class="mile-foot"><div><span class="mile-foot-l">Prev ODO end</span><b>'+(prevEnd===''?'—':prevEnd)+'</b></div><div><span class="mile-foot-l">Month to date</span><b>'+mileMonthTotal(mileDate)+' mi</b></div></div>';
+  h+='<div style="padding:0 12px 22px"><button class="btn btn-secondary" style="width:100%;justify-content:center" onclick="exportCIMileage()">CI Mileage Form — '+new Date(mileDate+'T12:00:00').toLocaleDateString('en-US',{month:'long'})+' (PDF)</button></div>';
   body.innerHTML=h;
 }
 function showToast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2200);}
@@ -1620,7 +1649,11 @@ function mapStopList(){
   });
   return stops;
 }
-function homeAddr(){return getData('dlr_home','93 Hyatt Pl, Yonkers, NY');}
+function homeAddr(){return getProfile().home||'93 Hyatt Pl, Yonkers, NY';}
+// One-time Profile for form headers (seeded from the workbook).
+function getProfile(){return getData('dlr_profile',{name:'Jeremiah Flavin',empNo:'31086',roll:'204',vehicle:'Subaru 2019',plate:'GKE 7821',phone:'347-387-6934',home:'93 Hyatt Pl, Yonkers, NY'});}
+function setProfileField(f,v){var p=getProfile();p[f]=v;setData('dlr_profile',p);syncPushProfile();}
+function renderProfile(){var p=getProfile();['name','empNo','roll','vehicle','plate','phone','home'].forEach(function(f){var el=document.getElementById('prof-'+f);if(el)el.value=p[f]||'';});}
 function openMapsWith(stops){
   stops=(stops||[]).filter(Boolean);
   if(!stops.length){showToast('No stops to map');return;}
@@ -1783,13 +1816,18 @@ function syncMeta(){
       syncPushMileage();
     }else syncPushMileage();
   }).catch(function(){});
+  userCol('meta').doc('profile').get().then(function(d){
+    if(d.exists&&d.data().data){setData('dlr_profile',d.data().data);renderProfile();}
+    else syncPushProfile();
+  }).catch(function(){});
 }
 function syncPushLog(entry){if(syncOn())userCol('logs').doc(entry.date).set(entry).catch(function(){});}
 function syncDeleteLog(date){if(syncOn())userCol('logs').doc(date).set({date:date,deleted:true,savedAt:new Date().toISOString()}).catch(function(){});}
 function syncPushDrafts(){if(syncOn())userCol('meta').doc('drafts').set({drafts:getData('dlr_drafts',{})}).catch(function(){});}
 function syncPushLists(){if(syncOn())userCol('meta').doc('lists').set({trades:trades,equipment:equipment}).catch(function(){});}
 function syncPushMileage(){if(syncOn())userCol('meta').doc('mileage').set({data:allMileage()}).catch(function(){});}
-function syncPushAll(){if(!syncOn())return;logs.forEach(function(l){syncPushLog(l);});syncPushDrafts();syncPushLists();syncPushMileage();}
+function syncPushProfile(){if(syncOn())userCol('meta').doc('profile').set({data:getProfile()}).catch(function(){});}
+function syncPushAll(){if(!syncOn())return;logs.forEach(function(l){syncPushLog(l);});syncPushDrafts();syncPushLists();syncPushMileage();syncPushProfile();}
 
 function updateAccountUI(){
   var signedOut=document.getElementById('account-signedout');
