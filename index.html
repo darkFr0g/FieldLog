@@ -51,7 +51,7 @@
 <div id="page-route" class="page active">
 <div class="wrap">
   <div class="hdr">
-    <div class="vbadge">v8.3</div>
+    <div class="vbadge">v8.4</div>
     <h1 class="hdr-title">Locations for <span id="headingName">Jeremiah Flavin</span></h1>
   </div>
   <div id="uploadSection">
@@ -217,7 +217,7 @@
   <div class="settings-section" style="margin-bottom:20px">
     <div class="settings-title">About</div>
     <div class="settings-card">
-      <div class="settings-row"><span style="font-size:15px">Field Log</span><span style="color:var(--ink-3);font-size:13px">v8.3</span></div>
+      <div class="settings-row"><span style="font-size:15px">Field Log</span><span style="color:var(--ink-3);font-size:13px">v8.4</span></div>
       <div class="settings-row" style="cursor:pointer" onclick="checkForUpdate()"><span style="font-size:15px;color:var(--green);font-weight:600">Check for updates</span><span style="color:var(--ink-3);font-size:13px">Reload latest →</span></div>
     </div>
   </div>
@@ -355,7 +355,10 @@
       <div style="font-size:12px;color:var(--ink-3);margin-bottom:12px;font-weight:600;line-height:1.5">Edit, remove, or reorder stops — sheet data can be messy. Google Maps routes from your home (93 Hyatt Pl) through the list, top to bottom.</div>
       <div class="cont-field" style="margin-bottom:12px"><label>Area appended to each (for accuracy)</label><input id="map-suffix" class="field-input" value="Bronx, NY"></div>
       <div id="map-list"></div>
-      <button type="button" class="add-fac-btn" style="margin-top:4px" onclick="addMapStop()">+ Add stop</button>
+      <div style="display:flex;gap:8px;margin-top:4px">
+        <button type="button" class="add-fac-btn" style="flex:1" onclick="addMapStop()">+ Add stop</button>
+        <button type="button" class="add-fac-btn" style="flex:1" onclick="smartOrderMapStops()">↕ Smart order</button>
+      </div>
       <div style="display:flex;flex-direction:column;gap:8px;margin-top:16px">
         <button type="button" class="btn btn-primary" style="justify-content:center" onclick="openMapsRoute()">Open route in Google Maps</button>
         <button type="button" class="btn btn-secondary" style="justify-content:center" onclick="copyMapStops()">Copy list</button>

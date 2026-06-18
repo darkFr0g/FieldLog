@@ -1624,15 +1624,24 @@ function homeAddr(){return getData('dlr_home','93 Hyatt Pl, Yonkers, NY');}
 function openMapsWith(stops){
   stops=(stops||[]).filter(Boolean);
   if(!stops.length){showToast('No stops to map');return;}
-  var origin=encodeURIComponent(homeAddr());
-  var url='https://www.google.com/maps/dir/?api=1&travelmode=driving&origin='+origin;
-  if(stops.length===1){
-    url+='&destination='+encodeURIComponent(stops[0]);
-  }else{
-    url+='&destination='+encodeURIComponent(stops[stops.length-1])+'&waypoints='+stops.slice(0,-1).map(encodeURIComponent).join('|');
-    if(stops.length>9)showToast('Many stops — Google may cap waypoints (~9)');
-  }
+  var home=encodeURIComponent(homeAddr());
+  // round trip: home -> all stops as waypoints -> home
+  var url='https://www.google.com/maps/dir/?api=1&travelmode=driving&origin='+home+'&destination='+home+
+          '&waypoints='+stops.map(encodeURIComponent).join('|');
+  if(stops.length>9)showToast('Many stops — Google caps waypoints (~9)');
   var a=document.createElement('a');a.href=url;a.target='_blank';a.rel='noopener';document.body.appendChild(a);a.click();document.body.removeChild(a);
+}
+// Rough sweep: sort numbered Bronx streets high→low (north/near-home first); plain
+// addresses keep their order at the end. Free heuristic, not true optimization.
+function streetNum(s){var m=String(s).match(/\b(\d{1,3})(?:st|nd|rd|th)\b/i);return m?+m[1]:null;}
+function smartOrderMapStops(){
+  var vals=[].slice.call(document.querySelectorAll('#map-list .map-stop')).map(function(i){return i.value;}).filter(function(v){return (v||'').trim();});
+  var withNum=[],without=[];
+  vals.forEach(function(v){var n=streetNum(v);if(n!=null)withNum.push({v:v,n:n});else without.push(v);});
+  withNum.sort(function(a,b){return b.n-a.n;});
+  var ordered=withNum.map(function(x){return x.v;}).concat(without);
+  document.getElementById('map-list').innerHTML=(ordered.length?ordered:['']).map(function(l){return mapRowHTML(l);}).join('');
+  showToast('Reordered north→south (rough)');
 }
 function openMapsRoute(){var stops=mapStopList();if(!stops.length){showToast('Add at least one stop');return;}openMapsWith(stops);}
 function copyMapStops(){
