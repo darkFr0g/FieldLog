@@ -134,6 +134,8 @@ function mileSetField(field,val){var e=currentMileEntry();e[field]=val;saveMilea
 function mileSetStop(i,field,val){var e=currentMileEntry();if(!e.stops[i])return;if(field==='mi'){val=(''+val).trim();e.stops[i].mi=(val===''?'':(isNaN(+val)?e.stops[i].mi:+val));}else e.stops[i][field]=val;saveMileageEntry(e);renderMileage();}
 function mileAddStop(){var e=currentMileEntry();e.stops.push({loc:'',ticket:'',mi:'',remarks:''});saveMileageEntry(e);renderMileage();}
 function mileDelStop(i){var e=currentMileEntry();e.stops.splice(i,1);if(e.stops.length===0)e.stops.push({loc:'',ticket:'',mi:'',remarks:''});saveMileageEntry(e);renderMileage();}
+function mileMoveStop(i,dir){var e=currentMileEntry();var j=i+dir;if(i<1||j<1||j>=e.stops.length)return;var t=e.stops[i];e.stops[i]=e.stops[j];e.stops[j]=t;saveMileageEntry(e);renderMileage();}
+function mileDupStop(i){var e=currentMileEntry();var s=e.stops[i];if(!s)return;e.stops.splice(i+1,0,{loc:s.loc,ticket:s.ticket,mi:'',remarks:s.remarks});saveMileageEntry(e);renderMileage();}
 function mileLoadFromLog(){
   var e=currentMileEntry(),src=mileStopSource(mileDate);
   if(!src.length){showToast('Load the route sheet for this day first');return;}
@@ -206,19 +208,28 @@ function renderMileage(){
   h+='<div class="mile-card"><div class="mile-rowhdr"><span>Stops — miles driven</span><span>'+mileTotal(e)+' mi</span></div>';
   h+='<label class="mile-f" style="margin-bottom:12px"><span>Start odometer (first stop)</span><input class="mile-sel" inputmode="numeric" placeholder="e.g. 72388" value="'+(e.startOdo===''||e.startOdo==null?'':e.startOdo)+'" onchange="mileSetStart(this.value)"></label>';
   var cum=(e.startOdo!==''&&e.startOdo!=null&&!isNaN(+e.startOdo))?+e.startOdo:null;
+  var n=e.stops.length;
   e.stops.forEach(function(s,i){
     if(i>0&&cum!==null&&s.mi!==''&&s.mi!=null&&!isNaN(+s.mi))cum+=+s.mi;
     var odoTxt=(cum!==null&&(i===0||(s.mi!==''&&s.mi!=null)))?('ODO '+cum):'';
-    h+='<div class="mile-stop">'+
+    var up=(i>=2)?'<button class="mile-ic" onclick="mileMoveStop('+i+',-1)" aria-label="Move up">↑</button>':'';
+    var down=(i>=1&&i<n-1)?'<button class="mile-ic" onclick="mileMoveStop('+i+',1)" aria-label="Move down">↓</button>':'';
+    h+='<div class="mile-stop'+(i===0?' mile-stop-start':'')+'">'+
       '<div class="mile-stop-main">'+
+        '<span class="mile-num'+(i===0?' mile-num-start':'')+'">'+(i===0?'★':(i+1))+'</span>'+
         '<input class="field-input mile-loc" placeholder="'+(i===0?'Start (first job)':'Location')+'" value="'+escHtml(s.loc||'')+'" onchange="mileSetStop('+i+',\'loc\',this.value)">'+
         (i===0?'<span class="mile-odochip">START</span>':'<input class="field-input mile-odo" inputmode="numeric" placeholder="miles" value="'+(s.mi===''||s.mi==null?'':s.mi)+'" onchange="mileSetStop('+i+',\'mi\',this.value)">')+
-        '<button class="mile-x" onclick="mileDelStop('+i+')" aria-label="Remove">×</button>'+
       '</div>'+
       '<div class="mile-stop-sub">'+
         '<input class="field-input mile-tkt" placeholder="Ticket #" value="'+escHtml(s.ticket||'')+'" onchange="mileSetStop('+i+',\'ticket\',this.value)">'+
         '<input class="field-input mile-rmk" placeholder="Remarks" value="'+escHtml(s.remarks||'')+'" onchange="mileSetStop('+i+',\'remarks\',this.value)">'+
-        (odoTxt?'<span class="mile-leg2">'+odoTxt+'</span>':'')+
+      '</div>'+
+      '<div class="mile-stop-ctl">'+
+        '<span class="mile-leg2">'+(odoTxt||'')+'</span>'+
+        '<span class="mile-btns">'+up+down+
+          '<button class="mile-ic" onclick="mileDupStop('+i+')" aria-label="Duplicate">⧉</button>'+
+          '<button class="mile-ic mile-ic-del" onclick="mileDelStop('+i+')" aria-label="Remove">×</button>'+
+        '</span>'+
       '</div>'+
     '</div>';
   });

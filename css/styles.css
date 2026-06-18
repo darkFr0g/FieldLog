@@ -159,13 +159,20 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
 .mile-carry{font-size:10px;color:var(--ink-4);font-style:italic;margin-top:8px;text-align:center}
 .mile-copy{font-size:12px}
 .mile-rowhdr{display:flex;justify-content:space-between;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-4);padding:0 2px 8px}
-.mile-stop{margin-bottom:8px;border-bottom:1px solid var(--border);padding-bottom:8px}
+.mile-stop{margin-bottom:8px;border:1px solid var(--border);border-radius:8px;padding:8px}
+.mile-stop-start{background:var(--green-bg);border-color:var(--green-text)}
 .mile-stop-main{display:flex;gap:6px;align-items:center}
+.mile-num{width:18px;flex-shrink:0;text-align:center;font-size:11px;font-weight:800;color:var(--ink-4)}
+.mile-num-start{color:var(--green-text);font-size:13px}
 .mile-loc{flex:1;min-width:0}
+.mile-stop-ctl{display:flex;align-items:center;justify-content:space-between;margin-top:6px;gap:8px}
+.mile-btns{display:flex;gap:4px}
+.mile-ic{width:32px;height:28px;border:1px solid var(--border);background:var(--surface-2);border-radius:6px;font-size:14px;line-height:1;cursor:pointer;color:var(--ink-2);padding:0;font-family:var(--font)}
+.mile-ic-del{color:var(--red)}
 .mile-odo{width:74px;flex-shrink:0;text-align:right;font-family:var(--font-mono)}
 .mile-odochip{width:74px;flex-shrink:0;text-align:center;font-size:10px;font-weight:800;letter-spacing:.06em;color:var(--ink-4);align-self:center}
 .mile-x{width:28px;flex-shrink:0;border:none;background:var(--surface-2);color:var(--red);border-radius:6px;font-size:18px;line-height:1;cursor:pointer;padding:5px 0}
-.mile-stop-sub{display:flex;gap:6px;align-items:center;margin-top:4px;padding-right:34px}
+.mile-stop-sub{display:flex;gap:6px;align-items:center;margin-top:5px}
 .mile-tkt{width:104px;flex-shrink:0;font-family:var(--font-mono);font-size:12px}
 .mile-rmk{flex:1;min-width:0;font-size:12px}
 .mile-leg2{font-size:11px;color:var(--ink-4);font-weight:700;white-space:nowrap}
