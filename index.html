@@ -31,11 +31,7 @@
   </button>
   <button class="nav-btn" onclick="showPage('dlr')" id="nav-dlr">
     <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-    DLR
-  </button>
-  <button class="nav-btn" onclick="showPage('mileage')" id="nav-mileage">
-    <svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 13l4-2.5"/><path d="M12 5V3.5"/><path d="M5.5 13H4"/><path d="M20 13h-1.5"/></svg>
-    Mileage
+    Day
   </button>
   <button class="nav-btn" onclick="showPage('history')" id="nav-history">
     <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
@@ -51,7 +47,7 @@
 <div id="page-route" class="page active">
 <div class="wrap">
   <div class="hdr">
-    <div class="vbadge">v8.8</div>
+    <div class="vbadge">v8.9</div>
     <h1 class="hdr-title">Locations for <span id="headingName">Jeremiah Flavin</span></h1>
   </div>
   <div id="uploadSection">
@@ -99,7 +95,7 @@
   <div class="date-header">
     <div>
       <div class="date-display" id="today-display"></div>
-      <div class="date-sub">Daily Log Report</div>
+      <div class="date-sub">Daily Log + Mileage</div>
     </div>
     <div style="display:flex;gap:8px;align-items:center">
       <button class="btn btn-secondary btn-sm" onclick="saveDraft()">Save</button>
@@ -124,21 +120,7 @@
     </button>
     <button class="btn btn-secondary" style="width:100%;justify-content:center" onclick="copyCurrentDLRFormatted()">Copy formatted (table) — paste into Notes</button>
   </div>
-</div>
-
-<!-- MILEAGE PAGE -->
-<div id="page-mileage" class="page">
-  <div class="date-header">
-    <div>
-      <div class="date-display" id="mile-display"></div>
-      <div class="date-sub">Mileage</div>
-    </div>
-    <div style="display:flex;gap:6px;align-items:center">
-      <button class="btn btn-secondary btn-sm" onclick="mileStep(-1)" aria-label="Previous day">‹</button>
-      <input type="date" id="mile-date" style="background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:6px 8px;font-size:13px;color:var(--ink);font-family:var(--font);outline:none" onchange="mileSetDate(this.value)">
-      <button class="btn btn-secondary btn-sm" onclick="mileStep(1)" aria-label="Next day">›</button>
-    </div>
-  </div>
+  <div class="day-divider"><span>Mileage</span></div>
   <div id="mileage-body"></div>
 </div>
 
@@ -231,7 +213,7 @@
   <div class="settings-section" style="margin-bottom:20px">
     <div class="settings-title">About</div>
     <div class="settings-card">
-      <div class="settings-row"><span style="font-size:15px">Field Log</span><span style="color:var(--ink-3);font-size:13px">v8.8</span></div>
+      <div class="settings-row"><span style="font-size:15px">Field Log</span><span style="color:var(--ink-3);font-size:13px">v8.9</span></div>
       <div class="settings-row" style="cursor:pointer" onclick="checkForUpdate()"><span style="font-size:15px;color:var(--green);font-weight:600">Check for updates</span><span style="color:var(--ink-3);font-size:13px">Reload latest →</span></div>
     </div>
   </div>

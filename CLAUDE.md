@@ -12,7 +12,10 @@ screen as a PWA. **Primary device is an iPhone** — optimize for that.
 **Live:** https://darkfr0g.github.io/FieldLog/
 **Repo:** https://github.com/darkFr0g/FieldLog
 
-### Tools inside the app (5 nav tabs: Route / DLR / Mileage / History / Settings)
+### Tools inside the app (4 nav tabs: Route / Day / History / Settings)
+**Day** = DLR crews + Mileage merged onto one page (shared date header; the
+Mileage section's stops derive from the day's DLR crews so locations live in one
+place). Sections below described separately.
 - **Route Sheet Extractor** — parses `.xlsx` route sheets (SheetJS), shows the
   inspector's assigned jobs and CCI staffing status. Inspector name defaults to
   "Jeremiah Flavin". Tabs: **Covering** / **Owned** (your jobs) + a one-at-a-time

@@ -83,7 +83,7 @@ function showPage(p){
   document.getElementById('page-'+p).classList.add('active');
   document.getElementById('nav-'+p).classList.add('active');
   if(p==='history')renderHistory();
-  if(p==='mileage')renderMileage();
+  if(p==='dlr'){var d=document.getElementById('log-date');if(d&&d.value)mileDate=d.value;renderMileage();}
   if(p==='settings'){updateSettingsCounts();renderProfile();}
 }
 
@@ -109,9 +109,14 @@ var MILE_WORKCODE=['Field','Training','Office','CFOR','WFH','Vacation','Holiday'
 function mileStopSource(date){
   var seen={},out=[];
   function add(loc,tkt){loc=(loc||'').trim();if(!loc)return;var sl=shortAddr(loc);if(seen[sl])return;seen[sl]=1;out.push({loc:sl,ticket:cleanTicket(tkt)});}
-  if(allData&&allData.routeDate===date&&allData.flavin&&allData.headers){
+  var ld=(document.getElementById('log-date')||{}).value;
+  // 1) the DLR crews you're building today (one source — no double entry)
+  if(currentCrews&&currentCrews.length&&ld===date){currentCrews.forEach(function(c){add(c.location,c.wo);});}
+  // 2) the loaded route sheet for that date
+  if(!out.length&&allData&&allData.routeDate===date&&allData.flavin&&allData.headers){
     var h=allData.headers;allData.flavin.forEach(function(row){add(gv(row,h,'Location'),gv(row,h,'Ticket #'));});
   }
+  // 3) a previously submitted DLR log
   if(!out.length){var log=logs.find(function(l){return l.date===date;});if(log)(log.crews||[]).forEach(function(c){add(c.location,c.wo);});}
   return out;
 }
@@ -235,7 +240,7 @@ function renderMileage(){
   });
   var copyDays=mileDaysWithStops();
   var copySel=copyDays.length?('<select class="mile-sel mile-copy" onchange="mileCopyFrom(this.value);this.value=\'\'"><option value="">Copy stops from another day…</option>'+copyDays.map(function(k){return '<option value="'+k+'">'+new Date(k+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})+'</option>';}).join('')+'</select>'):'';
-  h+='<div class="mile-actions"><button class="btn btn-secondary btn-sm" onclick="mileAddStop()">+ Add stop</button><button class="btn btn-secondary btn-sm" onclick="mileLoadFromLog()">Load from route</button><button class="btn btn-green btn-sm" onclick="mileMapStops()">Map drive</button></div>'+
+  h+='<div class="mile-actions"><button class="btn btn-secondary btn-sm" onclick="mileAddStop()">+ Add stop</button><button class="btn btn-secondary btn-sm" onclick="mileLoadFromLog()">Load stops from crews</button><button class="btn btn-green btn-sm" onclick="mileMapStops()">Map drive</button></div>'+
      (copySel?'<div style="margin-top:8px">'+copySel+'</div>':'')+
      '<div class="mile-total">'+mileTotal(e)+' mi today'+(mileEndOdo(e)!==''?' · ends '+mileEndOdo(e):'')+'</div></div>';
   var prevEnd=mileEndOdo(milePrevEntry(mileDate));
@@ -742,7 +747,7 @@ function generateDLR(){
 // ── DLR RENDERING ────────────────────────────────────────────────
 function today(){return new Date().toISOString().split('T')[0];}
 function fmtDate(d){var dt=new Date(d+'T12:00:00');return dt.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});}
-function updateDateDisplay(){document.getElementById('today-display').textContent=fmtDate(document.getElementById('log-date').value);saveWorkingDLR();}
+function updateDateDisplay(){var v=document.getElementById('log-date').value;document.getElementById('today-display').textContent=fmtDate(v);mileDate=v;saveWorkingDLR();renderMileage();}
 function initLogDate(){var d=today();document.getElementById('log-date').value=d;document.getElementById('today-display').textContent=fmtDate(d);}
 
 function addCrew(){
