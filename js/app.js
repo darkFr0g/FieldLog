@@ -154,22 +154,29 @@ function monthDayCount(ym){return new Date(+ym.slice(0,4),+ym.slice(5,7),0).getD
 function buildCIMileageHTML(ym){
   var p=getProfile(),m=allMileage(),days=monthDayCount(ym);
   var monthName=new Date(ym+'-01T12:00:00').toLocaleDateString('en-US',{month:'long',year:'numeric'});
-  var rows='',gTotal=0;
+  var rows='',gTot=0;
   for(var d=1;d<=days;d++){
-    var ds=ym+'-'+('0'+d).slice(-2),e=m[ds],start='',end='',tot='';
-    if(e){var so=(e.startOdo===''||e.startOdo==null||isNaN(+e.startOdo))?'':+e.startOdo;var eo=mileEndOdo(e);var t=mileTotal(e);start=so;end=(eo===''?'':eo);tot=t;gTotal+=t;}
-    rows+='<tr><td>'+d+'</td><td>'+(start===''?'':start)+'</td><td>'+(end===''?'':end)+'</td><td>'+(tot===''?'':tot)+'</td><td>NRQ</td><td>0</td><td>'+(tot===''?'':tot)+'</td><td>See Daily Log Sheet</td></tr>';
+    var ds=ym+'-'+('0'+d).slice(-2),e=m[ds],start='N/A',end='N/A',tot=0;
+    if(e){var so=e.startOdo;if(so!==''&&so!=null&&!isNaN(+so)){start=+so;var eo=mileEndOdo(e);end=(eo===''?+so:eo);}tot=mileTotal(e)||0;}
+    gTot+=(+tot||0);
+    var dt=new Date(ds+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+    rows+='<tr><td>'+d+'</td><td>'+start+'</td><td>'+end+'</td><td>'+tot+'</td><td>NRQ</td><td>0</td><td>'+tot+'</td><td>See Daily Log Sheet</td><td>'+dt+'</td></tr>';
   }
+  function hc(v,l){return '<td><b>'+escHtml(v||'')+'</b><div class="cil">'+l+'</div></td>';}
   return '<div class="ci-form">'+
-    '<div class="ci-t1">CI-660-1 — Reimbursement for Use of Personal Automobile</div>'+
-    '<div class="ci-t2">Daily Mileage Report</div>'+
-    '<table class="ci-hd"><tr>'+
-      '<td><span>'+escHtml(p.name||'')+'</span>Employee&#39;s Name</td><td><span>'+escHtml(p.empNo||'')+'</span>Employee No.</td><td><span>'+escHtml(p.roll||'')+'</span>Roll No. &amp; Dept.</td></tr><tr>'+
-      '<td><span>'+escHtml(p.vehicle||'')+'</span>Auto Make &amp; Year</td><td><span>'+escHtml(p.plate||'')+'</span>License Plate</td><td><span>'+escHtml(monthName)+'</span>Month / Year</td></tr></table>'+
-    '<table class="ci-tbl"><thead><tr><th>Date</th><th>ODO Start</th><th>ODO End</th><th>Total Miles</th><th>Home&#8596;Work</th><th>Other Non-Bus.</th><th>Company Business</th><th>Explanation</th></tr></thead><tbody>'+rows+'</tbody>'+
-    '<tfoot><tr><td colspan="3">GRAND TOTALS</td><td>'+gTotal+'</td><td>NRQ</td><td>0</td><td>'+gTotal+'</td><td></td></tr></tfoot></table>'+
-    '<div class="ci-decl">I declare the information on this report is correct.</div>'+
-    '<div class="ci-sig"><span>Date: '+new Date().toLocaleDateString('en-US')+'</span><span>Print name: '+escHtml(p.name||'')+'</span><span>Signature: ______________</span></div>'+
+    '<div class="ci-title">CI-660-1, &ldquo;REIMBURSEMENT FOR FREQUENT USE OF PERSONAL VEHICLE ON COMPANY BUSINESS&rdquo;</div>'+
+    '<div class="ci-sub">DAILY MILEAGE REPORT</div>'+
+    '<table class="ci-head">'+
+      '<tr>'+hc(p.name,"Employee's Name")+hc(p.empNo,'Employees No.')+hc(p.roll,'Roll No. and Dept.')+'</tr>'+
+      '<tr>'+hc(p.vehicle,'Auto Make &amp; Year')+hc(p.plate,'License Plate No.')+hc(monthName,'Month / Year')+'</tr>'+
+    '</table>'+
+    '<table class="ci-tbl"><thead>'+
+      '<tr><th rowspan="2">DATE</th><th colspan="2">ODOMETER READINGS</th><th rowspan="2">TOTAL MILEAGE DRIVEN IN AUTO</th><th colspan="3">MILEAGE ANALYSIS</th><th rowspan="2">EXPLANATION OF COMPANY BUSINESS MILEAGE</th><th rowspan="2">DATE</th></tr>'+
+      '<tr><th>START</th><th>END</th><th>FROM HOME TO WORK OUT &amp; RETURN</th><th>OTHER NON-BUSINESS MILEAGE</th><th>COMPANY BUSINESS MILEAGE</th></tr>'+
+    '</thead><tbody>'+rows+'</tbody>'+
+    '<tfoot><tr><td></td><td colspan="2">GRAND TOTALS</td><td>'+gTot+'</td><td>0</td><td>0</td><td>'+gTot+'</td><td></td><td></td></tr></tfoot></table>'+
+    '<div class="ci-decl">I DECLARE THE INFORMATION ON THIS REPORT IS TRUE, CORRECT, AND COMPLETE TO THE BEST OF MY KNOWLEDGE AND BELIEF.</div>'+
+    '<div class="ci-sig"><span>Date: ______________</span><span>Print name: '+escHtml(p.name||'')+'</span><span>Signature: ______________</span></div>'+
   '</div>';
 }
 function exportCIMileage(){
