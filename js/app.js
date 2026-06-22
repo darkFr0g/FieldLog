@@ -84,7 +84,7 @@ function showPage(p){
   document.getElementById('nav-'+p).classList.add('active');
   updateSyncStamps();
   if(p==='history')renderHistory();
-  if(p==='dlr'){var d=document.getElementById('log-date');if(d&&d.value)mileDate=d.value;renderMileage();}
+  if(p==='dlr'){var d=document.getElementById('log-date');if(d&&d.value)mileDate=d.value;renderMileage();maybeNotifyDraft();}
   if(p==='month')renderMonth();
   if(p==='settings'){updateSettingsCounts();renderProfile();}
 }
@@ -813,6 +813,7 @@ function generateDLR(){
   });
   var rd=(allData&&allData.routeDate)||today();
   document.getElementById('log-date').value=rd;
+  lastDraftSave=Date.now();
   updateDateDisplay();
   saveWorkingDLR();
   renderCrews();showPage('dlr');
@@ -1090,9 +1091,37 @@ function closePicker(e){
 
 function saveDraft(){
   var date=document.getElementById('log-date').value;
-  var drafts=getData('dlr_drafts',{});
-  drafts[date]={date:date,crews:JSON.parse(JSON.stringify(currentCrews)),savedAt:new Date().toISOString()};
-  setData('dlr_drafts',drafts);syncPushDrafts();showToast('Draft saved');
+  var drafts=getData('dlr_drafts',{}),sa=new Date().toISOString();
+  drafts[date]={date:date,crews:JSON.parse(JSON.stringify(currentCrews)),savedAt:sa};
+  setData('dlr_drafts',drafts);lastDraftSave=new Date(sa).getTime();syncPushDrafts();showToast('Draft saved — syncs to your other devices');
+}
+// Notes-style: another device saved this day's crews → offer to load (never auto-overwrite).
+var lastDraftSave=0;
+function maybeNotifyDraft(){
+  if(!syncOn())return;
+  var ld=document.getElementById('log-date');if(!ld||!ld.value)return;
+  if(!document.getElementById('page-dlr').classList.contains('active'))return;
+  var dr=getData('dlr_drafts',{})[ld.value];if(!dr||!dr.savedAt)return;
+  var sa=new Date(dr.savedAt).getTime();if(sa<=lastDraftSave)return;
+  if(JSON.stringify(dr.crews||[])===JSON.stringify(currentCrews)){lastDraftSave=sa;return;}
+  showDraftBanner(ld.value,dr.savedAt);
+}
+function showDraftBanner(date,saISO){
+  var ex=document.getElementById('draft-banner');if(ex)ex.parentNode.removeChild(ex);
+  var t=new Date(saISO).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+  var b=document.createElement('div');b.id='draft-banner';b.className='update-banner';
+  b.innerHTML='<span>Crews updated on another device ('+t+')</span><span class="ub-go">Tap to load →</span>';
+  b.onclick=function(){loadDraftForDate(date);};
+  document.body.appendChild(b);
+}
+function loadDraftForDate(d){
+  var dr=getData('dlr_drafts',{})[d];if(!dr)return;
+  currentCrews=JSON.parse(JSON.stringify(dr.crews||[]));
+  lastDraftSave=new Date(dr.savedAt||Date.now()).getTime();
+  var ld=document.getElementById('log-date');if(ld)ld.value=d;
+  saveWorkingDLR();renderCrews();renderMileage();
+  var b=document.getElementById('draft-banner');if(b)b.parentNode.removeChild(b);
+  showToast('Loaded crews from your other device');
 }
 
 function submitLog(){
@@ -1113,7 +1142,7 @@ function submitLog(){
 
 function loadTodayDraft(){
   var d=today();var drafts=getData('dlr_drafts',{});
-  if(drafts[d]){currentCrews=drafts[d].crews;showToast('Draft restored');}
+  if(drafts[d]){currentCrews=drafts[d].crews;lastDraftSave=new Date(drafts[d].savedAt||Date.now()).getTime();showToast('Draft restored');}
 }
 
 // ── HISTORY ──────────────────────────────────────────────────────
@@ -1916,6 +1945,7 @@ function startSync(){
     if(!d.exists)return;var drafts=getData('dlr_drafts',{}),rd=d.data().drafts||{},ch=false;
     Object.keys(rd).forEach(function(k){if(!drafts[k]||!drafts[k].savedAt||(rd[k].savedAt&&rd[k].savedAt>drafts[k].savedAt)){drafts[k]=rd[k];ch=true;}});
     if(ch)setData('dlr_drafts',drafts);markSynced();
+    if(ch)maybeNotifyDraft();
   },function(){});
   // Live route — load the sheet on one device, it appears on all
   if(fbUnsubRoute)fbUnsubRoute();
@@ -2040,7 +2070,7 @@ function showUpdateBanner(){
   b.onclick=function(){checkForUpdate();};
   document.body.appendChild(b);
 }
-var APP_VERSION='v10.4';
+var APP_VERSION='v10.5';
 function setVersion(){var els=document.querySelectorAll('.vbadge,.ver-chip');for(var i=0;i<els.length;i++)els[i].textContent=APP_VERSION;}
 setVersion();
 function setNavH(){var n=document.querySelector('.nav');if(n)document.documentElement.style.setProperty('--navh',n.offsetHeight+'px');}
