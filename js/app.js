@@ -378,7 +378,8 @@ function processFile(file){
       var SHEETS=['CAC','Donofrio','EJ','Gianfia','MFM'];
       for(var si=0;si<wb.SheetNames.length;si++){
         var sn=wb.SheetNames[si];
-        if(sn==='Summary'||sn==='Raw Data'||sn==='DATA')continue;
+        var snl=String(sn).toLowerCase().trim();
+        if(snl==='summary'||snl==='raw data'||snl==='data'||snl.charAt(0)==='#')continue;
         var ws=wb.Sheets[sn];
         var rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:null});
         if(rows.length<3)continue;
@@ -619,7 +620,9 @@ function renderAllJobs(jobs){
   if(filtered.length===0){var nf=document.createElement('div');nf.className='no-jobs';nf.textContent='No matching jobs';jobsContainer.appendChild(nf);return;}
   var list=document.createElement('div');list.className='list-jobs';
   filtered.forEach(function(j){
+    var jc=contractorColor(j.contractor);
     var item=document.createElement('div');item.className='list-item';
+    if(jc){item.style.borderLeft='3px solid '+jc;item.style.background=hexToRgba(jc,0.07);}
     item.innerHTML='<div class="list-loc">'+escHtml(j.location||'—')+'</div>'+
       '<div class="list-meta">'+
         (j.contractor?'<span class="lm" style="font-weight:800'+(contractorColor(j.contractor)?';color:'+contractorColor(j.contractor):'')+'">'+escHtml(j.contractor)+'</span>':'')+
@@ -871,8 +874,9 @@ function crewHTML(crew){
   if(isActive(crew.fusingPeer))urg.push('<span class="utag ut-pt">Pressure Test</span>');
   var urgentLine=urg.length?'<div class="crew-urgent">'+urg.join('')+'</div>':'';
 
-  return '<div class="crew-card" id="crew-'+crew.id+'">'+
-    '<div class="crew-card-header" onclick="toggleCrew('+crew.id+')">'+
+  var coC=contractorColor(crew.contractor),coT=coC?hexToRgba(coC,0.12):'';
+  return '<div class="crew-card" id="crew-'+crew.id+'"'+(coC?' style="border-left-color:'+coC+'"':'')+'>'+
+    '<div class="crew-card-header" onclick="toggleCrew('+crew.id+')"'+(coT?' style="background:'+coT+'"':'')+'>'+
       '<div style="flex:1;min-width:0">'+
         '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><h2>Crew '+crew.num+'</h2>'+routeTag+
           (crew.location?'<span class="crew-loc-preview">'+escHtml(crew.location.substring(0,40))+'</span>':'')+'</div>'+
