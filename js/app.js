@@ -670,6 +670,12 @@ function renderAllJobs(jobs){
     list.appendChild(item);
   });
   jobsContainer.appendChild(list);
+  var wrs=filtered.map(function(j){return j.ticket||j.wo||'';}).filter(Boolean);
+  var sum=document.createElement('div');sum.className='aj-summary';
+  sum.innerHTML='<div class="aj-sum-h">'+filtered.length+' job'+(filtered.length!==1?'s':'')+' · WR#/WO# list</div>'+
+    '<div class="aj-sum-list" id="aj-wrs">'+escHtml(wrs.join(', '))+'</div>'+
+    '<button class="btn btn-secondary btn-sm" style="margin-top:8px" onclick="copyText(document.getElementById(\'aj-wrs\').textContent)">Copy list</button>';
+  jobsContainer.appendChild(sum);
 }
 
 // Hold Point chip → copy a standardized Photos album name (date - job#s - location).
@@ -1400,6 +1406,7 @@ function shareLog(date){
 // ── DLR rich copy (real table + bold for Notes / OneNote) ────────
 // Plain share can't carry a table; this puts text/html on the clipboard so a
 // paste into Notes becomes an actual crew/equipment table with bold labels.
+function copyText(t){t=t||'';if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(function(){showToast('Copied');}).catch(function(){fallbackCopy(t);});else fallbackCopy(t);}
 function copyRich(plain,html,msg){
   msg=msg||'Copied — paste into Notes';
   if(window.ClipboardItem&&navigator.clipboard&&navigator.clipboard.write){
