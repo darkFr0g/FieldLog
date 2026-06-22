@@ -899,8 +899,8 @@ function crewHTML(crew){
   var hpBadge=isActive(crew.holdPoint)?
     '<button class="hp-chip" onclick="event.stopPropagation();holdPointAlbumCrew('+crew.id+')">📷 Hold Point: '+escHtml(crew.holdPoint)+'</button>':
     '<span class="status-off">Hold Point: No</span>';
-  var leadLine=(crew.leads&&crew.leads.length)?
-    '<div class="crew-leads">'+crew.leads.map(function(l){var lbl=leadTypeLabel(l.type);return '<span class="lead-tag lead-'+l.type+'">'+escHtml(l.name)+(lbl?'<i>'+lbl+'</i>':'')+'</span>';}).join('')+'</div>':'';
+  var leadTags=(crew.leads&&crew.leads.length)?
+    crew.leads.map(function(l){var lbl=leadTypeLabel(l.type);return '<span class="lead-tag lead-'+l.type+'">'+escHtml(l.name)+(lbl?'<i>'+lbl+'</i>':'')+'</span>';}).join(''):'';
   var fuseBadge=isActive(crew.fusingPeer)?
     '<span class="b-fuse">Pressure Test: '+escHtml(crew.fusingPeer)+'</span>':
     '<span class="status-off">Pressure Test: No</span>';
@@ -909,15 +909,16 @@ function crewHTML(crew){
   if(isActive(crew.contingency))urg.push('<span class="utag ut-cont">⚠ '+escHtml(crew.contingencyNum||'Contingency')+'</span>');
   if(isActive(crew.holdPoint))urg.push('<span class="utag ut-hp">Hold Point</span>');
   if(isActive(crew.fusingPeer))urg.push('<span class="utag ut-pt">Pressure Test</span>');
-  var urgentLine=urg.length?'<div class="crew-urgent">'+urg.join('')+'</div>':'';
+  var metaLine=(leadTags||urg.length)?'<div class="crew-h-meta">'+leadTags+urg.join('')+'</div>':'';
+  var wr=[crew.wo,crew.cworxWO].filter(Boolean).join(' · ');
 
   var coC=contractorColor(crew.contractor),coT=coC?hexToRgba(coC,0.12):'';
   return '<div class="crew-card" id="crew-'+crew.id+'"'+(coC?' style="border-left-color:'+coC+'"':'')+'>'+
     '<div class="crew-card-header" onclick="toggleCrew('+crew.id+')"'+(coT?' style="background:'+coT+'"':'')+'>'+
       '<div style="flex:1;min-width:0">'+
-        '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><h2>Crew '+crew.num+'</h2>'+routeTag+
-          (crew.location?'<span class="crew-loc-preview">'+escHtml(crew.location.substring(0,40))+'</span>':'')+'</div>'+
-        leadLine+urgentLine+
+        '<div class="crew-h-top"><h2>Job '+crew.num+'</h2>'+(wr?'<span class="crew-wr">'+escHtml(wr)+'</span>':'')+routeTag+'</div>'+
+        (crew.location?'<div class="crew-loc-line">'+escHtml(shortAddr(crew.location))+'</div>':'')+
+        metaLine+
       '</div>'+
       '<div style="display:flex;align-items:center;gap:8px;flex-shrink:0">'+
         '<button class="btn btn-danger btn-sm" onclick="event.stopPropagation();removeCrew('+crew.id+')" style="width:28px;height:28px;padding:0;font-size:14px;font-weight:800;display:flex;align-items:center;justify-content:center">×</button>'+
