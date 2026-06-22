@@ -851,7 +851,17 @@ function renderCrews(){
     container.innerHTML='<div style="padding:40px 20px;text-align:center;color:var(--ink-4);font-size:14px">No crews yet.<br>Generate from route sheet or tap Add Crew.</div>';
     return;
   }
-  container.innerHTML=currentCrews.map(function(crew){return crewHTML(crew);}).join('');
+  container.innerHTML=currentCrews.map(function(crew){return crewHTML(crew);}).join('')+crewSummaryHTML();
+}
+// Copyable comma-separated WR#/WO# list for the day's jobs (mirrors All jobs footer).
+function crewSummaryHTML(){
+  var wrs=currentCrews.map(function(c){return c.wo||c.cworxWO||'';}).filter(Boolean);
+  if(!wrs.length)return '';
+  return '<div class="aj-summary">'+
+    '<div class="aj-sum-h">'+wrs.length+' job'+(wrs.length!==1?'s':'')+' · WR#/WO# list</div>'+
+    '<div class="aj-sum-list" id="day-wrs">'+escHtml(wrs.join(', '))+'</div>'+
+    '<button class="btn btn-secondary btn-sm" style="margin-top:8px" onclick="copyText(document.getElementById(\'day-wrs\').textContent)">Copy list</button>'+
+  '</div>';
 }
 
 function renderOneCrew(cid){
@@ -2070,7 +2080,7 @@ function showUpdateBanner(){
   b.onclick=function(){checkForUpdate();};
   document.body.appendChild(b);
 }
-var APP_VERSION='v10.5';
+var APP_VERSION='v10.6';
 function setVersion(){var els=document.querySelectorAll('.vbadge,.ver-chip');for(var i=0;i<els.length;i++)els[i].textContent=APP_VERSION;}
 setVersion();
 function setNavH(){var n=document.querySelector('.nav');if(n)document.documentElement.style.setProperty('--navh',n.offsetHeight+'px');}
