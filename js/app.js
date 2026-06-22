@@ -65,8 +65,8 @@ function restoreRoute(){
   allData=r;
   renderRouteResults();
 }
-function saveWorkingDLR(){try{var d=document.getElementById('log-date');setData('dlr_working',{date:d?d.value:today(),crews:currentCrews});}catch(e){}}
-function clearWorkingDLR(){try{localStorage.removeItem('dlr_working');}catch(e){}}
+function saveWorkingDLR(){try{var d=document.getElementById('log-date');setData('dlr_working',{date:d?d.value:today(),crews:currentCrews});}catch(e){}syncPushWorking();}
+function clearWorkingDLR(){try{localStorage.removeItem('dlr_working');}catch(e){}syncPushWorking();}
 function restoreWorkingDLR(){
   var w=getData('dlr_working',null);
   if(w&&w.crews&&w.crews.length){
@@ -470,7 +470,7 @@ function processFile(file){
       allJobsList.sort(function(a,b){return (a.inspector||'~~~').localeCompare(b.inspector||'~~~')||a.location.localeCompare(b.location);});
       var routeDate=parseDateFromName(file.name)||parseSummaryDate(wb)||null;
       allData={headers:headers,flavin:myJobs,flavinCompany:myJobsCompany,owned:ownedJobs,sheets:sheetJobs,ccis:ccis,crs:crs,contractorSheets:SHEETS,name:NAME,routeDate:routeDate,allJobs:allJobsList};
-      saveRoute();
+      saveRoute();syncPushRoute();
       renderRouteResults();
     }catch(err){setStatus('err','Error: '+err.message);dropZone.style.display='';}
   };
@@ -1810,7 +1810,7 @@ var FIREBASE_CONFIG = {
   messagingSenderId: "1061730210243",
   appId: "1:1061730210243:web:a300f274241c7f5b752d76"
 };
-var fbDb=null,fbUser=null,fbUnsub=null,fbUnsubMile=null,fbUnsubDraft=null,lastSync=null;
+var fbDb=null,fbUser=null,fbUnsub=null,fbUnsubMile=null,fbUnsubDraft=null,fbUnsubRoute=null,fbUnsubWork=null,lastSync=null;
 function markSynced(){lastSync=new Date();updateSyncStamps();}
 function syncAgo(){if(!lastSync)return fbUser?'syncing…':'local only';var s=Math.round((Date.now()-lastSync.getTime())/1000);if(s<60)return 'synced '+s+'s ago';var m=Math.round(s/60);if(m<60)return 'synced '+m+'m ago';return 'synced '+lastSync.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});}
 function updateSyncStamps(){var els=document.querySelectorAll('.sync-stamp');for(var i=0;i<els.length;i++)els[i].textContent=syncAgo();}
@@ -1910,9 +1910,33 @@ function startSync(){
     Object.keys(rd).forEach(function(k){if(!drafts[k]||!drafts[k].savedAt||(rd[k].savedAt&&rd[k].savedAt>drafts[k].savedAt)){drafts[k]=rd[k];ch=true;}});
     if(ch)setData('dlr_drafts',drafts);markSynced();
   },function(){});
+  // Live route — load the sheet on one device, it appears on all
+  if(fbUnsubRoute)fbUnsubRoute();
+  fbUnsubRoute=userCol('meta').doc('route').onSnapshot(function(d){
+    if(!d.exists||!d.data().json)return;var sa=d.data().savedAt||'';
+    if(sa<=getData('dlr_route_sa',''))return;
+    try{var rd=JSON.parse(d.data().json);if(rd&&rd.headers){allData=rebuildRoute(rd);setData('dlr_route',rd);setData('dlr_route_sa',sa);markSynced();if(document.getElementById('page-route').classList.contains('active'))renderRouteResults();}}catch(e){}
+  },function(){});
+  // Live in-progress DLR scratchpad
+  if(fbUnsubWork)fbUnsubWork();
+  fbUnsubWork=userCol('meta').doc('working').onSnapshot(function(d){
+    if(!d.exists)return;var data=d.data(),sa=data.savedAt||'';
+    if(sa<=getData('dlr_working_sa',''))return;
+    setData('dlr_working_sa',sa);
+    if(data.cleared){currentCrews=[];try{localStorage.removeItem('dlr_working');}catch(e){}}
+    else{currentCrews=data.crews||[];setData('dlr_working',{date:data.date||'',crews:currentCrews});var ld=document.getElementById('log-date');if(ld&&data.date){ld.value=data.date;mileDate=data.date;var td=document.getElementById('today-display');if(td)td.textContent=fmtDate(data.date);}}
+    markSynced();
+    if(document.getElementById('page-dlr').classList.contains('active')){renderCrews();renderMileage();}
+  },function(){});
   syncMeta();
 }
-function stopSync(){if(fbUnsub){fbUnsub();fbUnsub=null;}if(fbUnsubMile){fbUnsubMile();fbUnsubMile=null;}if(fbUnsubDraft){fbUnsubDraft();fbUnsubDraft=null;}}
+function rebuildRoute(r){
+  if(r.flavin&&r._coFlavin)r.flavin.forEach(function(row,i){if(row)row._co=r._coFlavin[i]||'';});
+  if(r.owned&&r._coOwned)r.owned.forEach(function(row,i){if(row)row._co=r._coOwned[i]||'';});
+  if(r.sheets)Object.keys(r.sheets).forEach(function(sn){var sd=r.sheets[sn];if(sd&&sd.jobs)sd.jobs.forEach(function(row){if(row)row._co=sd.company||sn;});});
+  return r;
+}
+function stopSync(){[fbUnsub,fbUnsubMile,fbUnsubDraft,fbUnsubRoute,fbUnsubWork].forEach(function(u){if(u)u();});fbUnsub=fbUnsubMile=fbUnsubDraft=fbUnsubRoute=fbUnsubWork=null;}
 function mergeRemoteLog(r){
   if(!r||!r.date)return false;
   var i=logs.findIndex(function(l){return l.date===r.date;});
@@ -1968,7 +1992,26 @@ function syncPushDrafts(){if(syncOn())userCol('meta').doc('drafts').set({drafts:
 function syncPushLists(){if(syncOn())userCol('meta').doc('lists').set({trades:trades,equipment:equipment}).catch(function(){});}
 function syncPushMileage(){if(syncOn())userCol('meta').doc('mileage').set({data:allMileage()}).catch(function(){});}
 function syncPushProfile(){if(syncOn())userCol('meta').doc('profile').set({data:getProfile()}).catch(function(){});}
-function syncPushAll(){if(!syncOn())return;logs.forEach(function(l){syncPushLog(l);});syncPushDrafts();syncPushLists();syncPushMileage();syncPushProfile();}
+// Sync the loaded route sheet (as JSON — it has nested arrays Firestore won't take raw).
+function syncPushRoute(){
+  if(!syncOn()||!allData||!allData.headers)return;
+  var sa=new Date().toISOString();setData('dlr_route_sa',sa);
+  try{userCol('meta').doc('route').set({json:JSON.stringify(getData('dlr_route',allData)),savedAt:sa}).catch(function(){});}catch(e){}
+}
+// Sync the in-progress DLR scratchpad (debounced — saveWorkingDLR fires on every keystroke).
+var _workTimer=null;
+function syncPushWorking(){
+  if(!syncOn())return;
+  clearTimeout(_workTimer);
+  _workTimer=setTimeout(function(){
+    if(!syncOn())return;
+    var w=getData('dlr_working',null),sa=new Date().toISOString();
+    setData('dlr_working_sa',sa);
+    var payload=w?{date:w.date||'',crews:w.crews||[],savedAt:sa}:{cleared:true,savedAt:sa};
+    userCol('meta').doc('working').set(payload).catch(function(){});
+  },1400);
+}
+function syncPushAll(){if(!syncOn())return;logs.forEach(function(l){syncPushLog(l);});syncPushDrafts();syncPushLists();syncPushMileage();syncPushProfile();syncPushRoute();syncPushWorking();}
 
 function updateAccountUI(){
   var signedOut=document.getElementById('account-signedout');
