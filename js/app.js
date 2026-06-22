@@ -499,8 +499,8 @@ function buildRouteTabs(){
   tabBar.innerHTML=
     '<button class="tab'+(mine&&routeMine==='flavin'?' active':'')+'" onclick="setMineTab(\'flavin\')">'+escHtml(lastName)+'<span class="tab-ct">'+allData.flavin.length+'</span></button>'+
     '<button class="tab'+(mine&&routeMine==='owned'?' active':'')+'" onclick="setMineTab(\'owned\')">Owned<span class="tab-ct">'+allData.owned.length+'</span></button>'+
-    ((allData.crs&&allData.crs.length)?'<button class="tab'+(routeCRs?' active':'')+'" onclick="setRouteCRs()">CRs<span class="tab-ct">'+allData.crs.length+'</span></button>':'')+
-    '<button class="tab'+(routeAll?' active':'')+'" style="margin-left:auto" onclick="setRouteAll()">All jobs<span class="tab-ct">'+(allData.allJobs||[]).length+'</span></button>';
+    '<button class="tab'+(routeAll?' active':'')+'" onclick="setRouteAll()">All jobs<span class="tab-ct">'+(allData.allJobs||[]).length+'</span></button>'+
+    ((allData.crs&&allData.crs.length)?'<button class="tab tab-crs'+(routeCRs?' active':'')+'" style="margin-left:auto" onclick="setRouteCRs()">CRs<span class="tab-ct">'+allData.crs.length+'</span></button>':'');
 }
 function setMineTab(w){routeAll=false;routeCRs=false;routeMine=w;routeCo='';buildRouteTabs();renderRouteBody();}
 function setRouteAll(){routeAll=true;routeCRs=false;routeCo='';buildRouteTabs();renderRouteBody();}
@@ -676,7 +676,7 @@ function albumDate(iso){
 }
 function abbrevStreet(s){
   s=s.replace(/\bEast\b/gi,'E').replace(/\bWest\b/gi,'W').replace(/\bNorth\b/gi,'N').replace(/\bSouth\b/gi,'S');
-  [[/\bStreet\b/gi,'St'],[/\bAvenue\b/gi,'Ave'],[/\bRoad\b/gi,'Rd'],[/\bBoulevard\b/gi,'Blvd'],
+  [[/\bStreet\b/gi,'St'],[/\bAvenue\b/gi,'Ave'],[/\bAv\b/gi,'Ave'],[/\bRoad\b/gi,'Rd'],[/\bBoulevard\b/gi,'Blvd'],
    [/\bDrive\b/gi,'Dr'],[/\bLane\b/gi,'Ln'],[/\bPlace\b/gi,'Pl'],[/\bCourt\b/gi,'Ct'],
    [/\bTerrace\b/gi,'Ter'],[/\bParkway\b/gi,'Pkwy'],[/\bExpressway\b/gi,'Expwy'],
    [/\bHighway\b/gi,'Hwy'],[/\bSquare\b/gi,'Sq'],[/\bPlaza\b/gi,'Plz']].forEach(function(m){s=s.replace(m[0],m[1]);});
@@ -690,7 +690,7 @@ function shortAddr(loc){
   // strip a leading WR job prefix the route sheet jams on, e.g. "WR100170592-P2 – "
   s=s.replace(/^WR\s*\d+(?:\s*-\s*P?\d+)?\s*[–-]?\s*/i,'').trim();
   var hasNum=/^\d+\s/.test(s);
-  var parts=s.split(/\s+(?:btwn?|between|bet\.?|b\/w|&|and)\s+/i);
+  var parts=s.split(/\s+(?:btwn?|between|bet\.?|b\/w|bt|&|and|@)\s+/i);
   var out=parts[0];
   if(!hasNum&&parts.length>1&&parts[1])out=parts[0]+' & '+parts[1];
   return abbrevStreet(out);
