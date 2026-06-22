@@ -520,6 +520,7 @@ function isActive(v){if(!v)return false;var s=String(v).trim().toLowerCase();ret
 
 // Subtle per-contractor accent (from their logo colors). Matched loosely on name.
 var CONTRACTOR_THEME=[['cac','#1F7A4D'],['onofrio','#C1272D'],['ej','#E0322E'],['gianfia','#2B4A9B'],['mfm','#7A1F2B']];
+function hexToRgba(hex,a){hex=String(hex).replace('#','');if(hex.length===3)hex=hex.replace(/(.)/g,'$1$1');var n=parseInt(hex,16);return 'rgba('+((n>>16)&255)+','+((n>>8)&255)+','+(n&255)+','+a+')';}
 function contractorColor(name){
   if(!name)return '';var s=String(name).toLowerCase();
   for(var i=0;i<CONTRACTOR_THEME.length;i++){if(s.indexOf(CONTRACTOR_THEME[i][0])!==-1)return CONTRACTOR_THEME[i][1];}
@@ -554,9 +555,10 @@ function renderFlavinJobs(jobs){
     }else hpTag='<span class="status-off">Hold Point: No</span>';
     var fuseTag=isActive(fz)?('<span class="b-fuse">Pressure Test: '+escHtml(fz)+'</span>'):'<span class="status-off">Pressure Test: No</span>';
     var coColor=contractorColor(co);
+    var coTint=coColor?hexToRgba(coColor,0.12):'';
     var card=document.createElement('div');card.className='job-card';
     if(coColor)card.style.borderLeft='3px solid '+coColor;
-    card.innerHTML='<div class="card-head"><div class="loc">'+loc+'</div>'+(tw?'<span class="'+bc+'">'+tw+'</span>':'')+' </div>'+
+    card.innerHTML='<div class="card-head"'+(coTint?' style="background:'+coTint+'"':'')+'><div class="loc">'+loc+'</div>'+(tw?'<span class="'+bc+'">'+tw+'</span>':'')+' </div>'+
       '<div class="card-primary"><div class="pf"><span class="fl">Ticket #</span><span class="fv'+(tk?'':' mt')+'">'+(tk||'N/A')+'</span></div><div class="pf"><span class="fl">Contingency</span><span class="fv pl'+(cgf?'':' mt')+'">'+(cgf||'No')+'</span></div></div>'+
       '<div class="card-foreman">'+(co?'<div class="co-tag"'+(coColor?' style="color:'+coColor+'"':'')+'>'+co+'</div>':'')+' <div class="fm-name'+(fm?'':' mt')+'">'+(fmDisp||'N/A')+'</div>'+fmLink+'</div>'+
       '<div class="card-fields"><div class="cf"><span class="fl">Work</span><span class="cfv pl'+(wd?'':' mt')+'">'+(wd||'N/A')+'</span></div><div class="cf"><span class="fl">Work order</span><span class="cfv'+(wo?'':' mt')+'">'+(wo||'N/A')+'</span></div><div class="cf"><span class="fl">Permit hrs</span><span class="cfv'+(ph?'':' mt')+'">'+(ph||'N/A')+'</span></div><div class="cf"><span class="fl">PSC</span><span class="cfv pl'+(psc?'':' mt')+'">'+(psc||'N/A')+'</span></div><div class="cf"><span class="fl">CCI</span><span class="cfv pl'+(cci?'':' mt')+'">'+(cci||'N/A')+'</span></div><div class="cf"><span class="fl">Job owner</span><span class="cfv pl'+(jo?'':' mt')+'">'+(jo||'N/A')+'</span></div><div class="cf"><span class="fl">Code 753</span><span class="cfv'+(c7?'':' mt')+'">'+(c7||'N/A')+'</span></div></div>'+
