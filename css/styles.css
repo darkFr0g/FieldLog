@@ -293,7 +293,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
 .gen-dlr-btn:active{opacity:.8}
 
 /* DLR */
-.page-header{background:var(--surface);padding:16px;border-bottom:2px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.page-header{background:var(--surface);padding:16px;border-bottom:2px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:var(--navh,56px);z-index:50}
 .page-header h1{font-size:22px;font-weight:800;letter-spacing:-.03em}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 16px;border-radius:var(--radius);border:2px solid transparent;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;cursor:pointer;font-family:var(--font);transition:opacity .15s,transform .1s}
 .btn:active{transform:scale(0.97)}
@@ -302,7 +302,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
 .btn-danger{background:#fff0ef;color:var(--red);border-color:#ffd5d2}
 .btn-green{background:var(--green);color:#fff;border-color:var(--green)}
 .btn-sm{padding:6px 12px;font-size:11px}
-.date-header{background:var(--surface);padding:14px 16px;border-bottom:2px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.date-header{background:var(--surface);padding:14px 16px;border-bottom:2px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:var(--navh,56px);z-index:50}
 .date-display{font-size:20px;font-weight:800;letter-spacing:-.03em}
 .date-sub{font-size:11px;color:var(--ink-4);margin-top:2px;font-weight:700;text-transform:uppercase;letter-spacing:.08em}
 
