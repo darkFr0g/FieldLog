@@ -21,8 +21,10 @@ place). Sections below described separately.
   "Jeremiah Flavin". Tabs: **Covering** / **Owned** (your jobs) + a one-at-a-time
   **contractor filter** chip row (themed per contractor logo color) + an **All
   jobs** view (everyone's jobs: location · contractor · WR#/WO# · inspector, with
-  filter + sort). Job cards show 3 status pills — Contingency (yellow) / Hold
-  Point (blue) / Fusing Peer (red) — colored when active, grayed when not.
+  filter + sort + **type-of-work filter**). The 3 status pills — Contingency
+  (yellow) / Hold Point (blue) / Pressure Test = Fusing Peer (red) — are
+  collectively called **"Urgent Tasks"**; colored when active, grayed when not,
+  and active ones show on the collapsed DLR crew block next to the foreman.
   **Hold Point** chip copies a standardized Photos album name (and can fire an
   iOS Shortcut named `FieldLog Album` when the Settings → Photos toggle is on).
   **Map my stops / Map drive** open Google Maps routed through the day's stops,

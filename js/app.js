@@ -398,9 +398,10 @@ function processFile(file){
           var aTk=String(row[headers.indexOf('Ticket #')]||'').trim();
           var aWo=String(row[headers.indexOf('Layout/CWORX Work Order #')]||'').trim();
           var aIn=insp?String(insp).trim():'';
+          var aTow=String(row[headers.indexOf('Type Of Work')]||'').trim();
           if(aLoc||aTk){
             var aKey=aLoc+'|'+aTk+'|'+aIn;
-            if(!allSeen[aKey]){allSeen[aKey]=true;allJobsList.push({location:aLoc,contractor:company,ticket:aTk,wo:aWo,inspector:aIn});}
+            if(!allSeen[aKey]){allSeen[aKey]=true;allJobsList.push({location:aLoc,contractor:company,ticket:aTk,wo:aWo,inspector:aIn,tow:aTow});}
           }
           if(insp&&String(insp).trim()===NAME){
             if(!row[0]||String(row[0]).trim()===''){row=row.slice();row[0]=lastF;}
@@ -551,7 +552,7 @@ function renderFlavinJobs(jobs){
       var hpIdx=window._hpData.push({date:allData.routeDate||today(),ticket:tk||'',wo:wo||'',location:(loc==='—'?'':loc),hp:hp})-1;
       hpTag='<button class="hp-chip" onclick="holdPointAlbum('+hpIdx+')">📷 Hold Point: '+escHtml(hp)+'</button>';
     }else hpTag='<span class="status-off">Hold Point: No</span>';
-    var fuseTag=isActive(fz)?('<span class="b-fuse">Fusing Peer: '+escHtml(fz)+'</span>'):'<span class="status-off">Fusing Peer: No</span>';
+    var fuseTag=isActive(fz)?('<span class="b-fuse">Pressure Test: '+escHtml(fz)+'</span>'):'<span class="status-off">Pressure Test: No</span>';
     var coColor=contractorColor(co);
     var card=document.createElement('div');card.className='job-card';
     if(coColor)card.style.borderLeft='3px solid '+coColor;
@@ -583,16 +584,16 @@ function renderListJobs(jobs){
 }
 
 // All jobs across every inspector: location · contractor · WR#/WO# · covering inspector.
-var ajCo='',ajInsp='',ajSort='inspector';
-function ajChange(kind,val){if(kind==='co')ajCo=val;else if(kind==='insp')ajInsp=val;else ajSort=val;renderAllJobs(allData.allJobs);}
+var ajCo='',ajInsp='',ajSort='inspector',ajTow='';
+function ajChange(kind,val){if(kind==='co')ajCo=val;else if(kind==='insp')ajInsp=val;else if(kind==='tow')ajTow=val;else ajSort=val;renderAllJobs(allData.allJobs);}
 function renderAllJobs(jobs){
   jobs=jobs||[];resultsHdr.style.display='none';jobsContainer.innerHTML='';
   if(jobs.length===0){jobsContainer.innerHTML='<div class="no-jobs">No jobs found</div>';return;}
-  var cos={},insps={};
-  jobs.forEach(function(j){if(j.contractor)cos[j.contractor]=1;insps[j.inspector||'—']=1;});
-  var coList=Object.keys(cos).sort(),inspList=Object.keys(insps).sort();
-  if(ajCo&&!cos[ajCo])ajCo='';if(ajInsp&&!insps[ajInsp])ajInsp='';
-  var filtered=jobs.filter(function(j){return (!ajCo||j.contractor===ajCo)&&(!ajInsp||(j.inspector||'—')===ajInsp);});
+  var cos={},insps={},tows={};
+  jobs.forEach(function(j){if(j.contractor)cos[j.contractor]=1;insps[j.inspector||'—']=1;if(j.tow)tows[j.tow]=1;});
+  var coList=Object.keys(cos).sort(),inspList=Object.keys(insps).sort(),towList=Object.keys(tows).sort();
+  if(ajCo&&!cos[ajCo])ajCo='';if(ajInsp&&!insps[ajInsp])ajInsp='';if(ajTow&&!tows[ajTow])ajTow='';
+  var filtered=jobs.filter(function(j){return (!ajCo||j.contractor===ajCo)&&(!ajInsp||(j.inspector||'—')===ajInsp)&&(!ajTow||j.tow===ajTow);});
   filtered=filtered.slice().sort(function(a,b){
     if(ajSort==='contractor')return (a.contractor||'~').localeCompare(b.contractor||'~')||(a.location||'').localeCompare(b.location||'');
     if(ajSort==='location')  return (a.location||'~').localeCompare(b.location||'~');
@@ -604,6 +605,7 @@ function renderAllJobs(jobs){
   bar.innerHTML=
     '<select style="'+ss+'" onchange="ajChange(\'co\',this.value)">'+opts(coList,ajCo,'All contractors')+'</select>'+
     '<select style="'+ss+'" onchange="ajChange(\'insp\',this.value)">'+opts(inspList,ajInsp,'All inspectors')+'</select>'+
+    (towList.length?'<select style="'+ss+'" onchange="ajChange(\'tow\',this.value)">'+opts(towList,ajTow,'All work types')+'</select>':'')+
     '<select style="'+ss+'" onchange="ajChange(\'sort\',this.value)">'+
       '<option value="inspector"'+(ajSort==='inspector'?' selected':'')+'>Sort: Inspector</option>'+
       '<option value="contractor"'+(ajSort==='contractor'?' selected':'')+'>Sort: Contractor</option>'+
@@ -858,16 +860,21 @@ function crewHTML(crew){
   var leadLine=(crew.leads&&crew.leads.length)?
     '<div class="crew-leads">'+crew.leads.map(function(l){var lbl=leadTypeLabel(l.type);return '<span class="lead-tag lead-'+l.type+'">'+escHtml(l.name)+(lbl?'<i>'+lbl+'</i>':'')+'</span>';}).join('')+'</div>':'';
   var fuseBadge=isActive(crew.fusingPeer)?
-    '<span class="b-fuse">Fusing Peer: '+escHtml(crew.fusingPeer)+'</span>':
-    '<span class="status-off">Fusing Peer: No</span>';
-  var badgeBar='<div class="badge-bar">'+contBadge+hpBadge+fuseBadge+'</div>';
+    '<span class="b-fuse">Pressure Test: '+escHtml(crew.fusingPeer)+'</span>':
+    '<span class="status-off">Pressure Test: No</span>';
+  var badgeBar='<div class="urgent-cap">Urgent Tasks</div><div class="badge-bar">'+contBadge+hpBadge+fuseBadge+'</div>';
+  var urg=[];
+  if(isActive(crew.contingency))urg.push('<span class="utag ut-cont">⚠ '+escHtml(crew.contingencyNum||'Contingency')+'</span>');
+  if(isActive(crew.holdPoint))urg.push('<span class="utag ut-hp">Hold Point</span>');
+  if(isActive(crew.fusingPeer))urg.push('<span class="utag ut-pt">Pressure Test</span>');
+  var urgentLine=urg.length?'<div class="crew-urgent">'+urg.join('')+'</div>':'';
 
   return '<div class="crew-card" id="crew-'+crew.id+'">'+
     '<div class="crew-card-header" onclick="toggleCrew('+crew.id+')">'+
       '<div style="flex:1;min-width:0">'+
         '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><h2>Crew '+crew.num+'</h2>'+routeTag+
           (crew.location?'<span class="crew-loc-preview">'+escHtml(crew.location.substring(0,40))+'</span>':'')+'</div>'+
-        leadLine+
+        leadLine+urgentLine+
       '</div>'+
       '<div style="display:flex;align-items:center;gap:8px;flex-shrink:0">'+
         '<button class="btn btn-danger btn-sm" onclick="event.stopPropagation();removeCrew('+crew.id+')" style="width:28px;height:28px;padding:0;font-size:14px;font-weight:800;display:flex;align-items:center;justify-content:center">×</button>'+
