@@ -239,7 +239,10 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
 .mz-tbl .mz-0 td{color:var(--ink-4)}
 .mz-tbl tfoot td{font-weight:800;border-top:2px solid var(--border);border-bottom:none}
 .day-divider{display:flex;align-items:center;gap:10px;margin:18px 12px 4px;color:var(--ink-4);font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.1em}
-.day-divider-btn{cursor:pointer;user-select:none}
+.day-divider-btn{cursor:pointer;user-select:none;background:var(--surface);border:2px solid var(--border);border-radius:10px;margin:16px 12px 8px;padding:12px 14px;justify-content:space-between;color:var(--ink);font-size:13px}
+.day-divider-btn:before,.day-divider-btn:after{display:none}
+.day-divider-btn .mchev{font-size:16px;color:var(--ink-2)}
+.ver-chip{font-size:10px;font-weight:700;color:var(--ink-4);font-family:var(--font-mono)}
 .sync-row{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:8px}
 .sync-btn{font-size:12px;font-weight:700;border:1px solid var(--border);background:var(--surface);border-radius:8px;padding:5px 14px;color:var(--ink-2);cursor:pointer;font-family:var(--font)}
 .sync-stamp{font-size:11px;color:var(--ink-4);font-weight:600;white-space:nowrap}

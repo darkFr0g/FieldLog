@@ -65,8 +65,8 @@ function restoreRoute(){
   allData=r;
   renderRouteResults();
 }
-function saveWorkingDLR(){try{var d=document.getElementById('log-date');setData('dlr_working',{date:d?d.value:today(),crews:currentCrews});}catch(e){}syncPushWorking();}
-function clearWorkingDLR(){try{localStorage.removeItem('dlr_working');}catch(e){}syncPushWorking();}
+function saveWorkingDLR(){try{var d=document.getElementById('log-date');setData('dlr_working',{date:d?d.value:today(),crews:currentCrews});}catch(e){}}
+function clearWorkingDLR(){try{localStorage.removeItem('dlr_working');}catch(e){}}
 function restoreWorkingDLR(){
   var w=getData('dlr_working',null);
   if(w&&w.crews&&w.crews.length){
@@ -1924,17 +1924,6 @@ function startSync(){
     if(sa<=getData('dlr_route_sa',''))return;
     try{var rd=JSON.parse(d.data().json);if(rd&&rd.headers){allData=rebuildRoute(rd);setData('dlr_route',rd);setData('dlr_route_sa',sa);markSynced();if(document.getElementById('page-route').classList.contains('active'))renderRouteResults();}}catch(e){}
   },function(){});
-  // Live in-progress DLR scratchpad
-  if(fbUnsubWork)fbUnsubWork();
-  fbUnsubWork=userCol('meta').doc('working').onSnapshot(function(d){
-    if(!d.exists)return;var data=d.data(),sa=data.savedAt||'';
-    if(sa<=getData('dlr_working_sa',''))return;
-    setData('dlr_working_sa',sa);
-    if(data.cleared){currentCrews=[];try{localStorage.removeItem('dlr_working');}catch(e){}}
-    else{currentCrews=data.crews||[];setData('dlr_working',{date:data.date||'',crews:currentCrews});var ld=document.getElementById('log-date');if(ld&&data.date){ld.value=data.date;mileDate=data.date;var td=document.getElementById('today-display');if(td)td.textContent=fmtDate(data.date);}}
-    markSynced();
-    if(document.getElementById('page-dlr').classList.contains('active')){renderCrews();renderMileage();}
-  },function(){});
   syncMeta();
 }
 function rebuildRoute(r){
@@ -2018,7 +2007,7 @@ function syncPushWorking(){
     userCol('meta').doc('working').set(payload).catch(function(){});
   },1400);
 }
-function syncPushAll(){if(!syncOn())return;logs.forEach(function(l){syncPushLog(l);});syncPushDrafts();syncPushLists();syncPushMileage();syncPushProfile();syncPushRoute();syncPushWorking();}
+function syncPushAll(){if(!syncOn())return;logs.forEach(function(l){syncPushLog(l);});syncPushDrafts();syncPushLists();syncPushMileage();syncPushProfile();syncPushRoute();}
 
 function updateAccountUI(){
   var signedOut=document.getElementById('account-signedout');
@@ -2051,6 +2040,9 @@ function showUpdateBanner(){
   b.onclick=function(){checkForUpdate();};
   document.body.appendChild(b);
 }
+var APP_VERSION='v10.4';
+function setVersion(){var els=document.querySelectorAll('.vbadge,.ver-chip');for(var i=0;i<els.length;i++)els[i].textContent=APP_VERSION;}
+setVersion();
 function setNavH(){var n=document.querySelector('.nav');if(n)document.documentElement.style.setProperty('--navh',n.offsetHeight+'px');}
 setNavH();window.addEventListener('resize',setNavH);window.addEventListener('orientationchange',setNavH);
 if('serviceWorker' in navigator){

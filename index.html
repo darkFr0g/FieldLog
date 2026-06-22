@@ -100,7 +100,7 @@
   <div class="date-header">
     <div>
       <div class="date-display" id="today-display"></div>
-      <div class="date-sub">Daily Log + Mileage · <span class="sync-stamp"></span></div>
+      <div class="date-sub">Daily Log + Mileage · <span class="sync-stamp"></span> · <span class="ver-chip"></span></div>
     </div>
     <div style="display:flex;gap:8px;align-items:center">
       <button class="btn btn-secondary btn-sm" onclick="syncRefresh()" aria-label="Refresh">↻</button>
@@ -133,7 +133,7 @@
 <!-- MONTH PAGE -->
 <div id="page-month" class="page">
   <div class="date-header">
-    <div><div class="date-display" id="month-display"></div><div class="date-sub">Mileage — month · <span class="sync-stamp"></span></div></div>
+    <div><div class="date-display" id="month-display"></div><div class="date-sub">Mileage — month · <span class="sync-stamp"></span> · <span class="ver-chip"></span></div></div>
     <div style="display:flex;gap:6px;align-items:center">
       <button class="btn btn-secondary btn-sm" onclick="syncRefresh()" aria-label="Refresh">↻</button>
       <button class="btn btn-secondary btn-sm" onclick="monthStep(-1)" aria-label="Previous month">‹</button>
@@ -145,7 +145,7 @@
 
 <!-- HISTORY PAGE -->
 <div id="page-history" class="page">
-  <div class="page-header"><h1>Log History</h1><div style="display:flex;gap:8px;align-items:center"><span class="sync-stamp"></span><button class="btn btn-secondary btn-sm" onclick="syncRefresh()" aria-label="Refresh">↻</button><button class="btn btn-secondary btn-sm" onclick="showExportModal()">Export</button></div></div>
+  <div class="page-header"><h1>Log History</h1><div style="display:flex;gap:8px;align-items:center"><span class="ver-chip"></span><span class="sync-stamp"></span><button class="btn btn-secondary btn-sm" onclick="syncRefresh()" aria-label="Refresh">↻</button><button class="btn btn-secondary btn-sm" onclick="showExportModal()">Export</button></div></div>
   <div class="search-bar"><input class="search-input" placeholder="Search date, WO/WR#, location…" id="search-input" oninput="renderHistory()"></div>
   <div class="search-bar" style="border-bottom:2px solid var(--border)">
     <select id="history-sort" onchange="renderHistory()" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px;color:var(--ink);font-family:var(--font);outline:none">
@@ -232,7 +232,7 @@
   <div class="settings-section" style="margin-bottom:20px">
     <div class="settings-title">About</div>
     <div class="settings-card">
-      <div class="settings-row"><span style="font-size:15px">Field Log</span><span style="color:var(--ink-3);font-size:13px">v10.3</span></div>
+      <div class="settings-row"><span style="font-size:15px">Field Log</span><span class="ver-chip" style="color:var(--ink-3);font-size:13px"></span></div>
       <div class="settings-row" style="cursor:pointer" onclick="checkForUpdate()"><span style="font-size:15px;color:var(--green);font-weight:600">Check for updates</span><span style="color:var(--ink-3);font-size:13px">Reload latest →</span></div>
     </div>
   </div>
