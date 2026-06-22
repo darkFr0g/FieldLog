@@ -214,20 +214,21 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
 .lead-welder{background:#FDEAEA;color:#B3261E}
 .lead-other{background:var(--surface-2);color:var(--ink-3)}
 /* Mileage stops — one aligned line per stop */
-.ms-list{margin:4px 0 8px}
-.ms-row{display:grid;grid-template-columns:14px minmax(0,1.5fr) minmax(0,1fr) 42px 58px;gap:5px;align-items:center;padding:5px 2px;border-bottom:1px solid var(--border)}
-.ms-row.ms-start{background:var(--green-bg);border-radius:6px}
-.ms-n{font-size:11px;font-weight:800;color:var(--ink-4);text-align:center}
-.ms-start .ms-n{color:var(--green-text)}
+.ms-list{margin:4px 0 8px;border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.ms-row{display:grid;grid-template-columns:38px minmax(0,1.45fr) minmax(0,1fr) 44px 24px;gap:5px;align-items:center;padding:5px 6px;border-bottom:1px solid var(--border)}
+.ms-row:last-child{border-bottom:none}
+.ms-row:nth-of-type(even){background:var(--surface-2)}
+.ms-row.ms-start{background:var(--green-bg)}
+.ms-ctl-l{display:flex;gap:2px;align-items:center;justify-content:flex-start}
+.ms-star{width:17px;text-align:center;font-size:13px;color:var(--green-text)}
 .ms-loc,.ms-cmt{min-width:0}
-.ms-row input{width:100%;box-sizing:border-box;font-size:12px;padding:6px 6px}
+.ms-row input{width:100%;box-sizing:border-box;font-size:12px;padding:6px 6px;background:var(--surface)}
 .ms-tkt{display:block;font-size:8px;color:var(--ink-4);font-family:var(--font-mono);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2}
-.ms-mi{text-align:right;font-family:var(--font-mono)}
-.ms-start-lbl{font-size:9px;font-weight:800;color:var(--green-text);text-align:center}
-.ms-ctl{display:flex;gap:3px;justify-content:flex-end;align-items:center}
-.ms-ic{width:17px;height:26px;border:1px solid var(--border);background:var(--surface-2);border-radius:4px;font-size:11px;line-height:1;padding:0;color:var(--ink-2);cursor:pointer;font-family:var(--font)}
+.ms-mi{text-align:right;font-family:var(--font-mono);font-weight:800;color:var(--ink);background:#FFF6DF!important;border-color:var(--border-mid)!important}
+.ms-start-lbl{font-size:9px;font-weight:800;color:var(--green-text);text-align:center;background:none!important}
+.ms-ic{width:17px;height:26px;border:1px solid var(--border);background:var(--surface);border-radius:4px;font-size:11px;line-height:1;padding:0;color:var(--ink-2);cursor:pointer;font-family:var(--font)}
 .ms-ic-sp{width:17px}
-.ms-del{color:var(--red)}
+.ms-del{color:var(--red);justify-self:end}
 /* Month overview */
 .mz-prof{margin:10px 12px;font-size:12px;font-weight:700;color:var(--ink-2)}
 .mz-tbl{width:calc(100% - 24px);margin:0 12px;border-collapse:collapse;font-size:13px}

@@ -139,6 +139,7 @@ function mileTotal(e){return mileSum(e);}
 function mileSetField(field,val){var e=currentMileEntry();e[field]=val;saveMileageEntry(e);renderMileage();}
 function mileSetStop(i,field,val){var e=currentMileEntry();if(!e.stops[i])return;if(field==='mi'){val=(''+val).trim();e.stops[i].mi=(val===''?'':(isNaN(+val)?e.stops[i].mi:+val));}else e.stops[i][field]=val;saveMileageEntry(e);renderMileage();}
 function mileAddStop(){var e=currentMileEntry();e.stops.push({loc:'',ticket:'',mi:'',remarks:''});saveMileageEntry(e);renderMileage();}
+function mileAddLoc(v){if(!v)return;var p=v.split('~');var e=currentMileEntry();e.stops.push({loc:p[0]||'',ticket:p[1]||'',mi:'',remarks:''});saveMileageEntry(e);renderMileage();}
 function mileDelStop(i){var e=currentMileEntry();e.stops.splice(i,1);if(e.stops.length===0)e.stops.push({loc:'',ticket:'',mi:'',remarks:''});saveMileageEntry(e);renderMileage();}
 function mileMoveStop(i,dir){var e=currentMileEntry();var j=i+dir;if(j<0||j>=e.stops.length)return;var t=e.stops[i];e.stops[i]=e.stops[j];e.stops[j]=t;saveMileageEntry(e);renderMileage();}
 function mileDupStop(i){var e=currentMileEntry();var s=e.stops[i];if(!s)return;e.stops.splice(i+1,0,{loc:s.loc,ticket:s.ticket,mi:'',remarks:s.remarks});saveMileageEntry(e);renderMileage();}
@@ -249,21 +250,23 @@ function renderMileage(){
     if(i>0&&cum!==null&&s.mi!==''&&s.mi!=null&&!isNaN(+s.mi))cum+=+s.mi;
     var isStart=(i===0);
     h+='<div class="ms-row'+(isStart?' ms-start':'')+'">'+
-      '<span class="ms-n">'+(isStart?'★':(i+1))+'</span>'+
+      '<span class="ms-ctl-l">'+
+        (isStart?'<span class="ms-star">★</span>':(i>=1?'<button class="ms-ic" onclick="mileMoveStop('+i+',-1)">↑</button>':'<span class="ms-ic-sp"></span>'))+
+        (i<n-1?'<button class="ms-ic" onclick="mileMoveStop('+i+',1)">↓</button>':'<span class="ms-ic-sp"></span>')+
+      '</span>'+
       '<div class="ms-loc"><input class="field-input" placeholder="'+(isStart?'Start (first job)':'Location')+'" value="'+escHtml(s.loc||'')+'" onchange="mileSetStop('+i+',\'loc\',this.value)">'+(s.ticket?'<span class="ms-tkt">'+escHtml(s.ticket)+'</span>':'')+'</div>'+
       '<input class="field-input ms-cmt" placeholder="comments" value="'+escHtml(s.remarks||'')+'" onchange="mileSetStop('+i+',\'remarks\',this.value)">'+
       (isStart?'<span class="ms-mi ms-start-lbl">START</span>':'<input class="field-input ms-mi" inputmode="numeric" placeholder="mi" value="'+(s.mi===''||s.mi==null?'':s.mi)+'" onchange="mileSetStop('+i+',\'mi\',this.value)">')+
-      '<span class="ms-ctl">'+
-        (i>=1?'<button class="ms-ic" onclick="mileMoveStop('+i+',-1)">↑</button>':'<span class="ms-ic-sp"></span>')+
-        (i<n-1?'<button class="ms-ic" onclick="mileMoveStop('+i+',1)">↓</button>':'<span class="ms-ic-sp"></span>')+
-        '<button class="ms-ic ms-del" onclick="mileDelStop('+i+')">×</button>'+
-      '</span>'+
+      '<button class="ms-ic ms-del" onclick="mileDelStop('+i+')">×</button>'+
     '</div>';
   });
   h+='</div>';
   var copyDays=mileDaysWithStops();
   var copySel=copyDays.length?('<select class="mile-sel mile-copy" onchange="mileCopyFrom(this.value);this.value=\'\'"><option value="">Copy stops from another day…</option>'+copyDays.map(function(k){return '<option value="'+k+'">'+new Date(k+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})+'</option>';}).join('')+'</select>'):'';
-  h+='<div class="mile-actions"><button class="btn btn-secondary btn-sm" onclick="mileAddStop()">+ Add stop</button><button class="btn btn-secondary btn-sm" onclick="mileLoadFromLog()">Load stops from crews</button><button class="btn btn-green btn-sm" onclick="mileMapStops()">Map drive</button></div>'+
+  var addLocs=mileStopSource(mileDate);
+  var addSel=addLocs.length?('<select class="mile-sel" style="margin-top:8px" onchange="mileAddLoc(this.value);this.value=\'\'"><option value="">+ Add stop from a job location…</option>'+addLocs.map(function(o){return '<option value="'+escHtml(o.loc)+'~'+escHtml(o.ticket||'')+'">'+escHtml(o.loc)+'</option>';}).join('')+'</select>'):'';
+  h+='<div class="mile-actions"><button class="btn btn-secondary btn-sm" onclick="mileAddStop()">+ Add blank</button><button class="btn btn-secondary btn-sm" onclick="mileLoadFromLog()">Load all from crews</button><button class="btn btn-green btn-sm" onclick="mileMapStops()">Map drive</button></div>'+
+     addSel+
      (copySel?'<div style="margin-top:8px">'+copySel+'</div>':'')+
      '<div class="mile-total">'+mileTotal(e)+' mi today'+(mileEndOdo(e)!==''?' · ends '+mileEndOdo(e):'')+'</div></div>';
   var prevEnd=mileEndOdo(milePrevEntry(mileDate));
