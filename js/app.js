@@ -305,6 +305,22 @@ document.getElementById('genDlrBtn').addEventListener('click',function(){generat
 function setStatus(t,m){statusBar.classList.add('visible');statusDot.className='status-dot '+t;statusText.textContent=m;}
 function fmtName(n){if(!n)return '';var p=n.trim().split(/\s+/);return p.length===1?p[0]:p[0].charAt(0).toUpperCase()+'. '+p[p.length-1];}
 
+// SUMMARY sheet holds two attendance tables (col C name / col D status):
+// a "CR" roster (inspectors: IN / Out / Nights) then a "CCI's" roster.
+function summarySheet(wb){for(var i=0;i<wb.SheetNames.length;i++){if(wb.SheetNames[i].toLowerCase().trim()==='summary')return wb.Sheets[wb.SheetNames[i]];}return null;}
+function parseAttendance(wb){
+  var ss=summarySheet(wb);if(!ss)return{crs:[],ccis:[]};
+  var rows=XLSX.utils.sheet_to_json(ss,{header:1,defval:null}),crs=[],ccis=[],mode=null;
+  for(var i=0;i<rows.length;i++){
+    var c=rows[i][2],d=rows[i][3],cl=c?String(c).toLowerCase().trim():'';
+    if(cl==='cr'){mode='cr';continue;}
+    if(cl.indexOf('cci')!==-1){mode='cci';continue;}
+    if(!c||!String(c).trim()){if(mode==='cci')break;continue;}
+    var rec={name:String(c).trim(),status:String(d||'').trim()};
+    if(mode==='cr')crs.push(rec);else if(mode==='cci')ccis.push(rec);
+  }
+  return {crs:crs,ccis:ccis};
+}
 function parseCCIs(wb){
   var ss=wb.Sheets['Summary'];if(!ss)return[];
   var rows=XLSX.utils.sheet_to_json(ss,{header:1,defval:null});
@@ -373,7 +389,7 @@ function processFile(file){
   reader.onload=function(e){
     try{
       var wb=XLSX.read(new Uint8Array(e.target.result),{type:'array',cellDates:true});
-      var ccis=parseCCIs(wb);
+      var att=parseAttendance(wb),ccis=(att.ccis.length?att.ccis:parseCCIs(wb)),crs=att.crs;
       var sheetJobs={};var headers=null;var allJobsList=[];var allSeen={};
       var SHEETS=['CAC','Donofrio','EJ','Gianfia','MFM'];
       for(var si=0;si<wb.SheetNames.length;si++){
@@ -449,7 +465,7 @@ function processFile(file){
       }
       allJobsList.sort(function(a,b){return (a.inspector||'~~~').localeCompare(b.inspector||'~~~')||a.location.localeCompare(b.location);});
       var routeDate=parseDateFromName(file.name)||parseSummaryDate(wb)||null;
-      allData={headers:headers,flavin:myJobs,flavinCompany:myJobsCompany,owned:ownedJobs,sheets:sheetJobs,ccis:ccis,contractorSheets:SHEETS,name:NAME,routeDate:routeDate,allJobs:allJobsList};
+      allData={headers:headers,flavin:myJobs,flavinCompany:myJobsCompany,owned:ownedJobs,sheets:sheetJobs,ccis:ccis,crs:crs,contractorSheets:SHEETS,name:NAME,routeDate:routeDate,allJobs:allJobsList};
       saveRoute();
       renderRouteResults();
     }catch(err){setStatus('err','Error: '+err.message);dropZone.style.display='';}
@@ -470,23 +486,39 @@ function renderRouteResults(){
   var grouped=groupByWOLocation(allData.flavin);var keys=Object.keys(grouped);
   document.getElementById('genDlrInfo').innerHTML='<b>'+allData.flavin.length+' job row'+(allData.flavin.length!==1?'s':'')+' → '+keys.length+' DLR block'+(keys.length!==1?'s':'')+' by WO / Location</b>';
   document.getElementById('genDlrBar').classList.add('visible');
-  routeAll=false;routeMine='flavin';routeCo='';
+  routeAll=false;routeCRs=false;routeMine='flavin';routeCo='';
   buildRouteTabs();renderRouteBody();
 }
 
 // Route view state: my jobs (Covering / Owned) with a one-at-a-time contractor
 // filter, plus a separate All-jobs reference view.
-var routeAll=false,routeMine='flavin',routeCo='';
+var routeAll=false,routeCRs=false,routeMine='flavin',routeCo='';
 function buildRouteTabs(){
   var lastName=allData.name.split(' ').pop();
+  var mine=(!routeAll&&!routeCRs);
   tabBar.innerHTML=
-    '<button class="tab'+(!routeAll&&routeMine==='flavin'?' active':'')+'" onclick="setMineTab(\'flavin\')">'+escHtml(lastName)+'<span class="tab-ct">'+allData.flavin.length+'</span></button>'+
-    '<button class="tab'+(!routeAll&&routeMine==='owned'?' active':'')+'" onclick="setMineTab(\'owned\')">Owned<span class="tab-ct">'+allData.owned.length+'</span></button>'+
+    '<button class="tab'+(mine&&routeMine==='flavin'?' active':'')+'" onclick="setMineTab(\'flavin\')">'+escHtml(lastName)+'<span class="tab-ct">'+allData.flavin.length+'</span></button>'+
+    '<button class="tab'+(mine&&routeMine==='owned'?' active':'')+'" onclick="setMineTab(\'owned\')">Owned<span class="tab-ct">'+allData.owned.length+'</span></button>'+
+    ((allData.crs&&allData.crs.length)?'<button class="tab'+(routeCRs?' active':'')+'" onclick="setRouteCRs()">CRs<span class="tab-ct">'+allData.crs.length+'</span></button>':'')+
     '<button class="tab'+(routeAll?' active':'')+'" style="margin-left:auto" onclick="setRouteAll()">All jobs<span class="tab-ct">'+(allData.allJobs||[]).length+'</span></button>';
 }
-function setMineTab(w){routeAll=false;routeMine=w;routeCo='';buildRouteTabs();renderRouteBody();}
-function setRouteAll(){routeAll=true;routeCo='';buildRouteTabs();renderRouteBody();}
+function setMineTab(w){routeAll=false;routeCRs=false;routeMine=w;routeCo='';buildRouteTabs();renderRouteBody();}
+function setRouteAll(){routeAll=true;routeCRs=false;routeCo='';buildRouteTabs();renderRouteBody();}
+function setRouteCRs(){routeCRs=true;routeAll=false;buildRouteTabs();renderRouteBody();}
 function setRouteCo(co){routeCo=co;renderRouteBody();}
+function attRank(s){s=(s||'').toLowerCase();if(s.indexOf('night')!==-1)return 1;if(s.indexOf('out')!==-1)return 2;if(s.indexOf('in')!==-1)return 0;return 3;}
+function attClass(s){var r=attRank(s);return r===0?'att-in':r===1?'att-night':r===2?'att-out':'att-na';}
+function renderCRs(){
+  resultsHdr.style.display='none';
+  var crs=(allData.crs||[]),me=inspectorName();
+  if(!crs.length){jobsContainer.innerHTML='<div class="no-jobs">No CR attendance on this route sheet</div>';return;}
+  var inCt=crs.filter(function(r){return attRank(r.status)===0;}).length;
+  function row(r){return '<div class="att-row'+(r.name.toLowerCase()===me.toLowerCase()?' att-me':'')+'"><span class="att-name">'+escHtml(r.name)+'</span><span class="att-st '+attClass(r.status)+'">'+escHtml(r.status||'—')+'</span></div>';}
+  var sorted=crs.slice().sort(function(a,b){return attRank(a.status)-attRank(b.status)||a.name.localeCompare(b.name);});
+  var h='<div class="att-hdr">'+inCt+' of '+crs.length+' CRs in</div><div class="att-list">'+sorted.map(row).join('')+'</div>';
+  if(allData.ccis&&allData.ccis.length)h+='<div class="att-sub">CCIs</div><div class="att-list">'+allData.ccis.slice().sort(function(a,b){return attRank(a.status)-attRank(b.status)||a.name.localeCompare(b.name);}).map(row).join('')+'</div>';
+  jobsContainer.innerHTML=h;
+}
 function coChip(label,val,count,color){
   var active=routeCo===val,style='';
   if(active){var c=color||'#111';style='background:'+c+';border-color:'+c+';color:#fff';}
@@ -495,6 +527,7 @@ function coChip(label,val,count,color){
 }
 function renderRouteBody(){
   var row=document.getElementById('coFilterRow');
+  if(routeCRs){if(row)row.style.display='none';renderCRs();return;}
   if(routeAll){if(row)row.style.display='none';renderAllJobs(allData.allJobs);return;}
   var jobs=(routeMine==='owned')?allData.owned:allData.flavin;
   var counts={},order=[];
