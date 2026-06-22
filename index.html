@@ -33,6 +33,10 @@
     <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
     Day
   </button>
+  <button class="nav-btn" onclick="showPage('month')" id="nav-month">
+    <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="16" y1="2" x2="16" y2="6"/></svg>
+    Month
+  </button>
   <button class="nav-btn" onclick="showPage('history')" id="nav-history">
     <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
     History
@@ -47,7 +51,7 @@
 <div id="page-route" class="page active">
 <div class="wrap">
   <div class="hdr">
-    <div class="vbadge">v9.0</div>
+    <div class="vbadge">v9.1</div>
     <h1 class="hdr-title">Locations for <span id="headingName">Jeremiah Flavin</span></h1>
   </div>
   <div id="uploadSection">
@@ -122,6 +126,18 @@
   </div>
   <div class="day-divider"><span>Mileage</span></div>
   <div id="mileage-body"></div>
+</div>
+
+<!-- MONTH PAGE -->
+<div id="page-month" class="page">
+  <div class="date-header">
+    <div><div class="date-display" id="month-display"></div><div class="date-sub">Mileage — month</div></div>
+    <div style="display:flex;gap:6px;align-items:center">
+      <button class="btn btn-secondary btn-sm" onclick="monthStep(-1)" aria-label="Previous month">‹</button>
+      <button class="btn btn-secondary btn-sm" onclick="monthStep(1)" aria-label="Next month">›</button>
+    </div>
+  </div>
+  <div id="month-body"></div>
 </div>
 
 <!-- HISTORY PAGE -->
@@ -213,7 +229,7 @@
   <div class="settings-section" style="margin-bottom:20px">
     <div class="settings-title">About</div>
     <div class="settings-card">
-      <div class="settings-row"><span style="font-size:15px">Field Log</span><span style="color:var(--ink-3);font-size:13px">v9.0</span></div>
+      <div class="settings-row"><span style="font-size:15px">Field Log</span><span style="color:var(--ink-3);font-size:13px">v9.1</span></div>
       <div class="settings-row" style="cursor:pointer" onclick="checkForUpdate()"><span style="font-size:15px;color:var(--green);font-weight:600">Check for updates</span><span style="color:var(--ink-3);font-size:13px">Reload latest →</span></div>
     </div>
   </div>
