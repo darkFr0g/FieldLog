@@ -82,6 +82,7 @@ function showPage(p){
   document.querySelectorAll('.nav-btn').forEach(function(el){el.classList.remove('active');});
   document.getElementById('page-'+p).classList.add('active');
   document.getElementById('nav-'+p).classList.add('active');
+  updateSyncStamps();
   if(p==='history')renderHistory();
   if(p==='dlr'){var d=document.getElementById('log-date');if(d&&d.value)mileDate=d.value;renderMileage();}
   if(p==='month')renderMonth();
@@ -1808,7 +1809,17 @@ var FIREBASE_CONFIG = {
   messagingSenderId: "1061730210243",
   appId: "1:1061730210243:web:a300f274241c7f5b752d76"
 };
-var fbDb=null,fbUser=null,fbUnsub=null;
+var fbDb=null,fbUser=null,fbUnsub=null,fbUnsubMile=null,fbUnsubDraft=null,lastSync=null;
+function markSynced(){lastSync=new Date();updateSyncStamps();}
+function syncAgo(){if(!lastSync)return fbUser?'syncing…':'local only';var s=Math.round((Date.now()-lastSync.getTime())/1000);if(s<60)return 'synced '+s+'s ago';var m=Math.round(s/60);if(m<60)return 'synced '+m+'m ago';return 'synced '+lastSync.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});}
+function updateSyncStamps(){var els=document.querySelectorAll('.sync-stamp');for(var i=0;i<els.length;i++)els[i].textContent=syncAgo();}
+function syncRefresh(){
+  if(!syncOn()){showToast('Sign in (Settings) to sync devices');return;}
+  showToast('Refreshing…');
+  pushLocalLogs();syncMeta();
+  setTimeout(function(){markSynced();var a=document.querySelector('.page.active');if(a){if(a.id==='page-dlr'){renderCrews();renderMileage();}else if(a.id==='page-month')renderMonth();else if(a.id==='page-history')renderHistory();}showToast('Up to date');},900);
+}
+setInterval(updateSyncStamps,30000);
 function syncAvailable(){return !!(window.firebase&&firebase.apps&&firebase.firestore);}
 function syncOn(){return !!(fbDb&&fbUser);}
 function userCol(name){return fbDb.collection('users').doc(fbUser.uid).collection(name);}
@@ -1878,11 +1889,29 @@ function startSync(){
         }else{changed=mergeRemoteLog(data)||changed;}
       });
       if(changed){logs.sort(function(a,b){return b.date.localeCompare(a.date);});setData('dlr_logs',logs);renderHistory();updateSettingsCounts();}
+      markSynced();
     },function(){});
   });
+  // Live mileage so devices stay uniform without submitting
+  if(fbUnsubMile)fbUnsubMile();
+  fbUnsubMile=userCol('meta').doc('mileage').onSnapshot(function(d){
+    if(!d.exists)return;var remote=d.data().data||{},local=allMileage(),changed=false;
+    Object.keys(remote).forEach(function(k){if(!local[k]||!local[k].savedAt||(remote[k].savedAt&&remote[k].savedAt>local[k].savedAt)){local[k]=remote[k];changed=true;}});
+    if(changed)setData('dlr_mileage',local);
+    markSynced();
+    var act=document.querySelector('.page.active');
+    if(changed&&act){if(act.id==='page-dlr')renderMileage();else if(act.id==='page-month')renderMonth();}
+  },function(){});
+  // Live drafts (unfinished work shared across devices)
+  if(fbUnsubDraft)fbUnsubDraft();
+  fbUnsubDraft=userCol('meta').doc('drafts').onSnapshot(function(d){
+    if(!d.exists)return;var drafts=getData('dlr_drafts',{}),rd=d.data().drafts||{},ch=false;
+    Object.keys(rd).forEach(function(k){if(!drafts[k]||!drafts[k].savedAt||(rd[k].savedAt&&rd[k].savedAt>drafts[k].savedAt)){drafts[k]=rd[k];ch=true;}});
+    if(ch)setData('dlr_drafts',drafts);markSynced();
+  },function(){});
   syncMeta();
 }
-function stopSync(){if(fbUnsub){fbUnsub();fbUnsub=null;}}
+function stopSync(){if(fbUnsub){fbUnsub();fbUnsub=null;}if(fbUnsubMile){fbUnsubMile();fbUnsubMile=null;}if(fbUnsubDraft){fbUnsubDraft();fbUnsubDraft=null;}}
 function mergeRemoteLog(r){
   if(!r||!r.date)return false;
   var i=logs.findIndex(function(l){return l.date===r.date;});
