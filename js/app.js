@@ -269,7 +269,10 @@ function renderMileage(){
   var prevEnd=mileEndOdo(milePrevEntry(mileDate));
   h+='<div class="mile-foot"><div><span class="mile-foot-l">Prev ODO end</span><b>'+(prevEnd===''?'—':prevEnd)+'</b></div><div><span class="mile-foot-l">Month total → Month tab</span><b>'+mileMonthTotal(mileDate)+' mi</b></div></div>';
   body.innerHTML=h;
+  applyMileCollapsed();
 }
+function applyMileCollapsed(){var b=document.getElementById('mileage-body'),c=document.getElementById('mile-chev');if(!b)return;var col=getData('dlr_mile_collapsed',false);b.style.display=col?'none':'';if(c)c.textContent=col?'›':'⌄';}
+function toggleMileage(){setData('dlr_mile_collapsed',!getData('dlr_mile_collapsed',false));applyMileCollapsed();}
 function showToast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2200);}
 function escHtml(s){if(!s)return '';return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
