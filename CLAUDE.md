@@ -110,8 +110,12 @@ iPhones + 2 Surface laptops).
   standalone PWA; magic links do **not**, due to Safari/PWA storage split). First
   sign-in auto-creates the account; session persists.
 - **Data model:** `users/{uid}/logs/{date}` (one doc per DLR log, live `onSnapshot`),
-  `users/{uid}/meta/{drafts|lists|mileage}` (single docs). Config + security
-  rules were set up in the Firebase console (rules lock each user to their own
+  `users/{uid}/meta/{drafts|lists|mileage|profile|route|working}` (single docs).
+  **Live across devices** (onSnapshot, newest `savedAt` wins): logs, mileage,
+  drafts, the loaded **route** (JSON — load the sheet on one device, all get it),
+  and the in-progress **DLR scratchpad** (`working`, debounced push). So
+  Route/Day/Month stay uniform across the 4 devices without submitting. Config +
+  security rules were set in the Firebase console (each user locked to
   `users/{uid}/**`).
 - **Conflicts:** newest `savedAt` wins per record. **Deletes use tombstones**
   (`{deleted:true, savedAt}`) so a delete sticks across devices and never
