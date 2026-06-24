@@ -226,6 +226,23 @@ net until each PDF is faithful.
 
 ## Open ideas / backlog
 
+- **Make it a "real" iOS app (project — pending a Mac mini purchase).** Three
+  tiers, cheapest→most:
+  1. *PWA polish (no Mac, free, do anytime):* iOS splash screens
+     (`apple-touch-startup-image`, no white flash on launch), status-bar style +
+     `theme-color`, kill web-isms (disable long-press callout / text-select on
+     buttons, stop overscroll bounce), light haptics on Save/Submit, and **real
+     iOS push** (16.4+ home-screen PWAs) — could turn the "Crews updated on
+     another device" banner into an actual push via the existing Firebase sync.
+  2. *Capacitor wrapper (needs macOS):* wraps the **exact** current web app in a
+     native shell → App Store eligibility + native camera (Hold Point albums),
+     background sync, local notifications, file access for PDFs. Adds a build
+     step for the wrapper only. Requires a Mac (hence the Mac mini) **or** a
+     cloud-Mac build (GitHub Actions `macos` runner / Codemagic / Appflow) +
+     **$99/yr Apple Developer** acct for on-device installs / TestFlight.
+  3. *Native Swift rewrite:* not worth it for a personal field tool — skip.
+  Recommendation: Tier 1 anytime (I can do it in-repo, no tooling); Tier 2 once
+  the Mac mini lands and only if a PWA truly can't do what's needed.
 - **iOS Shortcut for Hold Point album** — app already fires
   `shortcuts://run-shortcut?name=FieldLog%20Album&text=<album name>` when the
   Settings → Photos toggle is on; user still needs to build the `FieldLog Album`
