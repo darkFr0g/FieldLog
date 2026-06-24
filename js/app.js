@@ -1744,9 +1744,9 @@ function buildContingencyHTML(){
   return head+'<br><br>────────────────────<br><br>'+body.join('<br>');
 }
 function copyContingencyReport(){
-  var subject=getContVal('cont-subject');
-  var plain=(subject?subject+'\n\n':'')+buildContingencyBody();
-  var html=(subject?bcEsc(subject)+'<br><br>':'')+buildContingencyHTML();
+  // Pasted into the email BODY (subject is set separately), so omit the subject line.
+  var plain=buildContingencyBody();
+  var html=buildContingencyHTML();
   if(window.ClipboardItem&&navigator.clipboard&&navigator.clipboard.write){
     try{
       var item=new ClipboardItem({
@@ -2080,7 +2080,7 @@ function showUpdateBanner(){
   b.onclick=function(){checkForUpdate();};
   document.body.appendChild(b);
 }
-var APP_VERSION='v10.6';
+var APP_VERSION='v10.7';
 function setVersion(){var els=document.querySelectorAll('.vbadge,.ver-chip');for(var i=0;i<els.length;i++)els[i].textContent=APP_VERSION;}
 setVersion();
 function setNavH(){var n=document.querySelector('.nav');if(n)document.documentElement.style.setProperty('--navh',n.offsetHeight+'px');}
