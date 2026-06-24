@@ -226,6 +226,13 @@ net until each PDF is faithful.
 
 ## Open ideas / backlog
 
+- **TODO (user, in-field reminder):** Contingency email — "Copy formatted
+  (bold) — paste into email" should **not** include the subject line. It's
+  pasted into the email *body*, and the subject is set separately, so the
+  prepended subject is redundant. Fix at `app.js:1747-1749` (`copyContingency`):
+  drop the `subject?subject+'\n\n'` / `bcEsc(subject)+'<br><br>'` prefixes from
+  the `plain`/`html` copy. Leave `composeContingency` (the mailto) as-is — that
+  one *should* keep the subject.
 - **iOS Shortcut for Hold Point album** — app already fires
   `shortcuts://run-shortcut?name=FieldLog%20Album&text=<album name>` when the
   Settings → Photos toggle is on; user still needs to build the `FieldLog Album`
