@@ -1070,7 +1070,10 @@ function checkNudge(crew,name,count){
 function openPicker(type,crewId){
   pickerCrewId=parseInt(crewId);pickerType=type;
   var crew=currentCrews.find(function(c){return c.id===pickerCrewId;});
-  var masterList=type==='trade'?trades:equipment;
+  var masterList=(type==='trade'?trades:equipment).slice().sort(function(a,b){
+    if(a==='Other')return 1;if(b==='Other')return -1; // keep the catch-all last
+    return a.localeCompare(b);
+  });
   var activeNames=(type==='trade'?crew.trades:crew.equip).map(function(i){return i.n;});
   document.getElementById('picker-title').textContent=type==='trade'?'Add Trade':'Add Equipment';
   var list=document.getElementById('picker-list');
@@ -2080,7 +2083,7 @@ function showUpdateBanner(){
   b.onclick=function(){checkForUpdate();};
   document.body.appendChild(b);
 }
-var APP_VERSION='v10.7';
+var APP_VERSION='v10.8';
 function setVersion(){var els=document.querySelectorAll('.vbadge,.ver-chip');for(var i=0;i<els.length;i++)els[i].textContent=APP_VERSION;}
 setVersion();
 function setNavH(){var n=document.querySelector('.nav');if(n)document.documentElement.style.setProperty('--navh',n.offsetHeight+'px');}
