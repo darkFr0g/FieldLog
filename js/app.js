@@ -311,7 +311,21 @@ function fmtName(n){if(!n)return '';var p=n.trim().split(/\s+/);return p.length=
 
 // SUMMARY sheet holds two attendance tables (col C name / col D status):
 // a "CR" roster (inspectors: IN / Out / Nights) then a "CCI's" roster.
-function summarySheet(wb){for(var i=0;i<wb.SheetNames.length;i++){if(wb.SheetNames[i].toLowerCase().trim()==='summary')return wb.Sheets[wb.SheetNames[i]];}return null;}
+function summarySheet(wb){
+  // Prefer a sheet literally named "Summary"…
+  for(var i=0;i<wb.SheetNames.length;i++){if(wb.SheetNames[i].toLowerCase().trim()==='summary')return wb.Sheets[wb.SheetNames[i]];}
+  // …else find the roster by content (some sheets ship it as "Sheet2"): a row
+  // whose col C is the "CR" header next to an IN/OUT column.
+  for(var s=0;s<wb.SheetNames.length;s++){
+    var ws=wb.Sheets[wb.SheetNames[s]];if(!ws)continue;
+    var rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:null});
+    for(var r=0;r<Math.min(rows.length,8);r++){
+      var c=rows[r]&&rows[r][2],d=rows[r]&&rows[r][3];
+      if(c&&String(c).toLowerCase().trim()==='cr'&&d&&String(d).toLowerCase().indexOf('out')!==-1)return ws;
+    }
+  }
+  return null;
+}
 function parseAttendance(wb){
   var ss=summarySheet(wb);if(!ss)return{crs:[],ccis:[]};
   var rows=XLSX.utils.sheet_to_json(ss,{header:1,defval:null}),crs=[],ccis=[],mode=null;
@@ -326,7 +340,7 @@ function parseAttendance(wb){
   return {crs:crs,ccis:ccis};
 }
 function parseCCIs(wb){
-  var ss=wb.Sheets['Summary'];if(!ss)return[];
+  var ss=summarySheet(wb);if(!ss)return[];
   var rows=XLSX.utils.sheet_to_json(ss,{header:1,defval:null});
   var hi=-1;
   for(var i=0;i<rows.length;i++){if(rows[i][2]&&String(rows[i][2]).toLowerCase().indexOf('cci')!==-1&&rows[i][3]&&String(rows[i][3]).toLowerCase().indexOf('in')!==-1){hi=i;break;}}
@@ -348,7 +362,7 @@ function parseDateFromName(name){
   return yr+'-'+('0'+mo).slice(-2)+'-'+('0'+da).slice(-2);
 }
 function parseSummaryDate(wb){
-  var ss=wb.Sheets['Summary'];if(!ss||!ss['A1'])return null;
+  var ss=summarySheet(wb);if(!ss||!ss['A1'])return null;
   var v=ss['A1'].v;
   if(v instanceof Date&&!isNaN(v))return v.getFullYear()+'-'+('0'+(v.getMonth()+1)).slice(-2)+'-'+('0'+v.getDate()).slice(-2);
   var t=Date.parse(String(v));
@@ -2083,7 +2097,7 @@ function showUpdateBanner(){
   b.onclick=function(){checkForUpdate();};
   document.body.appendChild(b);
 }
-var APP_VERSION='v10.8';
+var APP_VERSION='v10.9';
 function setVersion(){var els=document.querySelectorAll('.vbadge,.ver-chip');for(var i=0;i<els.length;i++)els[i].textContent=APP_VERSION;}
 setVersion();
 function setNavH(){var n=document.querySelector('.nav');if(n)document.documentElement.style.setProperty('--navh',n.offsetHeight+'px');}
