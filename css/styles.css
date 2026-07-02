@@ -210,6 +210,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
 .crew-leads{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}
 .lead-tag{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--surface-2);color:var(--ink-2);display:inline-flex;align-items:center;gap:5px;line-height:1.5}
 .lead-tag i{font-style:normal;font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;opacity:.75}
+.lead-tag .lead-its{font-family:var(--font-mono);font-size:10px;font-weight:800;opacity:.7;letter-spacing:.02em}
 .lead-labor{background:#EFF6FF;color:#1A56C4}
 .lead-mechanic{background:#FBEBD2;color:#8A4B00}
 .lead-welder{background:#FDEAEA;color:#B3261E}

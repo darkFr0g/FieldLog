@@ -782,7 +782,11 @@ function foremanType(wd){
 function LEAD_RANK(t){return t==='labor'?0:t==='mechanic'?1:t==='welder'?2:3;}
 function leadTypeLabel(t){return t==='labor'?'Labor':t==='mechanic'?'Mech':t==='welder'?'Weld':'';}
 function cleanLeadName(s){return String(s||'').replace(/^\d+[-\s]+/,'').replace(/\s*\(.*?\)\s*$/,'').replace(/\s+/g,' ').trim();}
-function addLead(g,name,type){if(!name)return;for(var i=0;i<g.leads.length;i++){if(g.leads[i].name.toLowerCase()===name.toLowerCase())return;}g.leads.push({name:name,type:type});}
+// ITS# = the leading employee number on a lead string, e.g. "419813- Elvis Aguiluz".
+function leadIts(s){var m=String(s||'').match(/^\s*(\d{3,})/);return m?m[1]:'';}
+// Name with its ITS# to the left, matching the route-sheet convention "419813- Name".
+function leadLabel(l){return (l&&l.its?l.its+'- ':'')+((l&&l.name)||'');}
+function addLead(g,raw,type){var name=cleanLeadName(raw);if(!name)return;for(var i=0;i<g.leads.length;i++){if(g.leads[i].name.toLowerCase()===name.toLowerCase()){if(!g.leads[i].its){var ex=leadIts(raw);if(ex)g.leads[i].its=ex;}return;}}g.leads.push({name:name,type:type,its:leadIts(raw)});}
 function groupByWOLocation(jobs){
   var h=allData.headers;var groups={};var order=[];
   var isMainJobs=(jobs===allData.flavin);
@@ -799,11 +803,11 @@ function groupByWOLocation(jobs){
     if(wd&&g.workDescs.indexOf(wd)===-1)g.workDescs.push(wd);
     var t=foremanType(wd);
     var fm=gv(row,h,"Contractor's Foreman");
-    if(fm)addLead(g,cleanLeadName(fm),t);
+    if(fm)addLead(g,fm,t);
     var mech=gv(row,h,'Mechanics/Fusers/Welders');
-    if(mech)String(mech).split(/[\n;]+/).forEach(function(nm){nm=cleanLeadName(nm);if(nm)addLead(g,nm,t==='welder'?'welder':'mechanic');});
+    if(mech)String(mech).split(/[\n;]+/).forEach(function(nm){if(nm&&nm.trim())addLead(g,nm,t==='welder'?'welder':'mechanic');});
   });
-  order.forEach(function(k){var g=groups[k];g.leads.sort(function(a,b){return LEAD_RANK(a.type)-LEAD_RANK(b.type);});g.foremen=g.leads.map(function(l){return l.name;});});
+  order.forEach(function(k){var g=groups[k];g.leads.sort(function(a,b){return LEAD_RANK(a.type)-LEAD_RANK(b.type);});g.foremen=g.leads.map(leadLabel);});
   var result={};order.forEach(function(k){result[k]=groups[k];});return result;
 }
 
@@ -931,7 +935,7 @@ function crewHTML(crew){
     '<button class="hp-chip" onclick="event.stopPropagation();holdPointAlbumCrew('+crew.id+')">📷 Hold Point: '+escHtml(crew.holdPoint)+'</button>':
     '<span class="status-off">Hold Point: No</span>';
   var leadTags=(crew.leads&&crew.leads.length)?
-    crew.leads.map(function(l){var lbl=leadTypeLabel(l.type);return '<span class="lead-tag lead-'+l.type+'">'+escHtml(l.name)+(lbl?'<i>'+lbl+'</i>':'')+'</span>';}).join(''):'';
+    crew.leads.map(function(l){var lbl=leadTypeLabel(l.type);return '<span class="lead-tag lead-'+l.type+'">'+(l.its?'<b class="lead-its">'+escHtml(l.its)+'</b>':'')+escHtml(l.name)+(lbl?'<i>'+lbl+'</i>':'')+'</span>';}).join(''):'';
   var fuseBadge=isActive(crew.fusingPeer)?
     '<span class="b-fuse">Pressure Test: '+escHtml(crew.fusingPeer)+'</span>':
     '<span class="status-off">Pressure Test: No</span>';
@@ -2097,7 +2101,7 @@ function showUpdateBanner(){
   b.onclick=function(){checkForUpdate();};
   document.body.appendChild(b);
 }
-var APP_VERSION='v10.9';
+var APP_VERSION='v11.0';
 function setVersion(){var els=document.querySelectorAll('.vbadge,.ver-chip');for(var i=0;i<els.length;i++)els[i].textContent=APP_VERSION;}
 setVersion();
 function setNavH(){var n=document.querySelector('.nav');if(n)document.documentElement.style.setProperty('--navh',n.offsetHeight+'px');}
