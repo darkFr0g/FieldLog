@@ -1912,6 +1912,8 @@ function authMsg(err){
   var c=err&&err.code||'';
   if(c==='auth/invalid-email')return'That email looks invalid';
   if(c==='auth/wrong-password'||c==='auth/invalid-credential')return'Wrong password';
+  if(c==='auth/user-not-found')return'No account for that email';
+  if(c==='auth/too-many-requests')return'Too many tries — wait a bit';
   if(c==='auth/weak-password')return'Password must be 6+ characters';
   if(c==='auth/network-request-failed')return'No connection — try again online';
   return (err&&err.message)||'Sign-in failed';
@@ -1933,6 +1935,15 @@ function doSignIn(){
     }
     throw err;
   }).then(function(){if(pw)pw.value='';showToast('Signed in — syncing');}).catch(function(err){showToast(authMsg(err));});
+}
+function doForgotPass(){
+  if(!syncAvailable()){showToast('Connect to the internet first');return;}
+  var em=document.getElementById('account-email');
+  var email=(em&&em.value||'').trim();
+  if(!email){showToast('Enter your email above first');if(em)em.focus();return;}
+  firebase.auth().sendPasswordResetEmail(email)
+    .then(function(){showToast('Reset link sent to '+email+' — check your email');})
+    .catch(function(err){showToast(authMsg(err));});
 }
 function signOutSync(){if(window.firebase&&firebase.auth)firebase.auth().signOut();}
 function togglePass(){
@@ -2101,7 +2112,7 @@ function showUpdateBanner(){
   b.onclick=function(){checkForUpdate();};
   document.body.appendChild(b);
 }
-var APP_VERSION='v11.0';
+var APP_VERSION='v11.1';
 function setVersion(){var els=document.querySelectorAll('.vbadge,.ver-chip');for(var i=0;i<els.length;i++)els[i].textContent=APP_VERSION;}
 setVersion();
 function setNavH(){var n=document.querySelector('.nav');if(n)document.documentElement.style.setProperty('--navh',n.offsetHeight+'px');}
