@@ -293,6 +293,8 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
 .map-btn svg{width:16px;height:16px;flex-shrink:0}
 .reset-alt{background:var(--surface-2);border-color:var(--border-mid);color:var(--ink-4)}
 .reset-alt:active{background:var(--border)}
+.wipe-alt{margin-top:8px;background:var(--surface);border-color:var(--red);color:var(--red)}
+.wipe-alt:active{background:var(--coral-bg)}
 .gen-dlr-bar{display:none;background:var(--surface);border:2px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:12px}
 .gen-dlr-bar.visible{display:block}
 .gen-dlr-info{font-size:13px;color:var(--ink-3);margin-bottom:10px;line-height:1.5;font-weight:600}

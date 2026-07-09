@@ -303,6 +303,10 @@ dropZone.addEventListener('dragleave',function(){dropZone.classList.remove('drag
 dropZone.addEventListener('drop',function(e){e.preventDefault();dropZone.classList.remove('drag-over');var f=e.dataTransfer.files[0];if(f)processFile(f);});
 fileInput.addEventListener('change',function(){if(this.files&&this.files[0])processFile(this.files[0]);});
 document.getElementById('resetBtn').addEventListener('click',function(){clearRoute();location.reload();});
+document.getElementById('wipeRouteBtn').addEventListener('click',function(){
+  if(!confirm('Clear the loaded route sheet from this device?\n\nYour logs, drafts and mileage are NOT affected. Your other devices keep their route until you load a new one.'))return;
+  clearRoute();location.reload(); // clearRoute keeps dlr_route_sa, so cloud sync won't re-add it
+});
 document.getElementById('genDlrBtn').addEventListener('click',function(){generateDLR();});
 (function(){var b=document.getElementById('mapStopsBtn');if(b)b.addEventListener('click',openMapModal);})();
 
@@ -2112,7 +2116,7 @@ function showUpdateBanner(){
   b.onclick=function(){checkForUpdate();};
   document.body.appendChild(b);
 }
-var APP_VERSION='v11.1';
+var APP_VERSION='v11.2';
 function setVersion(){var els=document.querySelectorAll('.vbadge,.ver-chip');for(var i=0;i<els.length;i++)els[i].textContent=APP_VERSION;}
 setVersion();
 function setNavH(){var n=document.querySelector('.nav');if(n)document.documentElement.style.setProperty('--navh',n.offsetHeight+'px');}
