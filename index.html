@@ -33,7 +33,7 @@
     <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
     Day
   </button>
-  <button class="nav-btn" onclick="showPage('month')" id="nav-month">
+  <button class="nav-btn" onclick="showPage('month')" id="nav-month" style="display:none">
     <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="16" y1="2" x2="16" y2="6"/></svg>
     Month
   </button>
@@ -127,8 +127,8 @@
     </button>
     <button class="btn btn-secondary" style="width:100%;justify-content:center" onclick="copyCurrentDLRFormatted()">Copy formatted (table) — paste into Notes</button>
   </div>
-  <div class="day-divider day-divider-btn" onclick="toggleMileage()"><span>Mileage</span><span class="mchev" id="mile-chev">⌄</span></div>
-  <div id="mileage-body"></div>
+  <div class="day-divider day-divider-btn" onclick="toggleMileage()" style="display:none"><span>Mileage</span><span class="mchev" id="mile-chev">⌄</span></div>
+  <div id="mileage-body" style="display:none"></div>
 </div>
 
 <!-- MONTH PAGE -->

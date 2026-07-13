@@ -194,6 +194,14 @@ Rocksplitter, Sawcut Equipment, Other.
 
 ## Big project: replace the monthly Excel mileage workbook
 
+> **PAUSED (v11.3).** The **Mileage** section (on Day) and the **Month** tab are
+> **hidden in the UI** — the user said the mileage approach "isn't working out as
+> planned." All the code (mileage capture, `renderMonth`, `buildCIMileageHTML`,
+> `exportCIMileage`, etc.) is **left intact**; only the entry points are hidden
+> (`display:none` on `#nav-month`, the Day `.day-divider` Mileage toggle, and
+> `#mileage-body`). To bring it back, remove those three `display:none`s. Revisit
+> the whole approach before re-enabling.
+
 The user keeps a macro-heavy `.xlsm` (`3-Mileage <Month> top dog.xlsm`, built with
 a separate "Claude-in-Excel" agent — it has its own `Claude Log` sheet) that is
 the monthly system of record: **INPUT** (daily mileage hand-entry), **CI Mileage
