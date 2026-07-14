@@ -299,6 +299,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
 .gen-dlr-bar.visible{display:block}
 .gen-dlr-info{font-size:13px;color:var(--ink-3);margin-bottom:10px;line-height:1.5;font-weight:600}
 .gen-dlr-info b{color:var(--ink);font-weight:800}
+.gen-dlr-date{font-size:15px;font-weight:800;color:var(--ink);letter-spacing:-.01em;margin-bottom:3px}
 .gen-dlr-btn{width:100%;border-radius:var(--radius);padding:15px;font-family:var(--font);font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;background:#111;border:none;color:#fff;margin-bottom:8px}
 .gen-dlr-btn:active{opacity:.8}
 
