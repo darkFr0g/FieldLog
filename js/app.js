@@ -506,7 +506,7 @@ function renderRouteResults(){
   });
   cciBar.classList.toggle('visible',allData.ccis.length>0);
   var grouped=groupByWOLocation(allData.flavin);var keys=Object.keys(grouped);
-  document.getElementById('genDlrInfo').innerHTML=(allData.routeDate?'<div class="gen-dlr-date">📅 '+escHtml(fmtDate(allData.routeDate))+'</div>':'')+'<b>'+allData.flavin.length+' job row'+(allData.flavin.length!==1?'s':'')+' → '+keys.length+' DLR block'+(keys.length!==1?'s':'')+' by WO / Location</b>';
+  document.getElementById('genDlrInfo').innerHTML=(allData.routeDate?'<div class="gen-dlr-date">'+escHtml(fmtDate(allData.routeDate))+'</div>':'')+'<b>'+allData.flavin.length+' job row'+(allData.flavin.length!==1?'s':'')+' → '+keys.length+' DLR block'+(keys.length!==1?'s':'')+' by WO / Location</b>';
   document.getElementById('genDlrBar').classList.add('visible');
   routeAll=false;routeCRs=false;routeMine='flavin';routeCo='';
   buildRouteTabs();renderRouteBody();
@@ -2116,7 +2116,7 @@ function showUpdateBanner(){
   b.onclick=function(){checkForUpdate();};
   document.body.appendChild(b);
 }
-var APP_VERSION='v11.4';
+var APP_VERSION='v11.5';
 function setVersion(){var els=document.querySelectorAll('.vbadge,.ver-chip');for(var i=0;i<els.length;i++)els[i].textContent=APP_VERSION;}
 setVersion();
 function setNavH(){var n=document.querySelector('.nav');if(n)document.documentElement.style.setProperty('--navh',n.offsetHeight+'px');}
