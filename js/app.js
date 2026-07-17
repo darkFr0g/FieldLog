@@ -535,12 +535,38 @@ function renderCRs(){
   var crs=(allData.crs||[]),me=inspectorName();
   if(!crs.length){jobsContainer.innerHTML='<div class="no-jobs">No CR attendance on this route sheet</div>';return;}
   var inCt=crs.filter(function(r){return attRank(r.status)===0;}).length;
-  function row(r){return '<div class="att-row'+(r.name.toLowerCase()===me.toLowerCase()?' att-me':'')+'"><span class="att-name">'+escHtml(r.name)+'</span><span class="att-st '+attClass(r.status)+'">'+escHtml(r.status||'—')+'</span></div>';}
+  // clk=true → tappable row that opens the inspector's jobs.
+  function row(r,clk){return '<div class="att-row'+(r.name.toLowerCase()===me.toLowerCase()?' att-me':'')+(clk?' att-click':'')+'"'+
+    (clk?' data-name="'+escHtml(r.name)+'" onclick="showCRJobs(this.getAttribute(\'data-name\'))"':'')+'>'+
+    '<span class="att-name">'+escHtml(r.name)+'</span>'+
+    (clk?'<span class="att-arrow">›</span>':'')+
+    '<span class="att-st '+attClass(r.status)+'">'+escHtml(r.status||'—')+'</span></div>';}
   var sorted=crs.slice().sort(function(a,b){return attRank(a.status)-attRank(b.status)||a.name.localeCompare(b.name);});
-  var h='<div class="att-hdr">'+inCt+' of '+crs.length+' CRs in</div><div class="att-list">'+sorted.map(row).join('')+'</div>';
-  if(allData.ccis&&allData.ccis.length)h+='<div class="att-sub">CCIs</div><div class="att-list">'+allData.ccis.slice().sort(function(a,b){return attRank(a.status)-attRank(b.status)||a.name.localeCompare(b.name);}).map(row).join('')+'</div>';
+  var h='<div class="att-hdr">'+inCt+' of '+crs.length+' CRs in</div><div class="att-list">'+sorted.map(function(r){return row(r,true);}).join('')+'</div>';
+  if(allData.ccis&&allData.ccis.length)h+='<div class="att-sub">CCIs</div><div class="att-list">'+allData.ccis.slice().sort(function(a,b){return attRank(a.status)-attRank(b.status)||a.name.localeCompare(b.name);}).map(function(r){return row(r,false);}).join('')+'</div>';
   jobsContainer.innerHTML=h;
 }
+// Match a roster name to covering-inspector values regardless of order / middle initials
+// ("Flavin, Jeremiah M" ⇔ "Jeremiah Flavin").
+function crNameKey(s){var toks=String(s||'').toLowerCase().replace(/[.,]/g,' ').replace(/\s+/g,' ').trim().split(' ').filter(function(t){return t.length>1;});return toks.sort().join(' ');}
+function showCRJobs(name){
+  var key=crNameKey(name);
+  var jobs=key?(allData.allJobs||[]).filter(function(j){return crNameKey(j.inspector)===key;}):[];
+  var rec=(allData.crs||[]).concat(allData.ccis||[]).filter(function(r){return crNameKey(r.name)===key;})[0];
+  document.getElementById('crjobs-title').innerHTML=escHtml(name)+(rec&&rec.status?' <span class="att-st '+attClass(rec.status)+'">'+escHtml(rec.status)+'</span>':'');
+  document.getElementById('crjobs-count').textContent=jobs.length+' job'+(jobs.length!==1?'s':'')+' on this route sheet';
+  var host=document.getElementById('crjobs-list');
+  if(!jobs.length){host.innerHTML='<div class="no-jobs">No jobs for '+escHtml(name)+' on this route sheet</div>';}
+  else host.innerHTML=jobs.map(function(j){var jc=contractorColor(j.contractor);
+    return '<div class="list-item"'+(jc?' style="border-left:3px solid '+jc+';background:'+hexToRgba(jc,0.07)+'"':'')+'>'+
+      '<div class="list-loc">'+escHtml(j.location||'—')+'</div><div class="list-meta">'+
+      (j.contractor?'<span class="lm" style="font-weight:800'+(jc?';color:'+jc:'')+'">'+escHtml(j.contractor)+'</span>':'')+
+      (j.ticket?'<span class="lm">WR# <b>'+escHtml(j.ticket)+'</b></span>':'')+
+      (j.wo?'<span class="lm">WO# <b>'+escHtml(j.wo)+'</b></span>':'')+
+      '</div></div>';}).join('');
+  document.getElementById('crjobs-modal').style.display='block';
+}
+function closeCRJobs(e){if(e&&!e.target.classList.contains('modal-overlay'))return;document.getElementById('crjobs-modal').style.display='none';}
 function coChip(label,val,count,color){
   var active=routeCo===val,style='';
   if(active){var c=color||'#111';style='background:'+c+';border-color:'+c+';color:#fff';}
@@ -2146,7 +2172,7 @@ function showUpdateBanner(){
   b.onclick=function(){checkForUpdate();};
   document.body.appendChild(b);
 }
-var APP_VERSION='v11.7';
+var APP_VERSION='v11.8';
 function setVersion(){var els=document.querySelectorAll('.vbadge,.ver-chip');for(var i=0;i<els.length;i++)els[i].textContent=APP_VERSION;}
 setVersion();
 function setNavH(){var n=document.querySelector('.nav');if(n)document.documentElement.style.setProperty('--navh',n.offsetHeight+'px');}
