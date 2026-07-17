@@ -14,8 +14,8 @@ var CWORX_EQUIPMENT = [
   'Port Compressor','Pumps','Rocksplitter','Sawcut Equipment','Other'
 ];
 // Default crew pre-fill: [{name, count}]
-var DEFAULT_TRADES = [{n:'Foreman',c:1},{n:'Operating Engineer',c:1},{n:'Laborers',c:4},{n:'Flagger',c:2}];
-var DEFAULT_EQUIP  = [{n:'Pick Up Truck',c:1},{n:'Backhoe',c:1},{n:'Compressor Truck',c:1}];
+var DEFAULT_TRADES = [{n:'Foreman',c:1},{n:'Operating Engineer',c:1},{n:'Laborers',c:4},{n:'Flagger',c:2},{n:'Chauffeur',c:1}];
+var DEFAULT_EQUIP  = [{n:'Pick Up Truck',c:1},{n:'Backhoe',c:1},{n:'Compressor Truck',c:1},{n:'Dump Truck',c:1}];
 // Nudge rules
 var NUDGE = {
   'Welders':             'Welders added — add Weld Truck?',
@@ -2116,7 +2116,7 @@ function showUpdateBanner(){
   b.onclick=function(){checkForUpdate();};
   document.body.appendChild(b);
 }
-var APP_VERSION='v11.5';
+var APP_VERSION='v11.6';
 function setVersion(){var els=document.querySelectorAll('.vbadge,.ver-chip');for(var i=0;i<els.length;i++)els[i].textContent=APP_VERSION;}
 setVersion();
 function setNavH(){var n=document.querySelector('.nav');if(n)document.documentElement.style.setProperty('--navh',n.offsetHeight+'px');}

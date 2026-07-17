@@ -31,8 +31,9 @@ place). Sections below described separately.
   cleaned by the smart address shortener (`shortAddr`).
 - **DLR (Daily Log Report)** — generates crew blocks from the route sheet
   (grouped by WO# / Location), pre-filled with the standard crew
-  (Foreman 1, Operating Engineer 1, Laborers 4, Flagger 2, Pick Up Truck 1,
-  Backhoe 1, Compressor Truck 1). Add/remove trades & equipment per block,
+  (Foreman 1, Operating Engineer 1, Laborers 4, Flagger 2, Chauffeur 1,
+  Pick Up Truck 1, Backhoe 1, Compressor Truck 1, Dump Truck 1). Add/remove
+  trades & equipment per block,
   Comments, optional T&E. Saves to `localStorage`; exports CSV / text; **shares
   plain-text** to iOS Notes/OneNote and **"Copy formatted (table)"** copies rich
   `text/html` with a real table. ⌘S/Ctrl+S saves a draft on desktop.
