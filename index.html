@@ -270,6 +270,21 @@
   </div>
 </div>
 
+<!-- HOLD POINT INFO MODAL -->
+<div id="hpinfo-modal" style="display:none">
+  <div class="modal-overlay" onclick="closeHpInfo(event)">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <div class="modal-title">Hold Point</div>
+        <button onclick="closeHpInfo()" style="background:none;border:none;font-size:24px;color:var(--ink-3);cursor:pointer;line-height:1">×</button>
+      </div>
+      <div style="font-size:12px;color:var(--ink-3);margin-bottom:14px;line-height:1.4">Enter the WR# in the portal — it auto-fills the rest. Paste the contractor &amp; foreman. Tap a row to copy.</div>
+      <div id="hpinfo-rows"></div>
+      <button class="btn btn-green" style="width:100%;justify-content:center;margin-top:14px" onclick="openHpPortal()">Open Hold Point portal →</button>
+    </div>
+  </div>
+</div>
+
 <!-- EXPORT MODAL -->
 <div id="export-modal" style="display:none">
   <div class="modal-overlay" onclick="closeExportModal(event)">

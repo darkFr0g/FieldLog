@@ -749,6 +749,35 @@ function holdPointAlbumCrew(cid){
   var c=currentCrews.find(function(x){return x.id===cid;});if(!c)return;
   copyAlbumName({date:(document.getElementById('log-date')||{}).value||today(),ticket:c.wo||'',wo:c.cworxWO||'',location:c.location||''});
 }
+// Hold Point portal helper: the ConEd form auto-fills from the WR#; the user only
+// types the contractor + foreman. This surfaces those three as tap-to-copy rows.
+var HP_PORTAL_URL='https://constructionandgasforms.coned.com/';
+function openHpPortal(){window.open(HP_PORTAL_URL,'_blank','noopener');}
+function holdPointInfo(cid){
+  var c=currentCrews.find(function(x){return x.id===cid;});if(!c)return;
+  var rows=[{label:'WR# / Ticket #',value:cleanTicket(c.wo||'')},{label:'Contractor',value:c.contractor||''}];
+  if(c.leads&&c.leads.length){
+    c.leads.forEach(function(l){rows.push({label:c.leads.length>1?('Foreman ('+(leadTypeLabel(l.type)||'—')+')'):'Foreman',value:l.name});});
+  }else{
+    (c.foremen||[]).map(cleanLeadName).filter(Boolean).forEach(function(n,i,a){rows.push({label:a.length>1?'Foreman '+(i+1):'Foreman',value:n});});
+  }
+  window._hpFields=rows;
+  document.getElementById('hpinfo-rows').innerHTML=rows.map(function(r,i){
+    return '<div class="hpi-row" onclick="copyHpField('+i+')"><div class="hpi-txt">'+
+      '<div class="hpi-l">'+escHtml(r.label)+'</div>'+
+      '<div class="hpi-v">'+escHtml(r.value||'—')+'</div></div>'+
+      '<div class="hpi-copy">Copy</div></div>';
+  }).join('');
+  document.getElementById('hpinfo-modal').style.display='block';
+}
+function copyHpField(i){
+  var r=(window._hpFields||[])[i];if(!r||!r.value)return;
+  var el=document.querySelectorAll('#hpinfo-rows .hpi-row')[i];
+  var done=function(){var c=el&&el.querySelector('.hpi-copy');if(c){c.textContent='Copied ✓';el.classList.add('copied');setTimeout(function(){c.textContent='Copy';el.classList.remove('copied');},1200);}};
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(r.value).then(done).catch(function(){fallbackCopy(r.value);done();});
+  else{fallbackCopy(r.value);done();}
+}
+function closeHpInfo(e){if(e&&!e.target.classList.contains('modal-overlay'))return;document.getElementById('hpinfo-modal').style.display='none';}
 var HP_SHORTCUT_NAME='FieldLog Album';
 function isIOS(){return /iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);}
 function toggleHpShortcut(){var v=!getData('dlr_hp_shortcut',false);setData('dlr_hp_shortcut',v);updateHpShortcutState();showToast(v?'Hold Point will open the "FieldLog Album" shortcut':'Hold Point will copy the album name');}
@@ -943,7 +972,8 @@ function crewHTML(crew){
   var fuseBadge=isActive(crew.fusingPeer)?
     '<span class="b-fuse">Pressure Test: '+escHtml(crew.fusingPeer)+'</span>':
     '<span class="status-off">Pressure Test: No</span>';
-  var badgeBar='<div class="urgent-cap">Urgent Tasks</div><div class="badge-bar">'+contBadge+hpBadge+fuseBadge+'</div>';
+  var badgeBar='<div class="urgent-cap">Urgent Tasks</div><div class="badge-bar">'+contBadge+hpBadge+fuseBadge+'</div>'+
+    '<button class="hpinfo-btn" onclick="event.stopPropagation();holdPointInfo('+crew.id+')">Hold Point info →</button>';
   var urg=[];
   if(isActive(crew.contingency))urg.push('<span class="utag ut-cont">⚠ '+escHtml(crew.contingencyNum||'Contingency')+'</span>');
   if(isActive(crew.holdPoint))urg.push('<span class="utag ut-hp">Hold Point</span>');
@@ -2116,7 +2146,7 @@ function showUpdateBanner(){
   b.onclick=function(){checkForUpdate();};
   document.body.appendChild(b);
 }
-var APP_VERSION='v11.6';
+var APP_VERSION='v11.7';
 function setVersion(){var els=document.querySelectorAll('.vbadge,.ver-chip');for(var i=0;i<els.length;i++)els[i].textContent=APP_VERSION;}
 setVersion();
 function setNavH(){var n=document.querySelector('.nav');if(n)document.documentElement.style.setProperty('--navh',n.offsetHeight+'px');}

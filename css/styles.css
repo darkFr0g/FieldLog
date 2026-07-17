@@ -376,6 +376,17 @@ textarea.field-input{resize:none;min-height:70px;line-height:1.5}
 
 .add-crew-wrap{padding:10px 12px}
 .badge-bar{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:8px 14px;border-top:2px solid var(--border);background:#fff}
+.hpinfo-btn{display:block;width:calc(100% - 28px);margin:0 14px 10px;padding:9px;background:var(--surface-2);border:2px solid var(--border-mid);border-radius:var(--radius-sm);color:var(--ink-2);font-family:var(--font);font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;cursor:pointer}
+.hpinfo-btn:active{background:var(--border)}
+/* Hold Point info modal — tap-to-copy field rows */
+.hpi-row{display:flex;align-items:center;gap:10px;padding:11px 13px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px;cursor:pointer;background:var(--surface-2)}
+.hpi-row:active{background:var(--border)}
+.hpi-row.copied{border-color:var(--green);background:var(--green-bg)}
+.hpi-txt{flex:1;min-width:0}
+.hpi-l{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:var(--ink-4);margin-bottom:2px}
+.hpi-v{font-size:15px;font-weight:700;color:var(--ink);word-break:break-word}
+.hpi-copy{font-size:11px;font-weight:800;color:var(--ink-3);flex-shrink:0;text-transform:uppercase;letter-spacing:.04em}
+.hpi-row.copied .hpi-copy{color:var(--green-text)}
 
 /* HISTORY */
 .search-bar{padding:10px 12px;background:var(--surface);border-bottom:2px solid var(--border)}
