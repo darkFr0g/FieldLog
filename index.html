@@ -53,7 +53,7 @@
   <div class="hdr">
     <div class="vbadge">v10.3</div>
     <h1 class="hdr-title">Locations for <span id="headingName">Jeremiah Flavin</span></h1>
-    <div class="sync-row"><button class="sync-btn" onclick="syncRefresh()">↻ Refresh</button><span class="sync-stamp"></span></div>
+    <div class="sync-row"><button class="sync-btn" onclick="syncRefresh(this)"><span class="ref-ico">↻</span> Refresh</button><span class="sync-stamp"></span></div>
   </div>
   <div id="uploadSection">
     <div class="name-box">
@@ -104,8 +104,8 @@
       <div class="date-sub">Daily Log + Mileage · <span class="sync-stamp"></span> · <span class="ver-chip"></span></div>
     </div>
     <div style="display:flex;gap:8px;align-items:center">
-      <button class="btn btn-secondary btn-sm" onclick="syncRefresh()" aria-label="Refresh">↻</button>
-      <button class="btn btn-secondary btn-sm" onclick="saveDraft()">Save</button>
+      <button class="btn btn-secondary btn-sm" onclick="syncRefresh(this)" aria-label="Refresh"><span class="ref-ico">↻</span></button>
+      <button class="btn btn-secondary btn-sm" onclick="saveDraft(this)">Save</button>
       <input type="date" id="log-date" style="background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:6px 8px;font-size:13px;color:var(--ink);font-family:var(--font);outline:none" onchange="updateDateDisplay()">
     </div>
   </div>
@@ -136,7 +136,7 @@
   <div class="date-header">
     <div><div class="date-display" id="month-display"></div><div class="date-sub">Mileage — month · <span class="sync-stamp"></span> · <span class="ver-chip"></span></div></div>
     <div style="display:flex;gap:6px;align-items:center">
-      <button class="btn btn-secondary btn-sm" onclick="syncRefresh()" aria-label="Refresh">↻</button>
+      <button class="btn btn-secondary btn-sm" onclick="syncRefresh(this)" aria-label="Refresh"><span class="ref-ico">↻</span></button>
       <button class="btn btn-secondary btn-sm" onclick="monthStep(-1)" aria-label="Previous month">‹</button>
       <button class="btn btn-secondary btn-sm" onclick="monthStep(1)" aria-label="Next month">›</button>
     </div>
@@ -146,7 +146,7 @@
 
 <!-- HISTORY PAGE -->
 <div id="page-history" class="page">
-  <div class="page-header"><h1>Log History</h1><div style="display:flex;gap:8px;align-items:center"><span class="ver-chip"></span><span class="sync-stamp"></span><button class="btn btn-secondary btn-sm" onclick="syncRefresh()" aria-label="Refresh">↻</button><button class="btn btn-secondary btn-sm" onclick="showExportModal()">Export</button></div></div>
+  <div class="page-header"><h1>Log History</h1><div style="display:flex;gap:8px;align-items:center"><span class="ver-chip"></span><span class="sync-stamp"></span><button class="btn btn-secondary btn-sm" onclick="syncRefresh(this)" aria-label="Refresh"><span class="ref-ico">↻</span></button><button class="btn btn-secondary btn-sm" onclick="showExportModal()">Export</button></div></div>
   <div class="search-bar"><input class="search-input" placeholder="Search date, WO/WR#, location…" id="search-input" oninput="renderHistory()"></div>
   <div class="search-bar" style="border-bottom:2px solid var(--border)">
     <select id="history-sort" onchange="renderHistory()" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px;color:var(--ink);font-family:var(--font);outline:none">

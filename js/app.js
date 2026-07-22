@@ -37,6 +37,7 @@ var allData = {};
 // Picker state
 var pickerCrewId = null;
 var pickerType   = null;
+var pickerSwapIdx = -1; // >=0 → picker is swapping an existing row's item, not adding
 
 // ── PERSISTENCE (survive iOS dropping the app from memory) ───────
 // The parsed route (allData) and the in-progress DLR (currentCrews) used to
@@ -961,7 +962,7 @@ function renderOneCrew(cid){
 function crewHTML(crew){
   var equipRows=crew.equip.map(function(item,i){
     return '<div class="count-row">'+
-      '<span class="count-name">'+escHtml(item.n)+'</span>'+
+      '<span class="count-name count-name-tap" onclick="openSwapPicker(\'equip\','+crew.id+','+i+')">'+escHtml(item.n)+'</span>'+
       '<div class="count-controls">'+
         '<button class="count-btn" onclick="adjustItem(\'equip\','+crew.id+','+i+',-1)">−</button>'+
         '<input class="count-input" type="number" min="0" value="'+item.c+'" onchange="setItem(\'equip\','+crew.id+','+i+',this.value)">'+
@@ -972,7 +973,7 @@ function crewHTML(crew){
 
   var tradeRows=crew.trades.map(function(item,i){
     return '<div class="count-row">'+
-      '<span class="count-name">'+escHtml(item.n)+'</span>'+
+      '<span class="count-name count-name-tap" onclick="openSwapPicker(\'trade\','+crew.id+','+i+')">'+escHtml(item.n)+'</span>'+
       '<div class="count-controls">'+
         '<button class="count-btn" onclick="adjustItem(\'trade\','+crew.id+','+i+',-1)">−</button>'+
         '<input class="count-input" type="number" min="0" value="'+item.c+'" onchange="setItem(\'trade\','+crew.id+','+i+',this.value)">'+
@@ -1162,9 +1163,34 @@ function openPicker(type,crewId){
   document.getElementById('picker-overlay').style.display='block';
 }
 
+// Tap an item name → swap it for another from the master list (keeps the count).
+function openSwapPicker(type,crewId,idx){
+  pickerCrewId=parseInt(crewId);pickerType=type;pickerSwapIdx=parseInt(idx);
+  var crew=currentCrews.find(function(c){return c.id===pickerCrewId;});if(!crew){pickerSwapIdx=-1;return;}
+  var arr=type==='trade'?crew.trades:crew.equip;
+  var curName=(arr[pickerSwapIdx]||{}).n||'';
+  var masterList=(type==='trade'?trades:equipment).slice().sort(function(a,b){
+    if(a==='Other')return 1;if(b==='Other')return -1;return a.localeCompare(b);
+  });
+  var activeNames=arr.map(function(i){return i.n;}).filter(function(n){return n!==curName;}); // block dupes, allow current
+  document.getElementById('picker-title').textContent=type==='trade'?'Swap Trade':'Swap Equipment';
+  document.getElementById('picker-list').innerHTML=masterList.map(function(name){
+    var already=activeNames.indexOf(name)!==-1,isCur=name===curName;
+    return '<div class="picker-item'+(already?' already':'')+(isCur?' picked':'')+'" onclick="'+(already?'':('pickItem(\''+escHtml(name)+'\')'))+'">'+escHtml(name)+(isCur?' <span class="pk-cur">current</span>':'')+'</div>';
+  }).join('');
+  document.getElementById('picker-overlay').style.display='block';
+}
+
 function pickItem(name){
-  var crew=currentCrews.find(function(c){return c.id===pickerCrewId;});if(!crew)return;
+  var crew=currentCrews.find(function(c){return c.id===pickerCrewId;});if(!crew){closePicker();return;}
   var arr=pickerType==='trade'?crew.trades:crew.equip;
+  if(pickerSwapIdx>=0){ // swap mode: replace the name at this index, keep the count
+    if(arr[pickerSwapIdx])arr[pickerSwapIdx].n=name;
+    var st=pickerType,scid=pickerCrewId;
+    saveWorkingDLR();closePicker();renderOneCrew(scid);
+    if(st==='trade')checkNudge(crew,name,(arr[pickerSwapIdx]||{}).c||1);
+    return;
+  }
   if(arr.find(function(i){return i.n===name;})){closePicker();return;}
   arr.push({n:name,c:1});
   var t=pickerType;var cid=pickerCrewId;
@@ -1177,14 +1203,20 @@ function pickItem(name){
 function closePicker(e){
   if(e&&!e.target.classList.contains('picker-overlay'))return;
   document.getElementById('picker-overlay').style.display='none';
-  pickerCrewId=null;pickerType=null;
+  pickerCrewId=null;pickerType=null;pickerSwapIdx=-1;
 }
 
-function saveDraft(){
+function saveDraft(btn){
   var date=document.getElementById('log-date').value;
   var drafts=getData('dlr_drafts',{}),sa=new Date().toISOString();
   drafts[date]={date:date,crews:JSON.parse(JSON.stringify(currentCrews)),savedAt:sa};
   setData('dlr_drafts',drafts);lastDraftSave=new Date(sa).getTime();syncPushDrafts();showToast('Draft saved — syncs to your other devices');
+  if(btn&&btn.classList){
+    var orig=btn.getAttribute('data-lbl')||btn.textContent;btn.setAttribute('data-lbl',orig);
+    btn.classList.remove('saved-pop');void btn.offsetWidth;btn.classList.add('saved-pop');
+    btn.textContent='Saved ✓';
+    setTimeout(function(){btn.textContent=btn.getAttribute('data-lbl')||orig;btn.classList.remove('saved-pop');},1100);
+  }
 }
 // Notes-style: another device saved this day's crews → offer to load (never auto-overwrite).
 var lastDraftSave=0;
@@ -1941,7 +1973,8 @@ var fbDb=null,fbUser=null,fbUnsub=null,fbUnsubMile=null,fbUnsubDraft=null,fbUnsu
 function markSynced(){lastSync=new Date();updateSyncStamps();}
 function syncAgo(){if(!lastSync)return fbUser?'syncing…':'local only';var s=Math.round((Date.now()-lastSync.getTime())/1000);if(s<60)return 'synced '+s+'s ago';var m=Math.round(s/60);if(m<60)return 'synced '+m+'m ago';return 'synced '+lastSync.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});}
 function updateSyncStamps(){var els=document.querySelectorAll('.sync-stamp');for(var i=0;i<els.length;i++)els[i].textContent=syncAgo();}
-function syncRefresh(){
+function syncRefresh(btn){
+  if(btn&&btn.classList){btn.classList.remove('spinning');void btn.offsetWidth;btn.classList.add('spinning');setTimeout(function(){btn.classList.remove('spinning');},700);}
   if(!syncOn()){showToast('Sign in (Settings) to sync devices');return;}
   showToast('Refreshing…');
   pushLocalLogs();syncMeta();
@@ -2172,7 +2205,7 @@ function showUpdateBanner(){
   b.onclick=function(){checkForUpdate();};
   document.body.appendChild(b);
 }
-var APP_VERSION='v11.8';
+var APP_VERSION='v11.9';
 function setVersion(){var els=document.querySelectorAll('.vbadge,.ver-chip');for(var i=0;i<els.length;i++)els[i].textContent=APP_VERSION;}
 setVersion();
 function setNavH(){var n=document.querySelector('.nav');if(n)document.documentElement.style.setProperty('--navh',n.offsetHeight+'px');}

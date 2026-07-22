@@ -349,6 +349,9 @@ textarea.field-input{resize:none;min-height:70px;line-height:1.5}
 .count-row{display:flex;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)}
 .count-row:last-of-type{border-bottom:none}
 .count-name{font-size:14px;font-weight:700;flex:1}
+.count-name-tap{cursor:pointer;border-bottom:1.5px dotted var(--border-mid);align-self:flex-start;padding-bottom:1px}
+.count-name-tap::after{content:'⇄';font-size:11px;color:var(--ink-4);margin-left:6px;font-weight:800;vertical-align:1px}
+.count-name-tap:active{color:var(--green);border-bottom-color:var(--green)}
 .count-controls{display:flex;align-items:center;gap:6px;flex-shrink:0}
 .count-btn{width:30px;height:30px;border-radius:var(--radius-sm);border:2px solid var(--ink);background:var(--surface);color:var(--ink);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;font-family:var(--font);font-weight:700}
 .count-btn:active{background:var(--ink);color:#fff}
@@ -430,6 +433,14 @@ textarea.field-input{resize:none;min-height:70px;line-height:1.5}
 .picker-item:active{background:var(--surface-2)}
 .picker-item.already{color:var(--ink-4)}
 .picker-item.already::after{content:'Added';font-size:11px;font-weight:800;color:var(--border-mid);text-transform:uppercase;letter-spacing:.06em}
+.picker-item.picked{background:var(--green-bg)}
+.pk-cur{font-size:10px;font-weight:800;color:var(--green-text);text-transform:uppercase;letter-spacing:.06em}
+/* Save / Refresh button feedback animations */
+.ref-ico{display:inline-block}
+.spinning .ref-ico{animation:spin360 .7s cubic-bezier(.4,0,.2,1)}
+@keyframes spin360{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+.saved-pop{animation:savePop .45s ease}
+@keyframes savePop{0%{transform:scale(1)}35%{transform:scale(.9)}70%{transform:scale(1.06)}100%{transform:scale(1)}}
 
 /* MODAL */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;display:flex;align-items:flex-end;justify-content:center}
