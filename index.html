@@ -82,6 +82,7 @@
       <div class="gen-dlr-info" id="genDlrInfo"></div>
       <button class="gen-dlr-btn" id="genDlrBtn">Generate DLR from Route Sheet →</button>
       <button class="reset-btn map-btn" id="mapStopsBtn" style="margin-bottom:8px"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>Map my stops (Google Maps)</button>
+      <button class="reset-btn view-alt" id="viewSheetBtn" style="display:none" onclick="openSheetViewer()">View spreadsheet</button>
       <button class="reset-btn reset-alt" id="resetBtn">↩ Load another file</button>
       <button class="reset-btn wipe-alt" id="wipeRouteBtn">Clear loaded route</button>
     </div>
@@ -268,6 +269,16 @@
       </div>
     </div>
   </div>
+</div>
+
+<!-- RAW SPREADSHEET VIEWER (read-only grid of the uploaded workbook) -->
+<div id="sheet-viewer" style="display:none">
+  <div class="sv-head">
+    <div class="sv-name" id="sv-name"></div>
+    <button class="sv-close" onclick="closeSheetViewer()" aria-label="Close">×</button>
+  </div>
+  <div class="sv-tabs" id="sv-tabs"></div>
+  <div class="sv-body" id="sv-body"></div>
 </div>
 
 <!-- CR JOBS MODAL (tap an inspector in the CRs list → their jobs) -->

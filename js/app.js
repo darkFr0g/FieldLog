@@ -56,7 +56,7 @@ function saveRoute(){
     setData('dlr_route',snap);
   }catch(e){}
 }
-function clearRoute(){try{localStorage.removeItem('dlr_route');}catch(e){}}
+function clearRoute(){try{localStorage.removeItem('dlr_route');localStorage.removeItem('dlr_routefile');}catch(e){}}
 function restoreRoute(){
   var r=getData('dlr_route',null);
   if(!r||!r.headers)return;
@@ -403,6 +403,11 @@ function openForemanActions(idx){
   document.body.appendChild(ov);
 }
 
+// Base64 helpers for retaining/syncing the raw uploaded workbook.
+function ab2b64(buf){var bytes=new Uint8Array(buf),bin='',chunk=0x8000;for(var i=0;i<bytes.length;i+=chunk){bin+=String.fromCharCode.apply(null,bytes.subarray(i,i+chunk));}return btoa(bin);}
+function b642ab(b64){var bin=atob(b64),len=bin.length,bytes=new Uint8Array(len);for(var i=0;i<len;i++)bytes[i]=bin.charCodeAt(i);return bytes.buffer;}
+function hasRouteFile(){var rf=getData('dlr_routefile',null);return !!(rf&&rf.b64);}
+function updateViewSheetBtn(){var b=document.getElementById('viewSheetBtn');if(b)b.style.display=hasRouteFile()?'block':'none';}
 function processFile(file){
   var NAME=inspectorInput.value.trim()||'Jeremiah Flavin';
   headingName.textContent=NAME;
@@ -490,6 +495,8 @@ function processFile(file){
       var routeDate=parseDateFromName(file.name)||parseSummaryDate(wb)||null;
       allData={headers:headers,flavin:myJobs,flavinCompany:myJobsCompany,owned:ownedJobs,sheets:sheetJobs,ccis:ccis,crs:crs,contractorSheets:SHEETS,name:NAME,routeDate:routeDate,allJobs:allJobsList};
       saveRoute();syncPushRoute();
+      // Retain the raw workbook so it can be viewed (and synced) across devices.
+      try{var rf={name:file.name,b64:ab2b64(e.target.result),savedAt:new Date().toISOString()};setData('dlr_routefile',rf);setData('dlr_routefile_sa',rf.savedAt);var pushed=syncPushRouteFile(rf);if(syncOn()&&pushed===false)showToast('Sheet loaded — too large to sync; viewable on this device only');}catch(_){}
       renderRouteResults();
     }catch(err){setStatus('err','Error: '+err.message);dropZone.style.display='';}
   };
@@ -509,9 +516,30 @@ function renderRouteResults(){
   var grouped=groupByWOLocation(allData.flavin);var keys=Object.keys(grouped);
   document.getElementById('genDlrInfo').innerHTML=(allData.routeDate?'<div class="gen-dlr-date">'+escHtml(fmtDate(allData.routeDate))+'</div>':'')+'<b>'+allData.flavin.length+' job row'+(allData.flavin.length!==1?'s':'')+' → '+keys.length+' DLR block'+(keys.length!==1?'s':'')+' by WO / Location</b>';
   document.getElementById('genDlrBar').classList.add('visible');
+  updateViewSheetBtn();
   routeAll=false;routeCRs=false;routeMine='flavin';routeCo='';
   buildRouteTabs();renderRouteBody();
 }
+// ── RAW SPREADSHEET VIEWER (read-only grid of every tab) ─────────
+function openSheetViewer(){
+  var rf=getData('dlr_routefile',null);
+  if(!rf||!rf.b64){showToast('No spreadsheet stored — load a route sheet');return;}
+  var wb;try{wb=XLSX.read(new Uint8Array(b642ab(rf.b64)),{type:'array'});}catch(e){showToast('Could not open the stored file');return;}
+  window._svWb=wb;
+  document.getElementById('sv-name').textContent=rf.name||'Spreadsheet';
+  document.getElementById('sv-tabs').innerHTML=wb.SheetNames.map(function(sn,i){return '<button class="sv-tab'+(i===0?' active':'')+'" onclick="svShow('+i+')">'+escHtml(sn)+'</button>';}).join('');
+  svShow(0);
+  document.getElementById('sheet-viewer').style.display='block';
+}
+function svShow(i){
+  var wb=window._svWb;if(!wb)return;
+  var ws=wb.Sheets[wb.SheetNames[i]];
+  var body=document.getElementById('sv-body');
+  body.innerHTML=ws?XLSX.utils.sheet_to_html(ws,{editable:false}):'<div class="no-jobs">Empty sheet</div>';
+  var tabs=document.querySelectorAll('#sv-tabs .sv-tab');for(var t=0;t<tabs.length;t++)tabs[t].classList.toggle('active',t===i);
+  body.scrollTop=0;body.scrollLeft=0;
+}
+function closeSheetViewer(){document.getElementById('sheet-viewer').style.display='none';window._svWb=null;}
 
 // Route view state: my jobs (Covering / Owned) with a one-at-a-time contractor
 // filter, plus a separate All-jobs reference view.
@@ -1969,7 +1997,7 @@ var FIREBASE_CONFIG = {
   messagingSenderId: "1061730210243",
   appId: "1:1061730210243:web:a300f274241c7f5b752d76"
 };
-var fbDb=null,fbUser=null,fbUnsub=null,fbUnsubMile=null,fbUnsubDraft=null,fbUnsubRoute=null,fbUnsubWork=null,lastSync=null;
+var fbDb=null,fbUser=null,fbUnsub=null,fbUnsubMile=null,fbUnsubDraft=null,fbUnsubRoute=null,fbUnsubWork=null,fbUnsubRF=null,lastSync=null;
 function markSynced(){lastSync=new Date();updateSyncStamps();}
 function syncAgo(){if(!lastSync)return fbUser?'syncing…':'local only';var s=Math.round((Date.now()-lastSync.getTime())/1000);if(s<60)return 'synced '+s+'s ago';var m=Math.round(s/60);if(m<60)return 'synced '+m+'m ago';return 'synced '+lastSync.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});}
 function updateSyncStamps(){var els=document.querySelectorAll('.sync-stamp');for(var i=0;i<els.length;i++)els[i].textContent=syncAgo();}
@@ -2089,6 +2117,14 @@ function startSync(){
     if(sa<=getData('dlr_route_sa',''))return;
     try{var rd=JSON.parse(d.data().json);if(rd&&rd.headers){allData=rebuildRoute(rd);setData('dlr_route',rd);setData('dlr_route_sa',sa);markSynced();if(document.getElementById('page-route').classList.contains('active'))renderRouteResults();}}catch(e){}
   },function(){});
+  // Live raw workbook — view the uploaded spreadsheet on every device.
+  if(fbUnsubRF)fbUnsubRF();
+  fbUnsubRF=userCol('meta').doc('routefile').onSnapshot(function(d){
+    if(!d.exists||!d.data().b64)return;var sa=d.data().savedAt||'';
+    if(sa<=getData('dlr_routefile_sa',''))return;
+    setData('dlr_routefile',{name:d.data().name||'',b64:d.data().b64,savedAt:sa});setData('dlr_routefile_sa',sa);markSynced();
+    if(document.getElementById('page-route').classList.contains('active'))updateViewSheetBtn();
+  },function(){});
   syncMeta();
 }
 function rebuildRoute(r){
@@ -2097,7 +2133,7 @@ function rebuildRoute(r){
   if(r.sheets)Object.keys(r.sheets).forEach(function(sn){var sd=r.sheets[sn];if(sd&&sd.jobs)sd.jobs.forEach(function(row){if(row)row._co=sd.company||sn;});});
   return r;
 }
-function stopSync(){[fbUnsub,fbUnsubMile,fbUnsubDraft,fbUnsubRoute,fbUnsubWork].forEach(function(u){if(u)u();});fbUnsub=fbUnsubMile=fbUnsubDraft=fbUnsubRoute=fbUnsubWork=null;}
+function stopSync(){[fbUnsub,fbUnsubMile,fbUnsubDraft,fbUnsubRoute,fbUnsubWork,fbUnsubRF].forEach(function(u){if(u)u();});fbUnsub=fbUnsubMile=fbUnsubDraft=fbUnsubRoute=fbUnsubWork=fbUnsubRF=null;}
 function mergeRemoteLog(r){
   if(!r||!r.date)return false;
   var i=logs.findIndex(function(l){return l.date===r.date;});
@@ -2159,6 +2195,14 @@ function syncPushRoute(){
   var sa=new Date().toISOString();setData('dlr_route_sa',sa);
   try{userCol('meta').doc('route').set({json:JSON.stringify(getData('dlr_route',allData)),savedAt:sa}).catch(function(){});}catch(e){}
 }
+// Sync the raw workbook so it's viewable on every device. Firestore caps a doc at
+// 1 MiB — oversized sheets stay local-only (returns false so the caller can note it).
+function syncPushRouteFile(rf){
+  if(!syncOn()||!rf||!rf.b64)return null;
+  if(rf.b64.length>900000)return false;
+  try{userCol('meta').doc('routefile').set({name:rf.name||'',b64:rf.b64,savedAt:rf.savedAt||new Date().toISOString()}).catch(function(){});}catch(e){}
+  return true;
+}
 // Sync the in-progress DLR scratchpad (debounced — saveWorkingDLR fires on every keystroke).
 var _workTimer=null;
 function syncPushWorking(){
@@ -2205,7 +2249,7 @@ function showUpdateBanner(){
   b.onclick=function(){checkForUpdate();};
   document.body.appendChild(b);
 }
-var APP_VERSION='v11.9';
+var APP_VERSION='v12.0';
 function setVersion(){var els=document.querySelectorAll('.vbadge,.ver-chip');for(var i=0;i<els.length;i++)els[i].textContent=APP_VERSION;}
 setVersion();
 function setNavH(){var n=document.querySelector('.nav');if(n)document.documentElement.style.setProperty('--navh',n.offsetHeight+'px');}

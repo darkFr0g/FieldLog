@@ -111,7 +111,11 @@ iPhones + 2 Surface laptops).
   standalone PWA; magic links do **not**, due to Safari/PWA storage split). First
   sign-in auto-creates the account; session persists.
 - **Data model:** `users/{uid}/logs/{date}` (one doc per DLR log, live `onSnapshot`),
-  `users/{uid}/meta/{drafts|lists|mileage|profile|route|working}` (single docs).
+  `users/{uid}/meta/{drafts|lists|mileage|profile|route|routefile|working}` (single
+  docs). `routefile` = the raw uploaded workbook (base64) so the **View
+  spreadsheet** viewer works on every device; skipped if >900 KB (Firestore's
+  1 MiB doc cap) — then it stays local-only. Viewer renders each sheet read-only
+  via `XLSX.utils.sheet_to_html` (`openSheetViewer`/`svShow`).
   **Live across devices** (onSnapshot, newest `savedAt` wins): logs, mileage,
   drafts, the loaded **route** (JSON — load the sheet on one device, all get it),
   and the in-progress **DLR scratchpad** (`working`, debounced push). So
