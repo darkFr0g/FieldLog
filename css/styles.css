@@ -420,6 +420,7 @@ textarea.field-input{resize:none;min-height:70px;line-height:1.5}
 .empty-state{text-align:center;padding:60px 20px;color:var(--ink-4)}
 .empty-state p{font-size:14px;font-weight:600}
 .log-day{background:var(--surface);border-bottom:2px solid var(--border)}
+#history-list .log-day:nth-of-type(even){background:var(--surface-2)}
 .log-day-header{padding:13px 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer}
 .log-day-title{font-size:16px;font-weight:800;letter-spacing:-.02em}
 .edited-tag{font-size:9px;font-weight:800;letter-spacing:.08em;color:var(--amber-text);background:var(--amber-bg);border:1px solid #f0d5a0;padding:1px 6px;border-radius:var(--radius-xs);vertical-align:middle;margin-left:6px}
