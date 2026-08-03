@@ -44,9 +44,13 @@ place). Sections below described separately.
   You enter **miles driven** per stop; one Start odometer carries the running
   total; computes per-leg + daily miles and the rolling end odometer. "Copy stops
   from another day", "Load from route", and "Map drive" buttons.
-- **History** — lists submitted logs (Edit / Duplicate / Copy / Share / Delete),
-  with search + sort (log date / created / last-edited) and an EDITED badge +
-  saved timestamp. One log per date — re-submitting overwrites it.
+- **History** — a **daily journal grouped by month** (month header + count).
+  Every calendar day gets a row: submitted logs are expandable cards (Edit /
+  Duplicate / Copy / Share / Delete, EDITED badge, saved timestamp); days with no
+  log show a slim "No log — tap to start" row that opens the Day page for that
+  date. Renders each day of any month that has logs, plus the current month (up
+  to today); banded rows (`.rowband`). Searching falls back to matching logs only
+  (still month-grouped). One log per date — re-submitting overwrites it.
 - **Settings** — Sync & Account, **Profile** (name/employee #/roll/vehicle/plate/
   phone/home address — seeds form headers + the Maps start), master lists, Photos
   shortcut toggle, Data (backup/restore + clear), Check for updates.

@@ -1351,52 +1351,88 @@ function loadTodayDraft(){
 function renderHistory(){
   var q=(document.getElementById('search-input')&&document.getElementById('search-input').value||'').toLowerCase();
   var list=document.getElementById('history-list');
-  var filtered=logs;
-  if(q)filtered=logs.filter(function(l){return l.date.includes(q)||fmtDate(l.date).toLowerCase().includes(q)||l.crews.some(function(c){return(c.location||'').toLowerCase().includes(q)||(c.wo||'').toLowerCase().includes(q)||(c.foremen||[]).join(' ').toLowerCase().includes(q);});});
-  if(filtered.length===0){list.innerHTML='<div class="empty-state"><p>'+(logs.length===0?'No logs submitted yet':'No results found')+'</p></div>';return;}
   var sort=(document.getElementById('history-sort')||{}).value||'date-desc';
-  filtered=filtered.slice().sort(function(a,b){
-    switch(sort){
-      case 'date-asc':    return a.date.localeCompare(b.date);
-      case 'created-desc':return (b.createdAt||b.savedAt||b.date).localeCompare(a.createdAt||a.savedAt||a.date);
-      case 'created-asc': return (a.createdAt||a.savedAt||a.date).localeCompare(b.createdAt||b.savedAt||b.date);
-      case 'updated-desc':return (b.savedAt||b.date).localeCompare(a.savedAt||a.date);
-      case 'updated-asc': return (a.savedAt||a.date).localeCompare(b.savedAt||b.date);
-      default:            return b.date.localeCompare(a.date);
-    }
-  });
-  list.innerHTML=filtered.map(function(log){
-    var tw=log.crews.reduce(function(s,c){return s+(c.trades||[]).reduce(function(a,t){return a+(t.c||0);},0);},0);
-    var crewsHTML=log.crews.map(function(c){
-      var tl=(c.trades||[]).filter(function(t){return t.c>0;}).map(function(t){return t.n+': '+t.c;}).join(' · ');
-      var el=(c.equip||[]).filter(function(e){return e.c>0;}).map(function(e){return e.n+': '+e.c;}).join(' · ');
-      return '<div class="log-crew-row">'+
-        '<div class="log-crew-name">Crew '+c.num+(c.foremen&&c.foremen.length?' — '+c.foremen.slice(0,2).join(', '):'')+(c._fromRoute?' <span style="font-size:10px;color:var(--green);font-weight:700">ROUTE</span>':'')+'</div>'+
-        '<div class="log-crew-detail">'+
-          (c.location?'📍 '+c.location+'<br>':'')+
-          (c.wo?'Ticket: <b>'+c.wo+'</b>'+(c.cworxWO?' · WO: <b>'+c.cworxWO+'</b>':'')+'<br>':'')+
-          (tl?tl+'<br>':'')+
-          (el?el+'<br>':'')+
-          (c.comments?c.comments.substring(0,80)+(c.comments.length>80?'…':'')+'<br>':'')+
-          (c.te?'T&E: '+(c.teHours||'')+(c.teReason?' · '+c.teReason:''):'')+
-        '</div></div>';
+  var asc=(sort==='date-asc'||sort==='created-asc'||sort==='updated-asc');
+  var byDate={};logs.forEach(function(l){byDate[l.date]=l;});
+  var t=today();
+  function pad(n){return (n<10?'0':'')+n;}
+  function monthLabel(y,m){return new Date(y,m,1).toLocaleDateString('en-US',{month:'long',year:'numeric'});}
+  function section(k,rowsHTML,cnt){var p=k.split('-');return '<div class="hist-msec"><div class="hist-month">'+escHtml(monthLabel(+p[0],+p[1]-1))+' <span class="hm-ct">'+cnt+'</span></div>'+rowsHTML+'</div>';}
+
+  // Search → only matching logs, still grouped by month.
+  if(q){
+    var matches=logs.filter(function(l){return l.date.includes(q)||fmtDate(l.date).toLowerCase().includes(q)||l.crews.some(function(c){return(c.location||'').toLowerCase().includes(q)||(c.wo||'').toLowerCase().includes(q)||(c.foremen||[]).join(' ').toLowerCase().includes(q);});});
+    if(!matches.length){list.innerHTML='<div class="empty-state"><p>No results found</p></div>';return;}
+    var mk={};matches.forEach(function(l){var k=l.date.slice(0,7);(mk[k]=mk[k]||[]).push(l);});
+    var mkeys=Object.keys(mk).sort();if(!asc)mkeys.reverse();
+    var b1={i:0};
+    list.innerHTML=mkeys.map(function(k){
+      var rows=mk[k].sort(function(a,b){return asc?a.date.localeCompare(b.date):b.date.localeCompare(a.date);}).map(function(l){return histLogCard(l,(b1.i++%2===1));}).join('');
+      return section(k,rows,mk[k].length);
     }).join('');
-    var edited=(log.createdAt&&log.savedAt&&log.savedAt!==log.createdAt);
-    var editedBadge=edited?' <span class="edited-tag">EDITED</span>':'';
-    var savedTxt=log.savedAt?(' · saved '+fmtShortStamp(log.savedAt)):'';
-    return '<div class="log-day">'+
-      '<div class="log-day-header" onclick="toggleDay(\''+log.date+'\')">'+
-        '<div><div class="log-day-title">'+fmtDate(log.date)+editedBadge+'</div><div class="log-day-meta">'+log.crews.length+' crew'+(log.crews.length!==1?'s':'')+savedTxt+'</div></div>'+
-        '<span class="chevron" id="daychev-'+log.date+'">⌄</span></div>'+
-      '<div class="log-expanded" id="daylog-'+log.date+'">'+crewsHTML+
-        '<div style="padding:10px 16px;display:flex;gap:8px;flex-wrap:wrap">'+
-          '<button class="btn btn-secondary btn-sm" onclick="loadLogForEdit(\''+log.date+'\')">Edit</button>'+
-          '<button class="btn btn-secondary btn-sm" onclick="duplicateLog(\''+log.date+'\')">Duplicate</button>'+
-          '<button class="btn btn-secondary btn-sm" onclick="copyLogFormatted(\''+log.date+'\')">Copy</button>'+
-          '<button class="btn btn-secondary btn-sm" onclick="shareLog(\''+log.date+'\')">Share</button>'+
-          '<button class="btn btn-danger btn-sm" onclick="deleteLog(\''+log.date+'\')">Delete</button>'+
-        '</div></div></div>';
+    return;
+  }
+
+  // Calendar → every day of any month that has logs, plus the current month.
+  var mset={};logs.forEach(function(l){mset[l.date.slice(0,7)]=true;});mset[t.slice(0,7)]=true;
+  var monthKeys=Object.keys(mset).sort();if(!asc)monthKeys.reverse();
+  var band={i:0};
+  list.innerHTML=monthKeys.map(function(k){
+    var p=k.split('-'),y=+p[0],m=+p[1]-1,dim=new Date(y,m+1,0).getDate();
+    var days=[];for(var d=1;d<=dim;d++)days.push(d);if(!asc)days.reverse();
+    var rows=days.map(function(d){
+      var ds=y+'-'+pad(m+1)+'-'+pad(d);
+      if(ds>t&&!byDate[ds])return ''; // no empty slots for future days
+      return byDate[ds]?histLogCard(byDate[ds],(band.i++%2===1)):histEmptyDay(ds,(band.i++%2===1));
+    }).filter(Boolean).join('');
+    if(!rows)return '';
+    return section(k,rows,logs.filter(function(l){return l.date.slice(0,7)===k;}).length);
   }).join('');
+}
+function histLogCard(log,banded){
+  var crewsHTML=log.crews.map(function(c){
+    var tl=(c.trades||[]).filter(function(t){return t.c>0;}).map(function(t){return t.n+': '+t.c;}).join(' · ');
+    var el=(c.equip||[]).filter(function(e){return e.c>0;}).map(function(e){return e.n+': '+e.c;}).join(' · ');
+    return '<div class="log-crew-row">'+
+      '<div class="log-crew-name">Crew '+c.num+(c.foremen&&c.foremen.length?' — '+c.foremen.slice(0,2).join(', '):'')+(c._fromRoute?' <span style="font-size:10px;color:var(--green);font-weight:700">ROUTE</span>':'')+'</div>'+
+      '<div class="log-crew-detail">'+
+        (c.location?'📍 '+c.location+'<br>':'')+
+        (c.wo?'Ticket: <b>'+c.wo+'</b>'+(c.cworxWO?' · WO: <b>'+c.cworxWO+'</b>':'')+'<br>':'')+
+        (tl?tl+'<br>':'')+(el?el+'<br>':'')+
+        (c.comments?c.comments.substring(0,80)+(c.comments.length>80?'…':'')+'<br>':'')+
+        (c.te?'T&E: '+(c.teHours||'')+(c.teReason?' · '+c.teReason:''):'')+
+      '</div></div>';
+  }).join('');
+  var edited=(log.createdAt&&log.savedAt&&log.savedAt!==log.createdAt);
+  var editedBadge=edited?' <span class="edited-tag">EDITED</span>':'';
+  var savedTxt=log.savedAt?(' · saved '+fmtShortStamp(log.savedAt)):'';
+  return '<div class="log-day'+(banded?' rowband':'')+'">'+
+    '<div class="log-day-header" onclick="toggleDay(\''+log.date+'\')">'+
+      '<div><div class="log-day-title">'+fmtDate(log.date)+editedBadge+'</div><div class="log-day-meta">'+log.crews.length+' crew'+(log.crews.length!==1?'s':'')+savedTxt+'</div></div>'+
+      '<span class="chevron" id="daychev-'+log.date+'">⌄</span></div>'+
+    '<div class="log-expanded" id="daylog-'+log.date+'">'+crewsHTML+
+      '<div style="padding:10px 16px;display:flex;gap:8px;flex-wrap:wrap">'+
+        '<button class="btn btn-secondary btn-sm" onclick="loadLogForEdit(\''+log.date+'\')">Edit</button>'+
+        '<button class="btn btn-secondary btn-sm" onclick="duplicateLog(\''+log.date+'\')">Duplicate</button>'+
+        '<button class="btn btn-secondary btn-sm" onclick="copyLogFormatted(\''+log.date+'\')">Copy</button>'+
+        '<button class="btn btn-secondary btn-sm" onclick="shareLog(\''+log.date+'\')">Share</button>'+
+        '<button class="btn btn-danger btn-sm" onclick="deleteLog(\''+log.date+'\')">Delete</button>'+
+      '</div></div></div>';
+}
+function histEmptyDay(ds,banded){
+  var d=new Date(ds+'T12:00:00');
+  var lbl=d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+  return '<div class="log-day log-empty'+(banded?' rowband':'')+'" onclick="startDayLog(\''+ds+'\')">'+
+    '<div class="le-txt"><div class="le-date">'+escHtml(lbl)+'</div><div class="le-none">No log — tap to start</div></div>'+
+    '<span class="le-plus">+</span></div>';
+}
+// Tap an empty day → open the Day page for that date (loads its draft if any, else blank).
+function startDayLog(date){
+  var dr=getData('dlr_drafts',{})[date];
+  currentCrews=(dr&&dr.crews)?JSON.parse(JSON.stringify(dr.crews)):[];
+  lastDraftSave=(dr&&dr.savedAt)?new Date(dr.savedAt).getTime():Date.now();
+  var ld=document.getElementById('log-date');if(ld)ld.value=date;
+  updateDateDisplay();renderCrews();showPage('dlr');
 }
 function fmtShortStamp(iso){var d=new Date(iso);if(isNaN(d))return '';return d.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' '+d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});}
 function duplicateLog(date){
@@ -2300,7 +2336,7 @@ function showUpdateBanner(){
   b.onclick=function(){checkForUpdate();};
   document.body.appendChild(b);
 }
-var APP_VERSION='v12.2';
+var APP_VERSION='v12.3';
 function setVersion(){var els=document.querySelectorAll('.vbadge,.ver-chip');for(var i=0;i<els.length;i++)els[i].textContent=APP_VERSION;}
 setVersion();
 function setNavH(){var n=document.querySelector('.nav');if(n)document.documentElement.style.setProperty('--navh',n.offsetHeight+'px');}
