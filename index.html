@@ -281,6 +281,20 @@
   <div class="sv-body" id="sv-body"></div>
 </div>
 
+<!-- FOREMAN JOBS MODAL (is my covered foreman also on other jobs / CRs?) -->
+<div id="fj-modal" style="display:none">
+  <div class="modal-overlay" onclick="closeFJ(event)">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+        <div class="modal-title" id="fj-title"></div>
+        <button onclick="closeFJ()" style="background:none;border:none;font-size:24px;color:var(--ink-3);cursor:pointer;line-height:1">×</button>
+      </div>
+      <div style="font-size:12px;color:var(--ink-3);margin-bottom:12px" id="fj-count"></div>
+      <div id="fj-list" class="list-jobs"></div>
+    </div>
+  </div>
+</div>
+
 <!-- CR JOBS MODAL (tap an inspector in the CRs list → their jobs) -->
 <div id="crjobs-modal" style="display:none">
   <div class="modal-overlay" onclick="closeCRJobs(event)">

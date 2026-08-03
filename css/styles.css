@@ -211,6 +211,11 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
 .lead-tag{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--surface-2);color:var(--ink-2);display:inline-flex;align-items:center;gap:5px;line-height:1.5}
 .lead-tag i{font-style:normal;font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;opacity:.75}
 .lead-tag .lead-its{font-family:var(--font-mono);font-size:10px;font-weight:800;opacity:.7;letter-spacing:.02em}
+.lead-tap{cursor:pointer}
+.lead-tap:active{filter:brightness(.94)}
+.fore-spread{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:800;padding:3px 9px;border-radius:999px;background:#111;color:#fff;border:none;cursor:pointer;font-family:var(--font);letter-spacing:.01em}
+.fore-spread:active{opacity:.8}
+.fj-here{font-size:9px;font-weight:800;color:var(--green-text);text-transform:uppercase;letter-spacing:.06em;background:var(--green-bg);padding:1px 6px;border-radius:999px;margin-left:4px}
 .lead-labor{background:#EFF6FF;color:#1A56C4}
 .lead-mechanic{background:#FBEBD2;color:#8A4B00}
 .lead-welder{background:#FDEAEA;color:#B3261E}

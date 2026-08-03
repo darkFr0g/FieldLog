@@ -446,7 +446,7 @@ function processFile(file){
           var aTow=String(row[headers.indexOf('Type Of Work')]||'').trim();
           if(aLoc||aTk){
             var aKey=aLoc+'|'+aTk+'|'+aIn;
-            if(!allSeen[aKey]){allSeen[aKey]=true;allJobsList.push({location:aLoc,contractor:company,ticket:aTk,wo:aWo,inspector:aIn,tow:aTow});}
+            if(!allSeen[aKey]){allSeen[aKey]=true;allJobsList.push({location:aLoc,contractor:company,ticket:aTk,wo:aWo,inspector:aIn,tow:aTow,foreman:cleanLeadName(lastF),foremanIts:leadIts(lastF)});}
           }
           if(insp&&String(insp).trim()===NAME){
             if(!row[0]||String(row[0]).trim()===''){row=row.slice();row[0]=lastF;}
@@ -596,6 +596,54 @@ function showCRJobs(name){
   document.getElementById('crjobs-modal').style.display='block';
 }
 function closeCRJobs(e){if(e&&!e.target.classList.contains('modal-overlay'))return;document.getElementById('crjobs-modal').style.display='none';}
+
+// ── FOREMAN SPREAD (is the crew/foreman I'm covering also on other jobs/CRs?) ──
+function jobsForForeman(its,name){
+  var ik=its?String(its):'',nk=crNameKey(name||'');
+  return (allData.allJobs||[]).filter(function(j){
+    if(ik&&j.foremanIts&&String(j.foremanIts)===ik)return true;
+    return !ik&&nk&&crNameKey(j.foreman||'')===nk;
+  });
+}
+// Other jobs (different ticket) the given foreman is on — used for the block badge.
+function foremanOtherCount(its,name,notTicket){
+  var nt=cleanTicket(notTicket||''),seen={},n=0;
+  jobsForForeman(its,name).forEach(function(j){
+    var k=(j.location||'')+'|'+cleanTicket(j.ticket||'');
+    if(seen[k]||cleanTicket(j.ticket||'')===nt)return;seen[k]=true;n++;
+  });
+  return n;
+}
+// One lead tapped → show every job that foreman is on, across all inspectors.
+function openForemanJobs(name,its,curTicket){
+  renderForemanJobs(name,jobsForForeman(its,name),curTicket);
+}
+// Block badge → combine all leads on the crew.
+function openCrewForemanJobs(cid){
+  var c=currentCrews.find(function(x){return x.id===cid;});if(!c)return;
+  var leads=(c.leads&&c.leads.length)?c.leads:(c.foremen||[]).map(function(f){return {name:cleanLeadName(f),its:leadIts(f)};});
+  var jobs=[],seen={};
+  leads.forEach(function(l){jobsForForeman(l.its,l.name).forEach(function(j){var k=(j.location||'')+'|'+cleanTicket(j.ticket||'')+'|'+(j.inspector||'');if(!seen[k]){seen[k]=true;jobs.push(j);}});});
+  renderForemanJobs(leads.map(function(l){return l.name;}).join(', ')||'Foreman',jobs,c.wo);
+}
+function renderForemanJobs(title,jobs,curTicket){
+  var nt=cleanTicket(curTicket||'');
+  var insps={};jobs.forEach(function(j){if(j.inspector)insps[crNameKey(j.inspector)]=1;});
+  document.getElementById('fj-title').textContent=title;
+  document.getElementById('fj-count').textContent=jobs.length+' job'+(jobs.length!==1?'s':'')+' · '+Object.keys(insps).length+' inspector'+(Object.keys(insps).length!==1?'s':'');
+  var host=document.getElementById('fj-list');
+  if(!jobs.length){host.innerHTML='<div class="no-jobs">No jobs found for this foreman</div>';}
+  else host.innerHTML=jobs.map(function(j){
+    var jc=contractorColor(j.contractor),mine=crNameKey(j.inspector)===crNameKey(allData.name||''),here=cleanTicket(j.ticket||'')===nt&&nt;
+    return '<div class="list-item"'+(jc?' style="border-left:3px solid '+jc+';background:'+hexToRgba(jc,0.07)+'"':'')+'>'+
+      '<div class="list-loc">'+escHtml(j.location||'—')+(here?' <span class="fj-here">this job</span>':'')+'</div><div class="list-meta">'+
+      (j.contractor?'<span class="lm" style="font-weight:800'+(jc?';color:'+jc:'')+'">'+escHtml(j.contractor)+'</span>':'')+
+      (j.ticket?'<span class="lm">WR# <b>'+escHtml(j.ticket)+'</b></span>':'')+
+      '<span class="lm">CR <b'+(mine?' style="color:var(--green-text)"':'')+'>'+escHtml(j.inspector||'—')+(mine?' (you)':'')+'</b></span>'+
+      '</div></div>';}).join('');
+  document.getElementById('fj-modal').style.display='block';
+}
+function closeFJ(e){if(e&&!e.target.classList.contains('modal-overlay'))return;document.getElementById('fj-modal').style.display='none';}
 function coChip(label,val,count,color){
   var active=routeCo===val,style='';
   if(active){var c=color||'#111';style='background:'+c+';border-color:'+c+';color:#fff';}
@@ -1023,7 +1071,10 @@ function crewHTML(crew){
     '<button class="hp-chip" onclick="event.stopPropagation();holdPointAlbumCrew('+crew.id+')">📷 Hold Point: '+escHtml(crew.holdPoint)+'</button>':
     '<span class="status-off">Hold Point: No</span>';
   var leadTags=(crew.leads&&crew.leads.length)?
-    crew.leads.map(function(l){var lbl=leadTypeLabel(l.type);return '<span class="lead-tag lead-'+l.type+'">'+(l.its?'<b class="lead-its">'+escHtml(l.its)+'</b>':'')+escHtml(l.name)+(lbl?'<i>'+lbl+'</i>':'')+'</span>';}).join(''):'';
+    crew.leads.map(function(l){var lbl=leadTypeLabel(l.type);return '<span class="lead-tag lead-tap lead-'+l.type+'" data-fn="'+escHtml(l.name)+'" data-fi="'+escHtml(l.its||'')+'" data-tk="'+escHtml(crew.wo||'')+'" onclick="event.stopPropagation();openForemanJobs(this.getAttribute(\'data-fn\'),this.getAttribute(\'data-fi\'),this.getAttribute(\'data-tk\'))">'+(l.its?'<b class="lead-its">'+escHtml(l.its)+'</b>':'')+escHtml(l.name)+(lbl?'<i>'+lbl+'</i>':'')+'</span>';}).join(''):'';
+  // Does this crew's foreman(s) appear on other jobs (covered by me or another CR)?
+  var foreSpread=0;(crew.leads||[]).forEach(function(l){foreSpread=Math.max(foreSpread,foremanOtherCount(l.its,l.name,crew.wo));});
+  var spreadTag=foreSpread>0?'<button class="fore-spread" onclick="event.stopPropagation();openCrewForemanJobs('+crew.id+')">Foreman also on '+foreSpread+' other job'+(foreSpread!==1?'s':'')+' →</button>':'';
   var fuseBadge=isActive(crew.fusingPeer)?
     '<span class="b-fuse">Pressure Test: '+escHtml(crew.fusingPeer)+'</span>':
     '<span class="status-off">Pressure Test: No</span>';
@@ -1033,7 +1084,7 @@ function crewHTML(crew){
   if(isActive(crew.contingency))urg.push('<span class="utag ut-cont">⚠ '+escHtml(crew.contingencyNum||'Contingency')+'</span>');
   if(isActive(crew.holdPoint))urg.push('<span class="utag ut-hp">Hold Point</span>');
   if(isActive(crew.fusingPeer))urg.push('<span class="utag ut-pt">Pressure Test</span>');
-  var metaLine=(leadTags||urg.length)?'<div class="crew-h-meta">'+leadTags+urg.join('')+'</div>':'';
+  var metaLine=(leadTags||urg.length||spreadTag)?'<div class="crew-h-meta">'+leadTags+urg.join('')+spreadTag+'</div>':'';
   var wr=[crew.wo,crew.cworxWO].filter(Boolean).join(' · ');
 
   var coC=contractorColor(crew.contractor),coT=coC?hexToRgba(coC,0.12):'';
@@ -2249,7 +2300,7 @@ function showUpdateBanner(){
   b.onclick=function(){checkForUpdate();};
   document.body.appendChild(b);
 }
-var APP_VERSION='v12.0';
+var APP_VERSION='v12.1';
 function setVersion(){var els=document.querySelectorAll('.vbadge,.ver-chip');for(var i=0;i<els.length;i++)els[i].textContent=APP_VERSION;}
 setVersion();
 function setNavH(){var n=document.querySelector('.nav');if(n)document.documentElement.style.setProperty('--navh',n.offsetHeight+'px');}
