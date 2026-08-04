@@ -1481,7 +1481,15 @@ function renderListItems(items){
 function addListItem(){var input=document.getElementById('new-item-input');var val=input.value.trim();if(!val)return;if(editingList==='trade'){trades.push(val);setData('dlr_trades',trades);renderListItems(trades);}else{equipment.push(val);setData('dlr_equipment',equipment);renderListItems(equipment);}input.value='';updateSettingsCounts();syncPushLists();}
 function removeListItem(i){if(editingList==='trade'){trades.splice(i,1);setData('dlr_trades',trades);renderListItems(trades);}else{equipment.splice(i,1);setData('dlr_equipment',equipment);renderListItems(equipment);}updateSettingsCounts();syncPushLists();}
 function closeListModal(e){if(!e||e.target.classList.contains('modal-overlay'))document.getElementById('list-modal').style.display='none';}
-function updateSettingsCounts(){document.getElementById('trade-count').textContent=trades.length+' items';document.getElementById('equip-count').textContent=equipment.length+' items';document.getElementById('log-count-display').textContent=logs.length;}
+function updateSettingsCounts(){document.getElementById('trade-count').textContent=trades.length+' items';document.getElementById('equip-count').textContent=equipment.length+' items';document.getElementById('log-count-display').textContent=logs.length;updateContCount();}
+function contCount(){var all=getCont();return Object.keys(all).filter(function(k){return all[k]&&!all[k].deleted;}).length;}
+function updateContCount(){var el=document.getElementById('cont-saved-count');if(el)el.textContent=contCount()+' →';}
+// Open the contingency form standalone (no job) with the saved list expanded to browse/load.
+function browseContingencies(){
+  openContingencyModal({});
+  var l=document.getElementById('cont-saved-list'),c=document.getElementById('cont-saved-chev');
+  if(l)l.style.display='block';if(c)c.classList.add('open');
+}
 function clearAllData(){if(!confirm('Delete ALL logs and settings? Cannot be undone.'))return;localStorage.clear();trades=CWORX_TRADES.slice();equipment=CWORX_EQUIPMENT.slice();logs=[];currentCrews=[];setData('dlr_trades',trades);setData('dlr_equipment',equipment);updateSettingsCounts();showToast('All data cleared');}
 
 // Home-screen PWAs can't be hard-refreshed; this pulls the newest service
@@ -1837,6 +1845,7 @@ function renderContSaved(){
   var items=Object.keys(all).map(function(k){return all[k];}).filter(function(x){return x&&!x.deleted;})
     .sort(function(a,b){return (b.savedAt||'').localeCompare(a.savedAt||'');});
   var ct=document.getElementById('cont-saved-ct');if(ct)ct.textContent=items.length;
+  updateContCount();
   var host=document.getElementById('cont-saved-list');if(!host)return;
   host.innerHTML=items.length?items.map(function(e){
     var when=e.savedAt?new Date(e.savedAt).toLocaleDateString('en-US',{month:'short',day:'numeric'}):'';
@@ -2422,7 +2431,7 @@ function showUpdateBanner(){
   b.onclick=function(){checkForUpdate();};
   document.body.appendChild(b);
 }
-var APP_VERSION='v12.6';
+var APP_VERSION='v12.7';
 function setVersion(){var els=document.querySelectorAll('.vbadge,.ver-chip');for(var i=0;i<els.length;i++)els[i].textContent=APP_VERSION;}
 setVersion();
 function setNavH(){var n=document.querySelector('.nav');if(n)document.documentElement.style.setProperty('--navh',n.offsetHeight+'px');}
