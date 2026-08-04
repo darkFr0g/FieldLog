@@ -1781,9 +1781,70 @@ function openContingencyModal(p){
   addFacRow();
   var subj='Contingency'+(p.num?' - '+p.num:'')+(p.location?' - '+p.location:'');
   setContVal('cont-subject',subj);
+  renderContSaved();
   document.getElementById('cont-modal').style.display='block';
 }
 function closeContModal(e){if(!e||e.target.classList.contains('modal-overlay'))document.getElementById('cont-modal').style.display='none';}
+
+// ── SAVE / REUSE CONTINGENCIES ───────────────────────────────────
+var CONT_FIELDS=['cont-subject','cont-num','cont-layout','cont-code','cont-contractor','cont-scope',
+  'cont-dim-l','cont-dim-w','cont-dim-d','cont-pin1-dist','cont-pin1-dir','cont-pin1-ref',
+  'cont-pin2-dist','cont-pin2-dir','cont-pin2-ref','cont-comments','cont-inspector'];
+function serializeCont(){
+  var o={};CONT_FIELDS.forEach(function(id){o[id]=getContVal(id);});
+  o.fac=[];document.querySelectorAll('#cont-fac-list .fac-item').forEach(function(it){
+    o.fac.push({rel:it.getAttribute('data-rel')||'over',dist:((it.querySelector('.fac-dist')||{}).value||''),dir:((it.querySelector('.fac-dir')||{}).value||''),desc:((it.querySelector('.fac-desc')||{}).value||'')});
+  });
+  return o;
+}
+function applyCont(o){
+  o=o||{};CONT_FIELDS.forEach(function(id){setContVal(id,o[id]||'');});
+  var fl=document.getElementById('cont-fac-list');if(fl)fl.innerHTML='';
+  var facs=(o.fac&&o.fac.length)?o.fac:[{rel:'over'}];
+  facs.forEach(function(f){
+    addFacRow();
+    var it=document.querySelector('#cont-fac-list .fac-item:last-child');if(!it)return;
+    var btns=it.querySelectorAll('.fac-rel-btn');
+    setFacRel(btns[f.rel==='away'?1:0],f.rel==='away'?'away':'over');
+    if(it.querySelector('.fac-dist'))it.querySelector('.fac-dist').value=f.dist||'';
+    if(it.querySelector('.fac-dir'))it.querySelector('.fac-dir').value=f.dir||'';
+    if(it.querySelector('.fac-desc'))it.querySelector('.fac-desc').value=f.desc||'';
+  });
+}
+function getCont(){return getData('dlr_contingencies',{});}
+function saveContingency(){
+  var data=serializeCont();
+  var num=(data['cont-num']||'').trim();
+  var id=num?('n:'+num.toLowerCase()):('c'+(new Date().getTime()));
+  var ref=data['cont-pin1-ref']||data['cont-pin2-ref']||'';
+  var all=getCont();
+  all[id]={id:id,savedAt:new Date().toISOString(),label:(num||'Contingency')+(ref?' · '+ref:''),data:data};
+  setData('dlr_contingencies',all);syncPushContingencies();renderContSaved();showToast('Contingency saved for later');
+}
+function loadContingency(id){var e=getCont()[id];if(e&&e.data&&!e.deleted){applyCont(e.data);showToast('Loaded — edit & send as needed');}}
+function deleteContingency(id){
+  var all=getCont();if(!all[id])return;
+  if(!confirm('Delete this saved contingency?'))return;
+  all[id]={id:id,deleted:true,savedAt:new Date().toISOString()};
+  setData('dlr_contingencies',all);syncPushContingencies();renderContSaved();
+}
+function toggleContSaved(){
+  var l=document.getElementById('cont-saved-list'),c=document.getElementById('cont-saved-chev');if(!l)return;
+  var open=l.style.display!=='none';l.style.display=open?'none':'block';if(c)c.classList.toggle('open',!open);
+}
+function renderContSaved(){
+  var all=getCont();
+  var items=Object.keys(all).map(function(k){return all[k];}).filter(function(x){return x&&!x.deleted;})
+    .sort(function(a,b){return (b.savedAt||'').localeCompare(a.savedAt||'');});
+  var ct=document.getElementById('cont-saved-ct');if(ct)ct.textContent=items.length;
+  var host=document.getElementById('cont-saved-list');if(!host)return;
+  host.innerHTML=items.length?items.map(function(e){
+    var when=e.savedAt?new Date(e.savedAt).toLocaleDateString('en-US',{month:'short',day:'numeric'}):'';
+    return '<div class="cs-item">'+
+      '<div class="cs-main" onclick="loadContingency(\''+e.id.replace(/'/g,"\\'")+'\')"><div class="cs-label">'+escHtml(e.label||'Contingency')+'</div><div class="cs-when">saved '+escHtml(when)+' · tap to load</div></div>'+
+      '<button type="button" class="cs-del" onclick="deleteContingency(\''+e.id.replace(/'/g,"\\'")+'\')">×</button></div>';
+  }).join(''):'<div class="cs-empty">No saved contingencies yet</div>';
+}
 
 // Mirror raw feet entry back with a foot mark: 4 -> 4’ (idempotent).
 function mirrorFeet(el){if(!el)return;var v=String(el.value||'').replace(/[’']+/g,'').trim();el.value=v?v+'’':'';}
@@ -2287,6 +2348,12 @@ function syncMeta(){
     if(d.exists&&d.data().data){setData('dlr_profile',d.data().data);renderProfile();}
     else syncPushProfile();
   }).catch(function(){});
+  userCol('meta').doc('contingencies').get().then(function(d){
+    if(d.exists){var local=getData('dlr_contingencies',{}),rd=d.data().data||{},ch=false;
+      Object.keys(rd).forEach(function(k){if(!local[k]||!local[k].savedAt||(rd[k].savedAt&&rd[k].savedAt>local[k].savedAt)){local[k]=rd[k];ch=true;}});
+      if(ch)setData('dlr_contingencies',local);}
+    else syncPushContingencies();
+  }).catch(function(){});
 }
 function syncPushLog(entry){if(syncOn())userCol('logs').doc(entry.date).set(entry).catch(function(){});}
 function syncDeleteLog(date){if(syncOn())userCol('logs').doc(date).set({date:date,deleted:true,savedAt:new Date().toISOString()}).catch(function(){});}
@@ -2294,6 +2361,7 @@ function syncPushDrafts(){if(syncOn())userCol('meta').doc('drafts').set({drafts:
 function syncPushLists(){if(syncOn())userCol('meta').doc('lists').set({trades:trades,equipment:equipment}).catch(function(){});}
 function syncPushMileage(){if(syncOn())userCol('meta').doc('mileage').set({data:allMileage()}).catch(function(){});}
 function syncPushProfile(){if(syncOn())userCol('meta').doc('profile').set({data:getProfile()}).catch(function(){});}
+function syncPushContingencies(){if(syncOn())userCol('meta').doc('contingencies').set({data:getData('dlr_contingencies',{})}).catch(function(){});}
 // Sync the loaded route sheet (as JSON — it has nested arrays Firestore won't take raw).
 function syncPushRoute(){
   if(!syncOn()||!allData||!allData.headers)return;
@@ -2354,7 +2422,7 @@ function showUpdateBanner(){
   b.onclick=function(){checkForUpdate();};
   document.body.appendChild(b);
 }
-var APP_VERSION='v12.4';
+var APP_VERSION='v12.5';
 function setVersion(){var els=document.querySelectorAll('.vbadge,.ver-chip');for(var i=0;i<els.length;i++)els[i].textContent=APP_VERSION;}
 setVersion();
 function setNavH(){var n=document.querySelector('.nav');if(n)document.documentElement.style.setProperty('--navh',n.offsetHeight+'px');}

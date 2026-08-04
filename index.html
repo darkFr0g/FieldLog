@@ -353,6 +353,10 @@
         <div class="modal-title">Contingency Report</div>
         <button onclick="closeContModal()" style="background:none;border:none;font-size:24px;color:var(--ink-3);cursor:pointer;line-height:1">×</button>
       </div>
+      <div class="cont-saved">
+        <button type="button" class="cont-saved-toggle" onclick="toggleContSaved()">Saved contingencies <span class="cs-ct" id="cont-saved-ct">0</span><span class="cs-chev" id="cont-saved-chev">⌄</span></button>
+        <div id="cont-saved-list" style="display:none"></div>
+      </div>
       <form class="cont-form" onsubmit="return false">
         <div class="cont-field"><label>Subject</label><input id="cont-subject" class="field-input" enterkeyhint="next" autocapitalize="words"></div>
         <div class="cont-row">
@@ -397,6 +401,7 @@
       <div style="display:flex;flex-direction:column;gap:8px;margin-top:16px">
         <button type="button" class="btn btn-primary" style="justify-content:center" onclick="composeContingencyEmail()">Compose Email</button>
         <button type="button" class="btn btn-secondary" style="justify-content:center" onclick="copyContingencyReport()">Copy formatted (bold) — paste into email</button>
+        <button type="button" class="btn btn-secondary" style="justify-content:center" onclick="saveContingency()">Save contingency for later</button>
       </div>
     </div>
   </div>
