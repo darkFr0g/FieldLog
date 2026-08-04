@@ -1373,21 +1373,36 @@ function renderHistory(){
     return;
   }
 
-  // Calendar → every day of any month that has logs, plus the current month.
+  // Calendar → every day of any month that has logs, plus the current month,
+  // sub-grouped into Sunday-start weeks.
   var mset={};logs.forEach(function(l){mset[l.date.slice(0,7)]=true;});mset[t.slice(0,7)]=true;
   var monthKeys=Object.keys(mset).sort();if(!asc)monthKeys.reverse();
   var band={i:0};
   list.innerHTML=monthKeys.map(function(k){
     var p=k.split('-'),y=+p[0],m=+p[1]-1,dim=new Date(y,m+1,0).getDate();
-    var days=[];for(var d=1;d<=dim;d++)days.push(d);if(!asc)days.reverse();
-    var rows=days.map(function(d){
-      var ds=y+'-'+pad(m+1)+'-'+pad(d);
-      if(ds>t&&!byDate[ds])return ''; // no empty slots for future days
-      return byDate[ds]?histLogCard(byDate[ds],(band.i++%2===1)):histEmptyDay(ds,(band.i++%2===1));
-    }).filter(Boolean).join('');
-    if(!rows)return '';
+    var dayList=[];
+    for(var d=1;d<=dim;d++){var ds=y+'-'+pad(m+1)+'-'+pad(d);if(ds>t&&!byDate[ds])continue;dayList.push(ds);}
+    if(!dayList.length)return '';
+    var weeks=[];
+    dayList.forEach(function(ds){var wk=weekSundayKey(ds);var last=weeks[weeks.length-1];if(!last||last.sun!==wk){last={sun:wk,days:[]};weeks.push(last);}last.days.push(ds);});
+    if(!asc){weeks.reverse();weeks.forEach(function(w){w.days.reverse();});}
+    var rows=weeks.map(function(w){
+      var dr=w.days.map(function(ds){return byDate[ds]?histLogCard(byDate[ds],(band.i++%2===1)):histEmptyDay(ds,(band.i++%2===1));}).join('');
+      return weekHeader(w.sun,y,m)+dr;
+    }).join('');
     return section(k,rows,logs.filter(function(l){return l.date.slice(0,7)===k;}).length);
   }).join('');
+}
+// Sunday that begins the week containing dateStr (YYYY-MM-DD).
+function weekSundayKey(ds){var d=new Date(ds+'T12:00:00');d.setDate(d.getDate()-d.getDay());return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);}
+// Week sub-header (Sun–Sat range) with arrows when the week spills into an adjacent month.
+function weekHeader(sunKey,curY,curM){
+  var sun=new Date(sunKey+'T12:00:00'),sat=new Date(sun);sat.setDate(sun.getDate()+6);
+  function sd(x){return x.toLocaleDateString('en-US',{month:'short',day:'numeric'});}
+  var startsPrev=(sun.getMonth()!==curM||sun.getFullYear()!==curY);
+  var endsNext=(sat.getMonth()!==curM||sat.getFullYear()!==curY);
+  var arrows=(startsPrev?'<span class="hw-cross" title="week began in the previous month">↑</span>':'')+(endsNext?'<span class="hw-cross" title="week runs into the next month">↓</span>':'');
+  return '<div class="hist-week">Week of '+escHtml(sd(sun))+' – '+escHtml(sd(sat))+arrows+'</div>';
 }
 function histLogCard(log,banded){
   var crewsHTML=log.crews.map(function(c){
@@ -1406,9 +1421,11 @@ function histLogCard(log,banded){
   var edited=(log.createdAt&&log.savedAt&&log.savedAt!==log.createdAt);
   var editedBadge=edited?' <span class="edited-tag">EDITED</span>':'';
   var savedTxt=log.savedAt?(' · saved '+fmtShortStamp(log.savedAt)):'';
-  return '<div class="log-day'+(banded?' rowband':'')+'">'+
+  var wd=new Date(log.date+'T12:00:00').getDay(),we=(wd===0||wd===6);
+  var wePill=we?'<span class="we-pill">'+(wd===0?'SUN':'SAT')+'</span> ':'';
+  return '<div class="log-day'+(we?' weekend':'')+(banded?' rowband':'')+'">'+
     '<div class="log-day-header" onclick="toggleDay(\''+log.date+'\')">'+
-      '<div><div class="log-day-title">'+fmtDate(log.date)+editedBadge+'</div><div class="log-day-meta">'+log.crews.length+' crew'+(log.crews.length!==1?'s':'')+savedTxt+'</div></div>'+
+      '<div><div class="log-day-title">'+wePill+fmtDate(log.date)+editedBadge+'</div><div class="log-day-meta">'+log.crews.length+' crew'+(log.crews.length!==1?'s':'')+savedTxt+'</div></div>'+
       '<span class="chevron" id="daychev-'+log.date+'">⌄</span></div>'+
     '<div class="log-expanded" id="daylog-'+log.date+'">'+crewsHTML+
       '<div style="padding:10px 16px;display:flex;gap:8px;flex-wrap:wrap">'+
@@ -1420,10 +1437,11 @@ function histLogCard(log,banded){
       '</div></div></div>';
 }
 function histEmptyDay(ds,banded){
-  var d=new Date(ds+'T12:00:00');
+  var d=new Date(ds+'T12:00:00'),wd=d.getDay(),we=(wd===0||wd===6);
   var lbl=d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
-  return '<div class="log-day log-empty'+(banded?' rowband':'')+'" onclick="startDayLog(\''+ds+'\')">'+
-    '<div class="le-txt"><div class="le-date">'+escHtml(lbl)+'</div><div class="le-none">No log — tap to start</div></div>'+
+  var wePill=we?'<span class="we-pill">'+(wd===0?'SUN':'SAT')+'</span> ':'';
+  return '<div class="log-day log-empty '+(we?'we-empty':'wd-empty')+(banded?' rowband':'')+'" onclick="startDayLog(\''+ds+'\')">'+
+    '<div class="le-txt"><div class="le-date">'+wePill+escHtml(lbl)+'</div><div class="le-none">'+(we?'Off / no log':'No log — tap to start')+'</div></div>'+
     '<span class="le-plus">+</span></div>';
 }
 // Tap an empty day → open the Day page for that date (loads its draft if any, else blank).
@@ -2336,7 +2354,7 @@ function showUpdateBanner(){
   b.onclick=function(){checkForUpdate();};
   document.body.appendChild(b);
 }
-var APP_VERSION='v12.3';
+var APP_VERSION='v12.4';
 function setVersion(){var els=document.querySelectorAll('.vbadge,.ver-chip');for(var i=0;i<els.length;i++)els[i].textContent=APP_VERSION;}
 setVersion();
 function setNavH(){var n=document.querySelector('.nav');if(n)document.documentElement.style.setProperty('--navh',n.offsetHeight+'px');}
