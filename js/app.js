@@ -1977,7 +1977,7 @@ function buildContingencyBody(){
   L.push('────────────────────');
   L.push('');
   L.push('Good morning,');
-  L.push('Con Edison contractor '+contractor+' will be '+scope+' at the following location(s);');
+  L.push('Con Edison contractor '+contractor+' will be '+scope+' at the following location(s):');
   L.push('1. '+locLine.replace(/[ \t]+/g,' ').trim());
   L.push('');
   if(comments){L.push(comments);L.push('');}
@@ -2043,7 +2043,7 @@ function buildContingencyHTML(){
   var head=['<b>Contingency:</b> '+bcEsc(num),'<b>Layout:</b> '+bcEsc(layout),'<b>Code 753/811:</b> '+bcEsc(code)].join('<br>');
   var body=[];
   body.push('Good morning,');
-  body.push('Con Edison contractor '+bcEsc(contractor)+' will be '+bcEsc(scope)+' at the following location(s);');
+  body.push('Con Edison contractor '+bcEsc(contractor)+' will be '+bcEsc(scope)+' at the following location(s):');
   body.push('<ol><li>'+loc+'</li></ol>');
   if(comments)body.push('<b>'+bcEsc(comments).replace(/\n/g,'<br>')+'</b>');
   body.push('');
@@ -2422,7 +2422,7 @@ function showUpdateBanner(){
   b.onclick=function(){checkForUpdate();};
   document.body.appendChild(b);
 }
-var APP_VERSION='v12.5';
+var APP_VERSION='v12.6';
 function setVersion(){var els=document.querySelectorAll('.vbadge,.ver-chip');for(var i=0;i<els.length;i++)els[i].textContent=APP_VERSION;}
 setVersion();
 function setNavH(){var n=document.querySelector('.nav');if(n)document.documentElement.style.setProperty('--navh',n.offsetHeight+'px');}
