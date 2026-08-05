@@ -1912,6 +1912,7 @@ function openContingencyModal(p){
   // facility list — reset to a single fresh "main" row
   var fl=document.getElementById('cont-fac-list');if(fl)fl.innerHTML='';
   addFacRow();
+  hideExc2(); // second excavation collapsed & cleared until added
   var subj='Contingency'+(p.num?' - '+p.num:'')+(p.location?' - '+p.location:'');
   setContVal('cont-subject',subj);
   renderContSaved();
@@ -1922,7 +1923,16 @@ function closeContModal(e){if(!e||e.target.classList.contains('modal-overlay'))d
 // ── SAVE / REUSE CONTINGENCIES ───────────────────────────────────
 var CONT_FIELDS=['cont-subject','cont-num','cont-layout','cont-code','cont-contractor','cont-scope',
   'cont-dim-l','cont-dim-w','cont-dim-d','cont-pin1-dist','cont-pin1-dir','cont-pin1-ref',
-  'cont-pin2-dist','cont-pin2-dir','cont-pin2-ref','cont-comments','cont-inspector'];
+  'cont-pin2-dist','cont-pin2-dir','cont-pin2-ref',
+  'cont2-dim-l','cont2-dim-w','cont2-dim-d','cont2-pin1-dist','cont2-pin1-dir','cont2-pin1-ref',
+  'cont2-pin2-dist','cont2-pin2-dir','cont2-pin2-ref','cont2-fac-desc',
+  'cont-comments','cont-inspector'];
+// Second-excavation block visibility
+function showExc2(){var b=document.getElementById('cont-exc2');if(b)b.style.display='block';var a=document.getElementById('exc2-add-btn');if(a)a.style.display='none';}
+function hideExc2(){var b=document.getElementById('cont-exc2');if(b)b.style.display='none';var a=document.getElementById('exc2-add-btn');if(a)a.style.display='block';
+  ['cont2-dim-l','cont2-dim-w','cont2-dim-d','cont2-pin1-dist','cont2-pin1-dir','cont2-pin1-ref','cont2-pin2-dist','cont2-pin2-dir','cont2-pin2-ref','cont2-fac-desc'].forEach(function(id){setContVal(id,'');});}
+function exc2HasData(){return ['cont2-dim-l','cont2-dim-w','cont2-dim-d','cont2-pin1-dist','cont2-pin1-ref','cont2-pin2-dist','cont2-pin2-ref','cont2-fac-desc'].some(function(id){return getContVal(id);});}
+function updateExc2Visibility(){if(exc2HasData())showExc2();else hideExc2();}
 function serializeCont(){
   var o={};CONT_FIELDS.forEach(function(id){o[id]=getContVal(id);});
   o.fac=[];document.querySelectorAll('#cont-fac-list .fac-item').forEach(function(it){
@@ -1943,6 +1953,7 @@ function applyCont(o){
     if(it.querySelector('.fac-dir'))it.querySelector('.fac-dir').value=f.dir||'';
     if(it.querySelector('.fac-desc'))it.querySelector('.fac-desc').value=f.desc||'';
   });
+  updateExc2Visibility();
 }
 function getCont(){return getData('dlr_contingencies',{});}
 function saveContingency(){
@@ -2087,22 +2098,25 @@ function facilityClause(){
   });
   return clauses.join(' and ');
 }
+// One excavation's plain-text line. p='' for excavation 1, '2' for excavation 2.
+function excLinePlain(p){
+  var dparts=[];
+  if(getContVal('cont'+p+'-dim-l'))dparts.push(ft(getContVal('cont'+p+'-dim-l'))+' L');
+  if(getContVal('cont'+p+'-dim-w'))dparts.push(ft(getContVal('cont'+p+'-dim-w'))+' W');
+  if(getContVal('cont'+p+'-dim-d'))dparts.push(ft(getContVal('cont'+p+'-dim-d'))+' D');
+  var dims=dparts.join(' x ');
+  var pin=[contOffset(getContVal('cont'+p+'-pin1-dist'),getContVal('cont'+p+'-pin1-dir'),getContVal('cont'+p+'-pin1-ref')),
+           contOffset(getContVal('cont'+p+'-pin2-dist'),getContVal('cont'+p+'-pin2-dir'),getContVal('cont'+p+'-pin2-ref'))].filter(Boolean).join(' & ');
+  var fac=p===''?facilityClause():(getContVal('cont2-fac-desc')?('Directly over the '+getContVal('cont2-fac-desc')):facilityClause());
+  if(!dims&&!pin&&!fac)return '';
+  return ((dims?dims+' ':'')+'excavation'+(pin?' located '+pin:'')+(fac?' – '+fac:'')).replace(/[ \t]+/g,' ').trim();
+}
 function buildContingencyBody(){
   var num=getContVal('cont-num'),layout=getContVal('cont-layout'),code=getContVal('cont-code'),
       contractor=getContVal('cont-contractor'),scope=getContVal('cont-scope').toLowerCase(),
       comments=getContVal('cont-comments'),insp=getContVal('cont-inspector');
-  // Dimensions: L x W x D (skip any blank)
-  var dparts=[];
-  if(getContVal('cont-dim-l'))dparts.push(ft(getContVal('cont-dim-l'))+' L');
-  if(getContVal('cont-dim-w'))dparts.push(ft(getContVal('cont-dim-w'))+' W');
-  if(getContVal('cont-dim-d'))dparts.push(ft(getContVal('cont-dim-d'))+' D');
-  var dims=dparts.join(' x ');
-  // Pinpoint: up to two curb offsets joined by " & "
-  var pin=[contOffset(getContVal('cont-pin1-dist'),getContVal('cont-pin1-dir'),getContVal('cont-pin1-ref')),
-           contOffset(getContVal('cont-pin2-dist'),getContVal('cont-pin2-dir'),getContVal('cont-pin2-ref'))]
-          .filter(Boolean).join(' & ');
-  var fac=facilityClause();
-  var locLine=(dims?dims+' ':'')+'excavation'+(pin?' located '+pin:'')+(fac?' – '+fac:'');
+  var lines=[excLinePlain(''),excLinePlain('2')].filter(Boolean);
+  if(!lines.length)lines=['excavation'];
   var L=[];
   L.push('Contingency: '+num);
   L.push('Layout: '+layout);
@@ -2112,7 +2126,7 @@ function buildContingencyBody(){
   L.push('');
   L.push('Good morning,');
   L.push('Con Edison contractor '+contractor+' will be '+scope+' at the following location(s):');
-  L.push('1. '+locLine.replace(/[ \t]+/g,' ').trim());
+  lines.forEach(function(ln,i){L.push((i+1)+'. '+ln);});
   L.push('');
   if(comments){L.push(comments);L.push('');}
   L.push('I, '+insp+', am on location');
@@ -2156,29 +2170,34 @@ function facilityClauseHTML(){
   });
   return clauses.join(' and ');
 }
-function buildContingencyHTML(){
-  var num=getContVal('cont-num'),layout=getContVal('cont-layout'),code=getContVal('cont-code'),
-      contractor=getContVal('cont-contractor'),scope=getContVal('cont-scope').toLowerCase(),
-      comments=getContVal('cont-comments'),insp=getContVal('cont-inspector');
+function excLineHtml(p){
   var dparts=[];
-  if(getContVal('cont-dim-l'))dparts.push(ft(getContVal('cont-dim-l'))+' L');
-  if(getContVal('cont-dim-w'))dparts.push(ft(getContVal('cont-dim-w'))+' W');
-  if(getContVal('cont-dim-d'))dparts.push(ft(getContVal('cont-dim-d'))+' D');
+  if(getContVal('cont'+p+'-dim-l'))dparts.push(ft(getContVal('cont'+p+'-dim-l'))+' L');
+  if(getContVal('cont'+p+'-dim-w'))dparts.push(ft(getContVal('cont'+p+'-dim-w'))+' W');
+  if(getContVal('cont'+p+'-dim-d'))dparts.push(ft(getContVal('cont'+p+'-dim-d'))+' D');
   var dims=dparts.join(' x ');
   var offs=[];
-  [['cont-pin1-dist','cont-pin1-dir','cont-pin1-ref'],['cont-pin2-dist','cont-pin2-dir','cont-pin2-ref']].forEach(function(ids){
+  [['cont'+p+'-pin1-dist','cont'+p+'-pin1-dir','cont'+p+'-pin1-ref'],['cont'+p+'-pin2-dist','cont'+p+'-pin2-dir','cont'+p+'-pin2-ref']].forEach(function(ids){
     var dist=getContVal(ids[0]),dir=getContVal(ids[1]),ref=getContVal(ids[2]);
     if(!dist&&!dir&&!ref)return;
     var dd=[ft(dist),dir].filter(Boolean).join(' ');
     offs.push([B(dd),B(ref)].filter(Boolean).join(' '));
   });
-  var facHtml=facilityClauseHTML();
-  var loc=(dims?B(dims)+' ':'')+'excavation'+(offs.length?' located '+offs.join(' &amp; '):'')+(facHtml?' – '+facHtml:'');
+  var facHtml=p===''?facilityClauseHTML():(getContVal('cont2-fac-desc')?('Directly over the '+B(getContVal('cont2-fac-desc'))):facilityClauseHTML());
+  if(!dims&&!offs.length&&!facHtml)return '';
+  return (dims?B(dims)+' ':'')+'excavation'+(offs.length?' located '+offs.join(' &amp; '):'')+(facHtml?' – '+facHtml:'');
+}
+function buildContingencyHTML(){
+  var num=getContVal('cont-num'),layout=getContVal('cont-layout'),code=getContVal('cont-code'),
+      contractor=getContVal('cont-contractor'),scope=getContVal('cont-scope').toLowerCase(),
+      comments=getContVal('cont-comments'),insp=getContVal('cont-inspector');
+  var items=[excLineHtml(''),excLineHtml('2')].filter(Boolean);
+  if(!items.length)items=['excavation'];
   var head=['<b>Contingency:</b> '+bcEsc(num),'<b>Layout:</b> '+bcEsc(layout),'<b>Code 753/811:</b> '+bcEsc(code)].join('<br>');
   var body=[];
   body.push('Good morning,');
   body.push('Con Edison contractor '+bcEsc(contractor)+' will be '+bcEsc(scope)+' at the following location(s):');
-  body.push('<ol><li>'+loc+'</li></ol>');
+  body.push('<ol>'+items.map(function(x){return '<li>'+x+'</li>';}).join('')+'</ol>');
   if(comments)body.push('<b>'+bcEsc(comments).replace(/\n/g,'<br>')+'</b>');
   body.push('');
   body.push('I, '+bcEsc(insp)+', am on location');
@@ -2563,7 +2582,7 @@ function showUpdateBanner(){
   b.onclick=function(){checkForUpdate();};
   document.body.appendChild(b);
 }
-var APP_VERSION='v13.2';
+var APP_VERSION='v13.3';
 function setVersion(){var els=document.querySelectorAll('.vbadge,.ver-chip');for(var i=0;i<els.length;i++)els[i].textContent=APP_VERSION;}
 setVersion();
 function setNavH(){var n=document.querySelector('.nav');if(n)document.documentElement.style.setProperty('--navh',n.offsetHeight+'px');}

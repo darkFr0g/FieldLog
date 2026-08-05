@@ -429,6 +429,34 @@
           <div id="cont-fac-list"></div>
           <button type="button" class="add-fac-btn" onclick="addFacRow()">+ Add another main</button>
         </div>
+        <div id="cont-exc2" style="display:none">
+          <div class="exc2-head"><span>Excavation 2</span><button type="button" class="exc2-x" onclick="hideExc2()">Remove</button></div>
+          <div class="cont-field"><label>Dimensions — L × W × D</label>
+            <div class="dim-row">
+              <input id="cont2-dim-l" class="field-input" inputmode="decimal" enterkeyhint="next" placeholder="L" onblur="mirrorFeet(this)">
+              <span class="dim-x">×</span>
+              <input id="cont2-dim-w" class="field-input" inputmode="decimal" enterkeyhint="next" placeholder="W" onblur="mirrorFeet(this)">
+              <span class="dim-x">×</span>
+              <input id="cont2-dim-d" class="field-input" inputmode="decimal" enterkeyhint="next" placeholder="D" onblur="mirrorFeet(this)">
+            </div>
+          </div>
+          <div class="cont-field"><label>Pinpoint location (exc 2)</label>
+            <div class="pin-row">
+              <input id="cont2-pin1-dist" class="field-input pin-dist" inputmode="decimal" enterkeyhint="next" placeholder="85" onblur="mirrorFeet(this)">
+              <div class="dir-wrap"><input id="cont2-pin1-dir" class="field-input pin-dir" enterkeyhint="next" placeholder="WWC" autocapitalize="characters" autocorrect="off" spellcheck="false"><button type="button" class="dir-pick" onclick="openDirPicker(this,'curb')">⌄</button></div>
+              <input id="cont2-pin1-ref" class="field-input pin-ref" enterkeyhint="next" placeholder="Cross street">
+            </div>
+            <div class="pin-row">
+              <input id="cont2-pin2-dist" class="field-input pin-dist" inputmode="decimal" enterkeyhint="next" placeholder="18" onblur="mirrorFeet(this)">
+              <div class="dir-wrap"><input id="cont2-pin2-dir" class="field-input pin-dir" enterkeyhint="next" placeholder="SNC" autocapitalize="characters" autocorrect="off" spellcheck="false"><button type="button" class="dir-pick" onclick="openDirPicker(this,'curb')">⌄</button></div>
+              <input id="cont2-pin2-ref" class="field-input pin-ref" enterkeyhint="next" placeholder="Cross street">
+            </div>
+          </div>
+          <div class="cont-field"><label>Facility / main (exc 2)</label>
+            <input id="cont2-fac-desc" class="field-input" enterkeyhint="next" placeholder="blank = same main as excavation 1">
+          </div>
+        </div>
+        <button type="button" class="add-fac-btn" id="exc2-add-btn" onclick="showExc2()">+ Add second excavation</button>
         <div class="cont-field"><label>Additional comments</label>
           <textarea id="cont-comments" class="field-input" rows="3" placeholder="Con Edison corrosion has been notified"></textarea>
           <button type="button" class="add-fac-btn" style="margin-top:8px" onclick="addNoExcavation()">+ NO ADDITIONAL EXCAVATION REQUIRED!</button>
