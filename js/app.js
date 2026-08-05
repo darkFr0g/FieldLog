@@ -2245,23 +2245,41 @@ function uniqueRouteLocations(){
 }
 function mapRowHTML(v){
   return '<div class="map-row">'+
-    '<button type="button" class="map-move" onclick="moveMapStop(this,-1)">↑</button>'+
-    '<button type="button" class="map-move" onclick="moveMapStop(this,1)">↓</button>'+
+    '<span class="map-num"></span>'+
+    '<div class="map-moves">'+
+      '<button type="button" class="map-move" onclick="moveMapStop(this,-1)" aria-label="Move up">↑</button>'+
+      '<button type="button" class="map-move" onclick="moveMapStop(this,1)" aria-label="Move down">↓</button>'+
+    '</div>'+
     '<input class="field-input map-stop" value="'+escHtml(v||'')+'" placeholder="Address or intersection">'+
-    '<button type="button" class="count-remove" onclick="this.parentNode.remove()">×</button>'+
+    '<button type="button" class="map-remove" onclick="mapRemoveStop(this)" aria-label="Remove">×</button>'+
   '</div>';
 }
-function addMapStop(){var t=document.createElement('div');t.innerHTML=mapRowHTML('');document.getElementById('map-list').appendChild(t.firstChild);}
+// Number the stops (2,3,… — Home is A/1) and gray out unavailable arrows.
+function renumberMapStops(){
+  var rows=document.querySelectorAll('#map-list .map-row');
+  rows.forEach(function(r,i){
+    var n=r.querySelector('.map-num');if(n)n.textContent=(i+1);
+    var mv=r.querySelectorAll('.map-move');
+    if(mv[0])mv[0].disabled=(i===0);
+    if(mv[1])mv[1].disabled=(i===rows.length-1);
+  });
+  var ha=document.getElementById('map-home-addr');if(ha)ha.textContent=homeAddr();
+}
+function addMapStop(){var t=document.createElement('div');t.innerHTML=mapRowHTML('');document.getElementById('map-list').appendChild(t.firstChild);renumberMapStops();}
+function mapRemoveStop(btn){var row=btn.closest('.map-row');if(row)row.remove();renumberMapStops();}
 function moveMapStop(btn,dir){
-  var row=btn.parentNode;var list=row.parentNode;
+  var row=btn.closest('.map-row');if(!row)return;var list=row.parentNode;
   if(dir<0&&row.previousElementSibling)list.insertBefore(row,row.previousElementSibling);
   else if(dir>0&&row.nextElementSibling)list.insertBefore(row.nextElementSibling,row);
+  row.classList.remove('map-bump');void row.offsetWidth;row.classList.add('map-bump');
+  renumberMapStops();
 }
 function openMapModal(){
   if(!allData||!allData.flavin){showToast('Load a route sheet first');return;}
   var locs=uniqueRouteLocations();
   var sfx=document.getElementById('map-suffix');if(sfx&&!sfx.value.trim())sfx.value='Bronx, NY';
   document.getElementById('map-list').innerHTML=(locs.length?locs:['']).map(function(l){return mapRowHTML(shortAddr(l));}).join('');
+  renumberMapStops();
   document.getElementById('map-modal').style.display='block';
 }
 function closeMapModal(e){if(!e||e.target.classList.contains('modal-overlay'))document.getElementById('map-modal').style.display='none';}
@@ -2300,6 +2318,7 @@ function smartOrderMapStops(){
   withNum.sort(function(a,b){return b.n-a.n;});
   var ordered=withNum.map(function(x){return x.v;}).concat(without);
   document.getElementById('map-list').innerHTML=(ordered.length?ordered:['']).map(function(l){return mapRowHTML(l);}).join('');
+  renumberMapStops();
   showToast('Reordered north→south (rough)');
 }
 function openMapsRoute(){var stops=mapStopList();if(!stops.length){showToast('Add at least one stop');return;}openMapsWith(stops);}
@@ -2589,7 +2608,7 @@ function showUpdateBanner(){
   b.onclick=function(){checkForUpdate();};
   document.body.appendChild(b);
 }
-var APP_VERSION='v13.6';
+var APP_VERSION='v13.7';
 function setVersion(){var els=document.querySelectorAll('.vbadge,.ver-chip');for(var i=0;i<els.length;i++)els[i].textContent=APP_VERSION;}
 setVersion();
 function setNavH(){var n=document.querySelector('.nav');if(n)document.documentElement.style.setProperty('--navh',n.offsetHeight+'px');}

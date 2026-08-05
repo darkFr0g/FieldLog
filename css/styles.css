@@ -171,10 +171,23 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
 .fac-away .fac-dir-wrap{flex:1}
 .add-fac-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;background:var(--surface-2);border:2px solid var(--border);border-radius:var(--radius-sm);font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-3);cursor:pointer;font-family:var(--font)}
 .add-fac-btn:active{background:var(--border)}
-.map-row{display:flex;gap:4px;align-items:center;margin-bottom:6px}
-.map-row .map-stop{flex:1}
-.map-move{width:26px;height:34px;border-radius:var(--radius-sm);border:2px solid var(--border);background:var(--surface);color:var(--ink-3);font-size:12px;font-weight:800;cursor:pointer;flex-shrink:0;line-height:1;display:flex;align-items:center;justify-content:center}
-.map-move:active{background:var(--border)}
+.map-row{display:flex;gap:8px;align-items:center;margin-bottom:7px;background:var(--surface);border:1.5px solid var(--border);border-left:4px solid var(--green);border-radius:9px;padding:6px 8px 6px 6px}
+.map-row.map-bump{animation:mapBump .28s ease}
+@keyframes mapBump{0%{transform:scale(1)}40%{transform:scale(1.015);background:var(--green-bg)}100%{transform:scale(1)}}
+.map-num{flex-shrink:0;width:24px;height:24px;border-radius:50%;background:var(--green);color:#fff;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono)}
+.map-moves{display:flex;flex-direction:column;gap:3px;flex-shrink:0}
+.map-row .map-stop{flex:1;min-width:0}
+.map-move{width:30px;height:20px;border-radius:5px;border:1.5px solid var(--border-mid);background:var(--surface-2);color:var(--ink-2);font-size:12px;font-weight:800;cursor:pointer;line-height:1;display:flex;align-items:center;justify-content:center}
+.map-move:active{background:var(--green);color:#fff;border-color:var(--green)}
+.map-move:disabled{opacity:.3;pointer-events:none}
+.map-remove{width:28px;height:28px;flex-shrink:0;border:none;background:none;color:var(--red);font-size:18px;font-weight:700;cursor:pointer;line-height:1}
+.map-remove:active{opacity:.6}
+.map-home{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:9px;background:var(--green-bg);border:1.5px solid var(--green);margin-bottom:8px}
+.map-home-end{margin:8px 0 0}
+.map-home-dot{flex-shrink:0;width:24px;height:24px;border-radius:50%;background:var(--green);color:#fff;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center}
+.map-home-txt{display:flex;flex-direction:column;line-height:1.25;min-width:0}
+.map-home-txt b{font-size:12px;font-weight:800;color:var(--green-text);text-transform:uppercase;letter-spacing:.05em}
+.map-home-txt span{font-size:12px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .list-jobs{display:flex;flex-direction:column;gap:6px}
 .update-banner{position:fixed;left:12px;right:12px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:300;background:var(--green);color:#fff;border-radius:10px;padding:13px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:14px;font-weight:800;box-shadow:0 8px 28px rgba(0,0,0,.28);cursor:pointer;animation:ubIn .25s ease}
 .update-banner .ub-go{font-weight:700;opacity:.95}
