@@ -87,6 +87,7 @@ function showPage(p){
   if(p==='history')renderHistory();
   if(p==='dlr'){var d=document.getElementById('log-date');if(d&&d.value)mileDate=d.value;renderMileage();maybeNotifyDraft();}
   if(p==='month')renderMonth();
+  if(p==='jobs')renderJobs();
   if(p==='settings'){updateSettingsCounts();renderProfile();}
 }
 
@@ -497,6 +498,7 @@ function processFile(file){
       saveRoute();syncPushRoute();
       // Retain the raw workbook so it can be viewed (and synced) across devices.
       try{var rf={name:file.name,b64:ab2b64(e.target.result),savedAt:new Date().toISOString()};setData('dlr_routefile',rf);setData('dlr_routefile_sa',rf.savedAt);var pushed=syncPushRouteFile(rf);if(syncOn()&&pushed===false)showToast('Sheet loaded — too large to sync; viewable on this device only');}catch(_){}
+      accumulateJobs();
       renderRouteResults();
     }catch(err){setStatus('err','Error: '+err.message);dropZone.style.display='';}
   };
@@ -1493,6 +1495,99 @@ function closeListModal(e){if(!e||e.target.classList.contains('modal-overlay'))d
 function updateSettingsCounts(){document.getElementById('trade-count').textContent=trades.length+' items';document.getElementById('equip-count').textContent=equipment.length+' items';document.getElementById('log-count-display').textContent=logs.length;updateContCount();}
 function contCount(){var all=getCont();return Object.keys(all).filter(function(k){return all[k]&&!all[k].deleted;}).length;}
 function updateContCount(){var el=document.getElementById('cont-saved-count');if(el)el.textContent=contCount()+' →';}
+// ── JOBS LEDGER (persistent assigned jobs + permanent field/cut data) ──
+// Field Data schema mirrors the user's "Field Data" cut sheet.
+var JOB_FIELDS=[
+  {group:'Location / Crew',rows:[['contractor','Contractor'],['foreman','Foreman'],['mechanic','Mechanic']]},
+  {group:'Address',rows:[['houseNo','House No'],['streetName','Street Name'],['leftCross','Left Cross Street'],['rightCross','Right Cross Street']]},
+  {group:'Field Measurements',rows:[['poe','POE (LRW/RLW)'],['clToPl','CL to PL'],['plToBl','PL to BL'],['clToBl','CL to BL'],['main','Main'],['cover','Cover'],['service','Service'],['streetWidth','Street Width'],['mainConn','Main Connection'],['custPoe','Customer POE']]},
+  {group:'Cuts',rows:[['cut1','Cut 1'],['cut2','Cut 2'],['cut3','Cut 3'],['cut4','Cut 4'],['cut5','Cut 5']]}
+];
+function getJobs(){return getData('dlr_jobs',{});}
+function jobKey(tk,wo){var s=cleanTicket(tk||'')||String(wo||'');return s.replace(/\s+/g,'').toUpperCase();}
+// Accumulate the inspector's covering + owned jobs from the loaded route into the ledger.
+function accumulateJobs(){
+  if(!allData||!allData.headers)return;
+  var h=allData.headers,jobs=getJobs(),changed=false,now=new Date().toISOString();
+  function add(row,co){
+    if(!row)return;
+    var tk=gv(row,h,'Ticket #')||'',loc=gv(row,h,'Location')||'',wo=gv(row,h,'Layout/CWORX Work Order #')||'';
+    var k=jobKey(tk,wo);if(!k)return;
+    var j=jobs[k];
+    if(!j){jobs[k]={key:k,ticket:cleanTicket(tk),wo:wo,location:loc,contractor:co||'',inspector:allData.name||'',status:'active',firstSeen:now,savedAt:now,field:{}};changed=true;return;}
+    if(j.deleted)return;
+    var upd=false;
+    if(loc&&j.location!==loc){j.location=loc;upd=true;}
+    if(co&&!j.contractor){j.contractor=co;upd=true;}
+    if(wo&&!j.wo){j.wo=wo;upd=true;}
+    if(upd){j.savedAt=now;changed=true;}
+  }
+  (allData.flavin||[]).forEach(function(row,i){add(row,(allData.flavinCompany&&allData.flavinCompany[i])||row._co||'');});
+  (allData.owned||[]).forEach(function(row){add(row,row._co||'');});
+  if(changed){setData('dlr_jobs',jobs);syncPushJobs();}
+}
+var jobsTab='active';
+function setJobsTab(t){jobsTab=t;renderJobs();}
+function renderJobs(){
+  updateSyncStamps();
+  var all=getJobs();
+  var items=Object.keys(all).map(function(k){return all[k];}).filter(function(x){return x&&!x.deleted;});
+  var active=items.filter(function(x){return x.status!=='done';}).sort(function(a,b){return (a.location||'~').localeCompare(b.location||'~');});
+  var done=items.filter(function(x){return x.status==='done';}).sort(function(a,b){return (b.doneAt||'').localeCompare(a.doneAt||'');});
+  document.getElementById('jobs-tabs').innerHTML=
+    '<button class="tab'+(jobsTab==='active'?' active':'')+'" onclick="setJobsTab(\'active\')">Active<span class="tab-ct">'+active.length+'</span></button>'+
+    '<button class="tab'+(jobsTab==='done'?' active':'')+'" onclick="setJobsTab(\'done\')">Completed<span class="tab-ct">'+done.length+'</span></button>';
+  var rows=(jobsTab==='active'?active:done);
+  var host=document.getElementById('jobs-list');
+  if(!rows.length){host.innerHTML='<div class="empty-state"><p>'+(jobsTab==='active'?(items.length?'No active jobs':'Load a route sheet — your assigned jobs collect here'):'No completed jobs yet')+'</p></div>';return;}
+  host.innerHTML=rows.map(jobRow).join('');
+}
+function jobRow(j){
+  var jc=contractorColor(j.contractor),wr=[j.ticket,j.wo].filter(Boolean).join(' · ');
+  var hasField=j.field&&Object.keys(j.field).some(function(k){return j.field[k];});
+  return '<div class="job-row" onclick="openJobDetail(\''+j.key.replace(/'/g,"\\'")+'\')"'+(jc?' style="border-left:3px solid '+jc+'"':'')+'>'+
+    '<div class="jr-main"><div class="jr-loc">'+escHtml(j.location||'—')+'</div><div class="jr-meta">'+
+      (wr?'<span>'+escHtml(wr)+'</span>':'')+
+      (j.contractor?'<span'+(jc?' style="color:'+jc+';font-weight:800"':'')+'>'+escHtml(j.contractor)+'</span>':'')+
+      (hasField?'<span class="jr-flag">field data</span>':'')+
+      (j.status==='done'&&j.doneAt?'<span>done '+escHtml(new Date(j.doneAt).toLocaleDateString('en-US',{month:'short',day:'numeric'}))+'</span>':'')+
+    '</div></div><span class="jr-chev">›</span></div>';
+}
+function openJobDetail(key){
+  var j=getJobs()[key];if(!j||j.deleted)return;window._jobKey=key;
+  document.getElementById('job-title').textContent=j.location||'Job';
+  document.getElementById('job-sub').textContent=[j.ticket&&('WR# '+j.ticket),j.wo&&('WO# '+j.wo)].filter(Boolean).join('  ·  ')||'No WR/WO#';
+  document.getElementById('job-fields').innerHTML=JOB_FIELDS.map(function(g){
+    return '<div class="jf-group"><div class="jf-gtitle">'+escHtml(g.group)+'</div>'+
+      g.rows.map(function(r){return '<div class="jf-row"><label>'+escHtml(r[1])+'</label><input id="jf-'+r[0]+'" class="field-input" value="'+escHtml((j.field&&j.field[r[0]])||'')+'"></div>';}).join('')+'</div>';
+  }).join('');
+  var fb=document.getElementById('job-finish-btn');if(fb)fb.textContent=(j.status==='done'?'Reopen (back to Active)':'Mark finished →');
+  document.getElementById('job-modal').style.display='block';
+}
+function collectJobFields(){var f={};JOB_FIELDS.forEach(function(g){g.rows.forEach(function(r){var el=document.getElementById('jf-'+r[0]);if(el)f[r[0]]=el.value.trim();});});return f;}
+function saveJobDetail(){
+  var key=window._jobKey,jobs=getJobs(),j=jobs[key];if(!j)return;
+  j.field=collectJobFields();j.savedAt=new Date().toISOString();
+  setData('dlr_jobs',jobs);syncPushJobs();showToast('Field data saved');renderJobs();
+}
+function toggleJobDone(){
+  var key=window._jobKey,jobs=getJobs(),j=jobs[key];if(!j)return;
+  j.field=collectJobFields();
+  var now=new Date().toISOString();
+  if(j.status==='done'){j.status='active';j.doneAt='';showToast('Reopened → Active');}
+  else{j.status='done';j.doneAt=now;showToast('Finished → Completed');}
+  j.savedAt=now;setData('dlr_jobs',jobs);syncPushJobs();
+  document.getElementById('job-modal').style.display='none';renderJobs();
+}
+function deleteJobConfirm(){
+  var key=window._jobKey,jobs=getJobs(),j=jobs[key];if(!j)return;
+  if(!confirm('Delete this job and its field data?'))return;
+  jobs[key]={key:key,deleted:true,savedAt:new Date().toISOString()};
+  setData('dlr_jobs',jobs);syncPushJobs();
+  document.getElementById('job-modal').style.display='none';renderJobs();
+}
+function closeJobModal(e){if(e&&!e.target.classList.contains('modal-overlay'))return;document.getElementById('job-modal').style.display='none';}
+
 // Open the contingency form standalone (no job) with the saved list expanded to browse/load.
 function browseContingencies(){
   openContingencyModal({});
@@ -2372,6 +2467,12 @@ function syncMeta(){
       if(ch)setData('dlr_contingencies',local);}
     else syncPushContingencies();
   }).catch(function(){});
+  userCol('meta').doc('jobs').get().then(function(d){
+    if(d.exists){var local=getJobs(),rd=d.data().data||{},ch=false;
+      Object.keys(rd).forEach(function(k){if(!local[k]||!local[k].savedAt||(rd[k].savedAt&&rd[k].savedAt>local[k].savedAt)){local[k]=rd[k];ch=true;}});
+      if(ch){setData('dlr_jobs',local);if(document.getElementById('page-jobs')&&document.getElementById('page-jobs').classList.contains('active'))renderJobs();}}
+    else syncPushJobs();
+  }).catch(function(){});
 }
 function syncPushLog(entry){if(syncOn())userCol('logs').doc(entry.date).set(entry).catch(function(){});}
 function syncDeleteLog(date){if(syncOn())userCol('logs').doc(date).set({date:date,deleted:true,savedAt:new Date().toISOString()}).catch(function(){});}
@@ -2380,6 +2481,7 @@ function syncPushLists(){if(syncOn())userCol('meta').doc('lists').set({trades:tr
 function syncPushMileage(){if(syncOn())userCol('meta').doc('mileage').set({data:allMileage()}).catch(function(){});}
 function syncPushProfile(){if(syncOn())userCol('meta').doc('profile').set({data:getProfile()}).catch(function(){});}
 function syncPushContingencies(){if(syncOn())userCol('meta').doc('contingencies').set({data:getData('dlr_contingencies',{})}).catch(function(){});}
+function syncPushJobs(){if(syncOn())userCol('meta').doc('jobs').set({data:getData('dlr_jobs',{})}).catch(function(){});}
 // Sync the loaded route sheet (as JSON — it has nested arrays Firestore won't take raw).
 function syncPushRoute(){
   if(!syncOn()||!allData||!allData.headers)return;
@@ -2440,7 +2542,7 @@ function showUpdateBanner(){
   b.onclick=function(){checkForUpdate();};
   document.body.appendChild(b);
 }
-var APP_VERSION='v12.9';
+var APP_VERSION='v13.0';
 function setVersion(){var els=document.querySelectorAll('.vbadge,.ver-chip');for(var i=0;i<els.length;i++)els[i].textContent=APP_VERSION;}
 setVersion();
 function setNavH(){var n=document.querySelector('.nav');if(n)document.documentElement.style.setProperty('--navh',n.offsetHeight+'px');}

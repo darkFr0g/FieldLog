@@ -12,7 +12,16 @@ screen as a PWA. **Primary device is an iPhone** — optimize for that.
 **Live:** https://darkfr0g.github.io/FieldLog/
 **Repo:** https://github.com/darkFr0g/FieldLog
 
-### Tools inside the app (4 nav tabs: Route / Day / History / Settings)
+### Tools inside the app (5 nav tabs: Route / Day / Jobs / History / Settings)
+**Jobs** = a persistent ledger of the inspector's assigned jobs (covering + owned),
+accumulated across every loaded route sheet, deduped by WR#/WO# (`dlr_jobs`, keyed by
+`jobKey`). Active/Completed sub-tabs; each job holds permanent **Field Data** (the
+user's cut sheet: Location/Crew, Address, Field Measurements incl. POE/CL·PL·BL/Main/
+Cover/Service/Street Width/Main Connection/Customer POE, and Cut 1–5 — see `JOB_FIELDS`).
+"Mark finished" moves a job to **Completed** (its own pile — NOT the daily-log History
+tab). Syncs via `meta/jobs` (merge newest-wins). Jobs accumulate in `accumulateJobs()`
+on route load.
+
 **Day** = DLR crews + Mileage merged onto one page (shared date header; the
 Mileage section's stops derive from the day's DLR crews so locations live in one
 place). Sections below described separately.
@@ -115,7 +124,7 @@ iPhones + 2 Surface laptops).
   standalone PWA; magic links do **not**, due to Safari/PWA storage split). First
   sign-in auto-creates the account; session persists.
 - **Data model:** `users/{uid}/logs/{date}` (one doc per DLR log, live `onSnapshot`),
-  `users/{uid}/meta/{drafts|lists|mileage|profile|route|routefile|contingencies|working}` (single
+  `users/{uid}/meta/{drafts|lists|mileage|profile|route|routefile|contingencies|jobs|working}` (single
   docs). `routefile` = the raw uploaded workbook (base64) so the **View
   spreadsheet** viewer works on every device; skipped if >900 KB (Firestore's
   1 MiB doc cap) — then it stays local-only. Viewer renders each sheet read-only
