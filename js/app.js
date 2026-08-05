@@ -2131,7 +2131,7 @@ function buildContingencyBody(){
   L.push('Good morning,');
   L.push('Con Edison contractor '+contractor+' will be '+scope+' at the following location(s):');
   L.push('');
-  lines.forEach(function(ln,i){L.push((i+1)+'. '+ln);});
+  lines.forEach(function(ln,i){if(i>0)L.push('');L.push((i+1)+'. '+ln);});
   L.push('');
   if(comments){L.push(comments);L.push('');}
   L.push('I, '+insp+', am on location');
@@ -2204,7 +2204,7 @@ function buildContingencyHTML(){
   body.push('Good morning,');
   body.push('Con Edison contractor '+bcEsc(contractor)+' will be '+bcEsc(scope)+' at the following location(s):');
   body.push('');
-  body.push('<ol>'+items.map(function(x){return '<li>'+x+'</li>';}).join('')+'</ol>');
+  body.push('<ol>'+items.map(function(x){return '<li style="margin-bottom:10px">'+x+'</li>';}).join('')+'</ol>');
   if(comments)body.push('<b>'+bcEsc(comments).replace(/\n/g,'<br>')+'</b>');
   body.push('');
   body.push('I, '+bcEsc(insp)+', am on location');
@@ -2589,7 +2589,7 @@ function showUpdateBanner(){
   b.onclick=function(){checkForUpdate();};
   document.body.appendChild(b);
 }
-var APP_VERSION='v13.5';
+var APP_VERSION='v13.6';
 function setVersion(){var els=document.querySelectorAll('.vbadge,.ver-chip');for(var i=0;i<els.length;i++)els[i].textContent=APP_VERSION;}
 setVersion();
 function setNavH(){var n=document.querySelector('.nav');if(n)document.documentElement.style.setProperty('--navh',n.offsetHeight+'px');}
