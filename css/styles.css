@@ -435,8 +435,10 @@ textarea.field-input{resize:none;min-height:70px;line-height:1.5}
 .empty-state p{font-size:14px;font-weight:600}
 .log-day{background:var(--surface);border-bottom:2px solid var(--border)}
 .log-day.rowband{background:var(--surface-2)}
-.hist-month{background:#111;color:#fff;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;padding:7px 16px;display:flex;align-items:center;gap:8px}
+.hist-month{background:#111;color:#fff;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;padding:7px 16px;display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none}
 .hist-month .hm-ct{background:rgba(255,255,255,.22);border-radius:999px;padding:1px 9px;font-size:11px}
+.hist-month .hm-chev{font-size:14px;line-height:1;transition:transform .15s}
+.hist-month.collapsed .hm-chev{transform:rotate(-90deg)}
 .hist-week{background:var(--border);color:var(--ink);font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;padding:5px 16px;display:flex;align-items:center;justify-content:center;gap:7px;border-top:1px solid var(--border-mid);border-bottom:1px solid var(--border-mid)}
 .hist-week .hw-cross{color:var(--ink);font-size:13px;font-weight:800;line-height:1}
 /* Weekend day rows stand out (indigo accent + SAT/SUN pill) */

@@ -1357,7 +1357,9 @@ function renderHistory(){
   var t=today();
   function pad(n){return (n<10?'0':'')+n;}
   function monthLabel(y,m){return new Date(y,m,1).toLocaleDateString('en-US',{month:'long',year:'numeric'});}
-  function section(k,rowsHTML,cnt){var p=k.split('-');return '<div class="hist-msec"><div class="hist-month">'+escHtml(monthLabel(+p[0],+p[1]-1))+' <span class="hm-ct">'+cnt+'</span></div>'+rowsHTML+'</div>';}
+  function section(k,rowsHTML,cnt,forceOpen){var p=k.split('-');var col=forceOpen?false:histCollapsed(k);
+    return '<div class="hist-msec"><div class="hist-month'+(col?' collapsed':'')+'" onclick="toggleMonth(\''+k+'\')"><span class="hm-chev">⌄</span>'+escHtml(monthLabel(+p[0],+p[1]-1))+' <span class="hm-ct">'+cnt+'</span></div>'+
+      '<div class="hist-mdays" id="mdays-'+k+'"'+(col?' style="display:none"':'')+'>'+rowsHTML+'</div></div>';}
 
   // Search → only matching logs, still grouped by month.
   if(q){
@@ -1368,7 +1370,7 @@ function renderHistory(){
     var b1={i:0};
     list.innerHTML=mkeys.map(function(k){
       var rows=mk[k].sort(function(a,b){return asc?a.date.localeCompare(b.date):b.date.localeCompare(a.date);}).map(function(l){return histLogCard(l,(b1.i++%2===1));}).join('');
-      return section(k,rows,mk[k].length);
+      return section(k,rows,mk[k].length,true);
     }).join('');
     return;
   }
@@ -1392,6 +1394,13 @@ function renderHistory(){
     }).join('');
     return section(k,rows,logs.filter(function(l){return l.date.slice(0,7)===k;}).length);
   }).join('');
+}
+// Collapsible month sections in History (state remembered per month key).
+function histCollapsed(k){return getData('hist_collapsed',{})[k]===true;}
+function toggleMonth(k){
+  var c=getData('hist_collapsed',{});c[k]=!c[k];setData('hist_collapsed',c);
+  var days=document.getElementById('mdays-'+k);if(days)days.style.display=c[k]?'none':'block';
+  var hdr=days&&days.previousElementSibling;if(hdr)hdr.classList.toggle('collapsed',c[k]);
 }
 // Sunday that begins the week containing dateStr (YYYY-MM-DD).
 function weekSundayKey(ds){var d=new Date(ds+'T12:00:00');d.setDate(d.getDate()-d.getDay());return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);}
@@ -2431,7 +2440,7 @@ function showUpdateBanner(){
   b.onclick=function(){checkForUpdate();};
   document.body.appendChild(b);
 }
-var APP_VERSION='v12.8';
+var APP_VERSION='v12.9';
 function setVersion(){var els=document.querySelectorAll('.vbadge,.ver-chip');for(var i=0;i<els.length;i++)els[i].textContent=APP_VERSION;}
 setVersion();
 function setNavH(){var n=document.querySelector('.nav');if(n)document.documentElement.style.setProperty('--navh',n.offsetHeight+'px');}
