@@ -252,6 +252,16 @@ net until each PDF is faithful.
 
 ## Open ideas / backlog
 
+- **#1 PRIORITY — CworX / IBM Maximo "Work Order Tracking" integration.** The
+  user's system of record is **IBM Maximo Application Suite → Work Order Tracking
+  (CworX)**: columns Work Order, Description, Job Type (CMG), Job Sub Type (TEST
+  PITS / GAS MAINS / TRANSMISSION / MISC), **Layout #**, ARM WR#, Network (02X…),
+  Section (226). Goal: let Field Log look up / cross-reference / push WO#s against
+  Maximo so the job data (WR#/WO#/Layout/Section) round-trips instead of being
+  hand-copied. Almost certainly needs Maximo's REST/OSLC API + auth (enterprise —
+  likely gated by Con Ed IT) — scope the API access first. Big project; user
+  flagged it top priority (screenshot on 2026-08-05).
+
 - **Make it a "real" iOS app (project — pending a Mac mini purchase).** Three
   tiers, cheapest→most:
   1. *PWA polish (no Mac, free, do anytime):* iOS splash screens

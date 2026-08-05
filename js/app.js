@@ -1011,12 +1011,20 @@ function renderCrews(){
 }
 // Copyable comma-separated WR#/WO# list for the day's jobs (mirrors All jobs footer).
 function crewSummaryHTML(){
-  var wrs=currentCrews.map(function(c){return c.wo||c.cworxWO||'';}).filter(Boolean);
-  if(!wrs.length)return '';
+  // Two lines: WR#/Ticket and WO# (cWorx prefers WO#s) — each value colored to its job pill.
+  function line(vals){return vals.map(function(x){var col=contractorColor(x.co);return '<span'+(col?' style="color:'+col+';font-weight:800"':'')+'>'+escHtml(x.v)+'</span>';}).join(', ');}
+  var wr=[],wo=[];
+  currentCrews.forEach(function(c){var co=c.contractor;if(c.wo)wr.push({v:c.wo,co:co});if(c.cworxWO)wo.push({v:c.cworxWO,co:co});});
+  if(!wr.length&&!wo.length)return '';
+  function row(id,label,vals){
+    return '<div class="wrwo-line"><span class="wrwo-lbl">'+label+'</span>'+
+      '<span class="wrwo-vals" id="'+id+'">'+line(vals)+'</span>'+
+      '<button class="wrwo-copy" onclick="copyText(document.getElementById(\''+id+'\').textContent)">Copy</button></div>';
+  }
   return '<div class="aj-summary">'+
-    '<div class="aj-sum-h">'+wrs.length+' job'+(wrs.length!==1?'s':'')+' · WR#/WO# list</div>'+
-    '<div class="aj-sum-list" id="day-wrs">'+escHtml(wrs.join(', '))+'</div>'+
-    '<button class="btn btn-secondary btn-sm" style="margin-top:8px" onclick="copyText(document.getElementById(\'day-wrs\').textContent)">Copy list</button>'+
+    '<div class="aj-sum-h">'+currentCrews.length+' job'+(currentCrews.length!==1?'s':'')+'</div>'+
+    (wr.length?row('day-wr','WR#',wr):'')+
+    (wo.length?row('day-wo','WO#',wo):'')+
   '</div>';
 }
 
@@ -1219,12 +1227,8 @@ function removeItem(type,crewId,idx){
   renderOneCrew(cid);
 }
 
-function checkNudge(crew,name,count){
-  var nudgeEl=document.getElementById('nudge-'+crew.id);if(!nudgeEl)return;
-  var msg=NUDGE[name];if(!msg){nudgeEl.classList.remove('visible');return;}
-  if(count>0){nudgeEl.textContent=msg;nudgeEl.classList.add('visible');}
-  else nudgeEl.classList.remove('visible');
-}
+// Trade/equipment suggestion nudge — disabled (kept as a no-op so call sites stay valid).
+function checkNudge(crew,name,count){var nudgeEl=document.getElementById('nudge-'+(crew&&crew.id));if(nudgeEl)nudgeEl.classList.remove('visible');}
 
 // ── PICKER ───────────────────────────────────────────────────────
 function openPicker(type,crewId){
@@ -2608,7 +2612,7 @@ function showUpdateBanner(){
   b.onclick=function(){checkForUpdate();};
   document.body.appendChild(b);
 }
-var APP_VERSION='v13.7';
+var APP_VERSION='v13.8';
 function setVersion(){var els=document.querySelectorAll('.vbadge,.ver-chip');for(var i=0;i<els.length;i++)els[i].textContent=APP_VERSION;}
 setVersion();
 function setNavH(){var n=document.querySelector('.nav');if(n)document.documentElement.style.setProperty('--navh',n.offsetHeight+'px');}

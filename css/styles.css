@@ -331,6 +331,12 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
 .aj-summary{margin-top:14px;padding:12px;background:var(--surface-2);border-radius:8px}
 .aj-sum-h{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-4);margin-bottom:6px}
 .aj-sum-list{font-size:12px;font-family:var(--font-mono);color:var(--ink-2);word-break:break-word;line-height:1.6;user-select:all;-webkit-user-select:all}
+.wrwo-line{display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-top:1px solid var(--border)}
+.wrwo-line:first-of-type{border-top:none}
+.wrwo-lbl{flex-shrink:0;font-size:10px;font-weight:800;color:var(--ink-4);background:var(--surface);border:1px solid var(--border);border-radius:5px;padding:3px 7px;font-family:var(--font);letter-spacing:.04em}
+.wrwo-vals{flex:1;min-width:0;font-size:13px;font-family:var(--font-mono);color:var(--ink-2);word-break:break-word;line-height:1.5;user-select:all;-webkit-user-select:all}
+.wrwo-copy{flex-shrink:0;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--green-text);background:var(--green-bg);border:none;border-radius:6px;padding:4px 10px;cursor:pointer;font-family:var(--font)}
+.wrwo-copy:active{opacity:.7}
 .list-item{background:var(--surface);border:2px solid var(--border);border-radius:var(--radius-sm);padding:11px 14px;animation:slideIn .2s ease forwards;opacity:0;transform:translateY(5px)}
 .list-loc{font-size:14px;font-weight:800;line-height:1.3;margin-bottom:4px;letter-spacing:-.01em}
 .list-work{font-size:13px;font-weight:600;margin-bottom:6px}
