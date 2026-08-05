@@ -2107,6 +2107,7 @@ function excLinePlain(p){
   var dims=dparts.join(' x ');
   var pin=[contOffset(getContVal('cont'+p+'-pin1-dist'),getContVal('cont'+p+'-pin1-dir'),getContVal('cont'+p+'-pin1-ref')),
            contOffset(getContVal('cont'+p+'-pin2-dist'),getContVal('cont'+p+'-pin2-dir'),getContVal('cont'+p+'-pin2-ref'))].filter(Boolean).join(' & ');
+  if(p!==''&&!dims&&!pin)return ''; // no phantom 2nd excavation from an inherited main alone
   var fac=p===''?facilityClause():(getContVal('cont2-fac-desc')?('Directly over the '+getContVal('cont2-fac-desc')):facilityClause());
   if(!dims&&!pin&&!fac)return '';
   return ((dims?dims+' ':'')+'excavation'+(pin?' located '+pin:'')+(fac?' – '+fac:'')).replace(/[ \t]+/g,' ').trim();
@@ -2126,6 +2127,7 @@ function buildContingencyBody(){
   L.push('');
   L.push('Good morning,');
   L.push('Con Edison contractor '+contractor+' will be '+scope+' at the following location(s):');
+  L.push('');
   lines.forEach(function(ln,i){L.push((i+1)+'. '+ln);});
   L.push('');
   if(comments){L.push(comments);L.push('');}
@@ -2183,6 +2185,7 @@ function excLineHtml(p){
     var dd=[ft(dist),dir].filter(Boolean).join(' ');
     offs.push([B(dd),B(ref)].filter(Boolean).join(' '));
   });
+  if(p!==''&&!dims&&!offs.length)return ''; // no phantom 2nd excavation from an inherited main alone
   var facHtml=p===''?facilityClauseHTML():(getContVal('cont2-fac-desc')?('Directly over the '+B(getContVal('cont2-fac-desc'))):facilityClauseHTML());
   if(!dims&&!offs.length&&!facHtml)return '';
   return (dims?B(dims)+' ':'')+'excavation'+(offs.length?' located '+offs.join(' &amp; '):'')+(facHtml?' – '+facHtml:'');
@@ -2197,6 +2200,7 @@ function buildContingencyHTML(){
   var body=[];
   body.push('Good morning,');
   body.push('Con Edison contractor '+bcEsc(contractor)+' will be '+bcEsc(scope)+' at the following location(s):');
+  body.push('');
   body.push('<ol>'+items.map(function(x){return '<li>'+x+'</li>';}).join('')+'</ol>');
   if(comments)body.push('<b>'+bcEsc(comments).replace(/\n/g,'<br>')+'</b>');
   body.push('');
@@ -2582,7 +2586,7 @@ function showUpdateBanner(){
   b.onclick=function(){checkForUpdate();};
   document.body.appendChild(b);
 }
-var APP_VERSION='v13.3';
+var APP_VERSION='v13.4';
 function setVersion(){var els=document.querySelectorAll('.vbadge,.ver-chip');for(var i=0;i<els.length;i++)els[i].textContent=APP_VERSION;}
 setVersion();
 function setNavH(){var n=document.querySelector('.nav');if(n)document.documentElement.style.setProperty('--navh',n.offsetHeight+'px');}
