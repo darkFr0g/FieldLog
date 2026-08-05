@@ -2600,10 +2600,13 @@ setupContKeyboard();
 initSync();
 // Desktop: Cmd+S / Ctrl+S saves the DLR draft (instead of the browser Save dialog).
 document.addEventListener('keydown',function(e){
-  if((e.metaKey||e.ctrlKey)&&!e.altKey&&(e.key==='s'||e.key==='S')){
-    var dlr=document.getElementById('page-dlr');
-    if(dlr&&dlr.classList.contains('active')){e.preventDefault();saveDraft();}
-  }
+  if(!(e.metaKey||e.ctrlKey))return;
+  var k=(e.key||'').toLowerCase();if(k!=='s')return;
+  var dlr=document.getElementById('page-dlr');
+  if(!dlr||!dlr.classList.contains('active'))return;
+  e.preventDefault();
+  if(e.altKey)submitLog();      // Ctrl/⌘ + Alt + S → Submit Log
+  else saveDraft();             // Ctrl/⌘ + S → Save draft
 });
 function showUpdateBanner(){
   if(document.getElementById('update-banner'))return;
@@ -2612,7 +2615,7 @@ function showUpdateBanner(){
   b.onclick=function(){checkForUpdate();};
   document.body.appendChild(b);
 }
-var APP_VERSION='v13.8';
+var APP_VERSION='v13.9';
 function setVersion(){var els=document.querySelectorAll('.vbadge,.ver-chip');for(var i=0;i<els.length;i++)els[i].textContent=APP_VERSION;}
 setVersion();
 function setNavH(){var n=document.querySelector('.nav');if(n)document.documentElement.style.setProperty('--navh',n.offsetHeight+'px');}
