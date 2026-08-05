@@ -1628,7 +1628,8 @@ function checkForUpdate(){
 function backupData(){
   var data={app:'FieldLog',version:1,exportedAt:new Date().toISOString(),
     logs:getData('dlr_logs',[]),drafts:getData('dlr_drafts',{}),
-    trades:getData('dlr_trades',CWORX_TRADES),equipment:getData('dlr_equipment',CWORX_EQUIPMENT)};
+    trades:getData('dlr_trades',CWORX_TRADES),equipment:getData('dlr_equipment',CWORX_EQUIPMENT),
+    contingencies:getData('dlr_contingencies',{}),jobs:getData('dlr_jobs',{})};
   var json=JSON.stringify(data,null,2);
   var name='FieldLog_Backup_'+today()+'.json';
   if(navigator.share&&navigator.canShare){
@@ -1648,7 +1649,7 @@ function restoreFromFile(input){
   reader.onload=function(e){
     try{
       var data=JSON.parse(e.target.result);
-      if(!data||(!data.logs&&!data.trades))throw new Error('not a Field Log backup');
+      if(!data||(!data.logs&&!data.trades&&!data.contingencies&&!data.jobs))throw new Error('not a Field Log backup');
       var n=(data.logs||[]).length;
       if(!confirm('Restore this backup ('+n+' log'+(n!==1?'s':'')+')? Logs & drafts are merged (backup wins on the same date); master lists are replaced.')){input.value='';return;}
       var byDate={};getData('dlr_logs',[]).forEach(function(l){byDate[l.date]=l;});
@@ -1659,6 +1660,9 @@ function restoreFromFile(input){
       Object.keys(impD).forEach(function(k){curD[k]=impD[k];});setData('dlr_drafts',curD);
       if(data.trades&&data.trades.length){trades=data.trades.slice();setData('dlr_trades',trades);}
       if(data.equipment&&data.equipment.length){equipment=data.equipment.slice();setData('dlr_equipment',equipment);}
+      // Merge contingencies & jobs by savedAt (backup wins on ties).
+      if(data.contingencies){var curC=getData('dlr_contingencies',{});Object.keys(data.contingencies).forEach(function(k){var ex=curC[k],im=data.contingencies[k];if(!ex||!ex.savedAt||(im.savedAt&&im.savedAt>=ex.savedAt))curC[k]=im;});setData('dlr_contingencies',curC);}
+      if(data.jobs){var curJ=getData('dlr_jobs',{});Object.keys(data.jobs).forEach(function(k){var ex=curJ[k],im=data.jobs[k];if(!ex||!ex.savedAt||(im.savedAt&&im.savedAt>=ex.savedAt))curJ[k]=im;});setData('dlr_jobs',curJ);}
       updateSettingsCounts();renderHistory();syncPushAll();
       showToast('Restored — '+logs.length+' logs total');
     }catch(err){showToast('Restore failed: '+err.message);}
@@ -2526,7 +2530,7 @@ function syncPushWorking(){
     userCol('meta').doc('working').set(payload).catch(function(){});
   },1400);
 }
-function syncPushAll(){if(!syncOn())return;logs.forEach(function(l){syncPushLog(l);});syncPushDrafts();syncPushLists();syncPushMileage();syncPushProfile();syncPushRoute();}
+function syncPushAll(){if(!syncOn())return;logs.forEach(function(l){syncPushLog(l);});syncPushDrafts();syncPushLists();syncPushMileage();syncPushProfile();syncPushRoute();syncPushContingencies();syncPushJobs();}
 
 function updateAccountUI(){
   var signedOut=document.getElementById('account-signedout');
@@ -2559,7 +2563,7 @@ function showUpdateBanner(){
   b.onclick=function(){checkForUpdate();};
   document.body.appendChild(b);
 }
-var APP_VERSION='v13.1';
+var APP_VERSION='v13.2';
 function setVersion(){var els=document.querySelectorAll('.vbadge,.ver-chip');for(var i=0;i<els.length;i++)els[i].textContent=APP_VERSION;}
 setVersion();
 function setNavH(){var n=document.querySelector('.nav');if(n)document.documentElement.style.setProperty('--navh',n.offsetHeight+'px');}
