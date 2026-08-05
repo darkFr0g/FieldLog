@@ -1587,6 +1587,23 @@ function deleteJobConfirm(){
   document.getElementById('job-modal').style.display='none';renderJobs();
 }
 function closeJobModal(e){if(e&&!e.target.classList.contains('modal-overlay'))return;document.getElementById('job-modal').style.display='none';}
+// Clean plain-text Field Data (only non-empty rows) for share/copy.
+function buildJobText(loc,ticket,wo,field){
+  var L=[],f=field||{};
+  L.push('Field Data — '+(loc||'Job'));
+  var ids=[ticket&&('WR# '+ticket),wo&&('WO# '+wo)].filter(Boolean).join('   ');
+  if(ids)L.push(ids);
+  JOB_FIELDS.forEach(function(g){
+    var lines=g.rows.filter(function(r){return f[r[0]];}).map(function(r){return r[1]+': '+f[r[0]];});
+    if(lines.length){L.push('');L.push(g.group.toUpperCase());lines.forEach(function(x){L.push(x);});}
+  });
+  return L.join('\n');
+}
+function shareJobData(){
+  var j=getJobs()[window._jobKey];if(!j)return;
+  var txt=buildJobText(j.location,j.ticket,j.wo,collectJobFields()); // reflect on-screen edits
+  shareText('Field Data — '+(j.location||'Job'),txt);
+}
 
 // Open the contingency form standalone (no job) with the saved list expanded to browse/load.
 function browseContingencies(){
@@ -2542,7 +2559,7 @@ function showUpdateBanner(){
   b.onclick=function(){checkForUpdate();};
   document.body.appendChild(b);
 }
-var APP_VERSION='v13.0';
+var APP_VERSION='v13.1';
 function setVersion(){var els=document.querySelectorAll('.vbadge,.ver-chip');for(var i=0;i<els.length;i++)els[i].textContent=APP_VERSION;}
 setVersion();
 function setNavH(){var n=document.querySelector('.nav');if(n)document.documentElement.style.setProperty('--navh',n.offsetHeight+'px');}
