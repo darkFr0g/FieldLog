@@ -2112,9 +2112,12 @@ function excLinePlain(p){
   if(!dims&&!pin&&!fac)return '';
   return ((dims?dims+' ':'')+'excavation'+(pin?' located '+pin:'')+(fac?' – '+fac:'')).replace(/[ \t]+/g,' ').trim();
 }
+// Lowercase only the first character (so it reads after "will be …") — keeps
+// acronyms like XHP / IP-9 intact, unlike a blanket toLowerCase().
+function lcFirst(s){s=String(s||'');return s?s.charAt(0).toLowerCase()+s.slice(1):s;}
 function buildContingencyBody(){
   var num=getContVal('cont-num'),layout=getContVal('cont-layout'),code=getContVal('cont-code'),
-      contractor=getContVal('cont-contractor'),scope=getContVal('cont-scope').toLowerCase(),
+      contractor=getContVal('cont-contractor'),scope=lcFirst(getContVal('cont-scope')),
       comments=getContVal('cont-comments'),insp=getContVal('cont-inspector');
   var lines=[excLinePlain(''),excLinePlain('2')].filter(Boolean);
   if(!lines.length)lines=['excavation'];
@@ -2192,7 +2195,7 @@ function excLineHtml(p){
 }
 function buildContingencyHTML(){
   var num=getContVal('cont-num'),layout=getContVal('cont-layout'),code=getContVal('cont-code'),
-      contractor=getContVal('cont-contractor'),scope=getContVal('cont-scope').toLowerCase(),
+      contractor=getContVal('cont-contractor'),scope=lcFirst(getContVal('cont-scope')),
       comments=getContVal('cont-comments'),insp=getContVal('cont-inspector');
   var items=[excLineHtml(''),excLineHtml('2')].filter(Boolean);
   if(!items.length)items=['excavation'];
@@ -2586,7 +2589,7 @@ function showUpdateBanner(){
   b.onclick=function(){checkForUpdate();};
   document.body.appendChild(b);
 }
-var APP_VERSION='v13.4';
+var APP_VERSION='v13.5';
 function setVersion(){var els=document.querySelectorAll('.vbadge,.ver-chip');for(var i=0;i<els.length;i++)els[i].textContent=APP_VERSION;}
 setVersion();
 function setNavH(){var n=document.querySelector('.nav');if(n)document.documentElement.style.setProperty('--navh',n.offsetHeight+'px');}
