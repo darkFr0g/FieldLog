@@ -1010,15 +1010,23 @@ function renderCrews(){
   container.innerHTML=currentCrews.map(function(crew){return crewHTML(crew);}).join('')+crewSummaryHTML();
 }
 // Copyable comma-separated WR#/WO# list for the day's jobs (mirrors All jobs footer).
+// Palette used by the crew-card nth-child background/border (c0…c5), so a job's
+// number matches the color of its block whether or not the contractor is themed.
+var CREW_PALETTE=['#2563EB','#D97706','#7C3AED','#DC2626','#059669','#DB2777'];
+function crewPillColor(c,idx){return contractorColor(c&&c.contractor)||CREW_PALETTE[idx%6];}
 function crewSummaryHTML(){
-  // Two lines: WR#/Ticket and WO# (cWorx prefers WO#s) — each value colored to its job pill.
-  function line(vals){return vals.map(function(x){var col=contractorColor(x.co);return '<span'+(col?' style="color:'+col+';font-weight:800"':'')+'>'+escHtml(x.v)+'</span>';}).join(', ');}
+  function clean(s){return String(s||'').replace(/^\s*W[OR]\s*#?\s*:?\s*/i,'').trim();} // drop leading WO#/WR#
+  function span(v,col){return '<span style="color:'+col+';font-weight:800">'+escHtml(v)+'</span>';}
   var wr=[],wo=[];
-  currentCrews.forEach(function(c){var co=c.contractor;if(c.wo)wr.push({v:c.wo,co:co});if(c.cworxWO)wo.push({v:c.cworxWO,co:co});});
+  currentCrews.forEach(function(c,i){
+    var col=crewPillColor(c,i);
+    var w=clean(c.wo);if(w)wr.push(span(w,col));
+    var o=clean(c.cworxWO);if(o)wo.push(span(o,col));
+  });
   if(!wr.length&&!wo.length)return '';
-  function row(id,label,vals){
+  function row(id,label,arr){
     return '<div class="wrwo-line"><span class="wrwo-lbl">'+label+'</span>'+
-      '<span class="wrwo-vals" id="'+id+'">'+line(vals)+'</span>'+
+      '<span class="wrwo-vals" id="'+id+'">'+arr.join(', ')+'</span>'+
       '<button class="wrwo-copy" onclick="copyText(document.getElementById(\''+id+'\').textContent)">Copy</button></div>';
   }
   return '<div class="aj-summary">'+
@@ -2615,7 +2623,7 @@ function showUpdateBanner(){
   b.onclick=function(){checkForUpdate();};
   document.body.appendChild(b);
 }
-var APP_VERSION='v13.9';
+var APP_VERSION='v14.0';
 function setVersion(){var els=document.querySelectorAll('.vbadge,.ver-chip');for(var i=0;i<els.length;i++)els[i].textContent=APP_VERSION;}
 setVersion();
 function setNavH(){var n=document.querySelector('.nav');if(n)document.documentElement.style.setProperty('--navh',n.offsetHeight+'px');}
