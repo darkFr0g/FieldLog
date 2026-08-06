@@ -451,6 +451,11 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
 .cwx-chk input{width:13px;height:13px;accent-color:var(--green);margin:0;cursor:pointer}
 .cwx-chk.on{color:#fff;background:var(--green);border:1.5px solid var(--green)}
 .cwx-chk.on input{accent-color:#fff}
+/* History CworX flags: per-crew + collapsed-header summary */
+.hcwx{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;padding:1px 6px;border-radius:4px;background:var(--amber-bg);color:var(--amber-text);vertical-align:1px}
+.hcwx.on{background:var(--green-bg);color:var(--green-text)}
+.hcwx-sum{font-weight:800;color:var(--amber-text)}
+.hcwx-sum.ok{color:var(--green-text)}
 .chevron{display:inline-block;transition:transform .2s;font-size:16px;color:var(--ink-3);flex-shrink:0}
 .chevron.open{transform:rotate(180deg)}
 .crew-body{display:none}

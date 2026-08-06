@@ -1450,8 +1450,9 @@ function histLogCard(log,banded){
   var crewsHTML=log.crews.map(function(c){
     var tl=(c.trades||[]).filter(function(t){return t.c>0;}).map(function(t){return t.n+': '+t.c;}).join(' · ');
     var el=(c.equip||[]).filter(function(e){return e.c>0;}).map(function(e){return e.n+': '+e.c;}).join(' · ');
+    var cwx=c.cworxEntered?'<span class="hcwx on">CworX ✓</span>':'<span class="hcwx">CworX —</span>';
     return '<div class="log-crew-row">'+
-      '<div class="log-crew-name">Crew '+c.num+(c.foremen&&c.foremen.length?' — '+c.foremen.slice(0,2).join(', '):'')+(c._fromRoute?' <span style="font-size:10px;color:var(--green);font-weight:700">ROUTE</span>':'')+'</div>'+
+      '<div class="log-crew-name">Crew '+c.num+(c.foremen&&c.foremen.length?' — '+c.foremen.slice(0,2).join(', '):'')+(c._fromRoute?' <span style="font-size:10px;color:var(--green);font-weight:700">ROUTE</span>':'')+' '+cwx+'</div>'+
       '<div class="log-crew-detail">'+
         (c.location?'📍 '+c.location+'<br>':'')+
         (c.wo?'Ticket: <b>'+c.wo+'</b>'+(c.cworxWO?' · WO: <b>'+c.cworxWO+'</b>':'')+'<br>':'')+
@@ -1463,11 +1464,14 @@ function histLogCard(log,banded){
   var edited=(log.createdAt&&log.savedAt&&log.savedAt!==log.createdAt);
   var editedBadge=edited?' <span class="edited-tag">EDITED</span>':'';
   var savedTxt=log.savedAt?(' · saved '+fmtShortStamp(log.savedAt)):'';
+  // CworX audit summary on the collapsed header: green when all entered, amber otherwise.
+  var cwxDone=log.crews.filter(function(c){return c.cworxEntered;}).length;
+  var cwxSum=' · <span class="hcwx-sum'+(cwxDone===log.crews.length?' ok':'')+'">CworX '+cwxDone+'/'+log.crews.length+'</span>';
   var wd=new Date(log.date+'T12:00:00').getDay(),we=(wd===0||wd===6);
   var wePill=we?'<span class="we-pill">'+(wd===0?'SUN':'SAT')+'</span> ':'';
   return '<div class="log-day'+(we?' weekend':'')+(banded?' rowband':'')+'">'+
     '<div class="log-day-header" onclick="toggleDay(\''+log.date+'\')">'+
-      '<div><div class="log-day-title">'+wePill+fmtDate(log.date)+editedBadge+'</div><div class="log-day-meta">'+log.crews.length+' crew'+(log.crews.length!==1?'s':'')+savedTxt+'</div></div>'+
+      '<div><div class="log-day-title">'+wePill+fmtDate(log.date)+editedBadge+'</div><div class="log-day-meta">'+log.crews.length+' crew'+(log.crews.length!==1?'s':'')+savedTxt+cwxSum+'</div></div>'+
       '<span class="chevron" id="daychev-'+log.date+'">⌄</span></div>'+
     '<div class="log-expanded" id="daylog-'+log.date+'">'+crewsHTML+
       '<div style="padding:10px 16px;display:flex;gap:8px;flex-wrap:wrap">'+
@@ -2665,7 +2669,7 @@ function showUpdateBanner(){
   b.onclick=function(){checkForUpdate();};
   document.body.appendChild(b);
 }
-var APP_VERSION='v14.6';
+var APP_VERSION='v14.7';
 function setVersion(){var els=document.querySelectorAll('.vbadge,.ver-chip');for(var i=0;i<els.length;i++)els[i].textContent=APP_VERSION;}
 setVersion();
 
