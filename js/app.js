@@ -1016,23 +1016,23 @@ var CREW_PALETTE=['#2563EB','#D97706','#7C3AED','#DC2626','#059669','#DB2777'];
 function crewPillColor(c,idx){return contractorColor(c&&c.contractor)||CREW_PALETTE[idx%6];}
 function crewSummaryHTML(){
   function clean(s){return String(s||'').replace(/^\s*W[OR]\s*#?\s*:?\s*/i,'').trim();} // drop leading WO#/WR#
-  function span(v,col){return '<span style="color:'+col+';font-weight:800">'+escHtml(v)+'</span>';}
-  var wr=[],wo=[];
+  function pill(v,col){return '<span class="wrwo-pill" style="background:'+col+'">'+escHtml(v)+'</span>';}
+  var wr=[],wo=[],wrp=[],wop=[]; // pills for display, plain values for copy
   currentCrews.forEach(function(c,i){
     var col=crewPillColor(c,i);
-    var w=clean(c.wo);if(w)wr.push(span(w,col));
-    var o=clean(c.cworxWO);if(o)wo.push(span(o,col));
+    var w=clean(c.wo);if(w){wr.push(pill(w,col));wrp.push(w);}
+    var o=clean(c.cworxWO);if(o){wo.push(pill(o,col));wop.push(o);}
   });
   if(!wr.length&&!wo.length)return '';
-  function row(id,label,arr){
+  function row(label,pills,plain){
     return '<div class="wrwo-line"><span class="wrwo-lbl">'+label+'</span>'+
-      '<span class="wrwo-vals" id="'+id+'">'+arr.join(', ')+'</span>'+
-      '<button class="wrwo-copy" onclick="copyText(document.getElementById(\''+id+'\').textContent)">Copy</button></div>';
+      '<span class="wrwo-vals">'+pills.join('')+'</span>'+
+      '<button class="wrwo-copy" onclick="copyText(this.getAttribute(\'data-copy\'))" data-copy="'+escHtml(plain)+'">Copy</button></div>';
   }
   return '<div class="aj-summary">'+
     '<div class="aj-sum-h">'+currentCrews.length+' job'+(currentCrews.length!==1?'s':'')+'</div>'+
-    (wr.length?row('day-wr','WR#',wr):'')+
-    (wo.length?row('day-wo','WO#',wo):'')+
+    (wr.length?row('WR#',wr,wrp.join(', ')):'')+
+    (wo.length?row('WO#',wo,wop.join(', ')):'')+
   '</div>';
 }
 
@@ -2646,7 +2646,7 @@ function showUpdateBanner(){
   b.onclick=function(){checkForUpdate();};
   document.body.appendChild(b);
 }
-var APP_VERSION='v14.4';
+var APP_VERSION='v14.5';
 function setVersion(){var els=document.querySelectorAll('.vbadge,.ver-chip');for(var i=0;i<els.length;i++)els[i].textContent=APP_VERSION;}
 setVersion();
 
