@@ -8,7 +8,7 @@
    - Firebase SDK (gstatic CDN): cache-first runtime cache so sync code loads offline.
    Bump CACHE_VERSION to force-evict everything on the next load.
 */
-var CACHE_VERSION = 'fieldlog-v4';
+var CACHE_VERSION = 'fieldlog-v5';
 var SHELL_CACHE   = CACHE_VERSION + '-shell';
 var STATIC_CACHE  = CACHE_VERSION + '-static';
 var FONT_CACHE    = CACHE_VERSION + '-fonts';
@@ -120,8 +120,12 @@ self.addEventListener('fetch', function (event) {
   }
 
   // App shell + navigations — network-first, fall back to cache offline.
+  // cache:'no-cache' forces revalidation past the HTTP cache (GitHub Pages
+  // serves max-age=600, so a plain fetch could be up to 10 min stale — this
+  // was why "Check for updates" often did nothing). Fetch by URL, not the
+  // Request object: navigation-mode Requests can't be re-constructed with init.
   event.respondWith(
-    fetch(req).then(function (res) {
+    fetch(req.url, { cache: 'no-cache', credentials: 'same-origin' }).then(function (res) {
       var copy = res.clone();
       caches.open(SHELL_CACHE).then(function (c) { c.put(req, copy); });
       return res;

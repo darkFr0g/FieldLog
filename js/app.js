@@ -1667,13 +1667,26 @@ function clearAllData(){if(!confirm('Delete ALL logs and settings? Cannot be und
 
 // Home-screen PWAs can't be hard-refreshed; this pulls the newest service
 // worker and reloads (network-first shell then serves the fresh files).
+// Ask the server (cache:'no-store' skips SW + HTTP cache) what version is live,
+// and only reload when it actually differs — with honest feedback either way.
+function fetchLiveVersion(){
+  return fetch('./js/app.js?v='+Date.now(),{cache:'no-store'}).then(function(r){
+    if(!r.ok)throw new Error('http '+r.status);
+    return r.text();
+  }).then(function(t){var m=t.match(/APP_VERSION='(v[\d.]+)'/);return m?m[1]:null;});
+}
 function checkForUpdate(){
   showToast('Checking for updates…');
   if('serviceWorker' in navigator&&navigator.serviceWorker.getRegistrations){
     navigator.serviceWorker.getRegistrations().then(function(regs){
       return Promise.all(regs.map(function(r){return r.update();}));
-    })['catch'](function(){}).then(function(){setTimeout(function(){location.reload();},500);});
-  }else location.reload();
+    })['catch'](function(){});
+  }
+  fetchLiveVersion().then(function(latest){
+    if(latest&&latest===APP_VERSION){showToast('Up to date — '+APP_VERSION);return;}
+    showToast(latest?('Updating '+APP_VERSION+' → '+latest+'…'):'Refreshing…');
+    setTimeout(function(){location.reload();},600);
+  })['catch'](function(){showToast('Couldn’t reach the server — check your signal');});
 }
 
 // ── BACKUP / RESTORE (all data lives in localStorage on this device only) ──
@@ -2669,7 +2682,7 @@ function showUpdateBanner(){
   b.onclick=function(){checkForUpdate();};
   document.body.appendChild(b);
 }
-var APP_VERSION='v14.7';
+var APP_VERSION='v14.8';
 function setVersion(){var els=document.querySelectorAll('.vbadge,.ver-chip');for(var i=0;i<els.length;i++)els[i].textContent=APP_VERSION;}
 setVersion();
 
@@ -2715,3 +2728,11 @@ if('serviceWorker' in navigator){
     })['catch'](function(){});
   });
 }
+// Launch version probe — most releases don't touch sw.js, so the SW updatefound
+// path misses them; compare the live APP_VERSION directly and offer the banner.
+setTimeout(function(){
+  if(!navigator.onLine)return;
+  fetchLiveVersion().then(function(latest){
+    if(latest&&latest!==APP_VERSION)showUpdateBanner();
+  })['catch'](function(){});
+},3000);
