@@ -22,6 +22,50 @@
 html{-webkit-text-size-adjust:100%}
 body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:100vh;-webkit-font-smoothing:antialiased}
 
+/* ── APPEARANCE: accent + dark theme + density ─────────────────── */
+/* Accent (light values) — default green comes from :root */
+:root[data-accent="blue"]{--green:#2563EB;--green-bg:#E8F0FE;--green-text:#1A56C4}
+:root[data-accent="graphite"]{--green:#5B5A55;--green-bg:#ECEAE6;--green-text:#3B3A35}
+/* Dark theme neutrals + tints */
+:root[data-theme="dark"]{
+  --bg:#0f0f11;--surface:#1b1b1e;--surface-2:#26262a;--border:#34343b;--border-mid:#4d4d55;
+  --ink:#f2f2f3;--ink-2:#d8d8db;--ink-3:#a6a6ac;--ink-4:#75757c;
+  --green-bg:#12302a;--green-text:#57d6ad;
+  --amber-bg:#372c17;--amber-text:#e8bd7c;--coral-bg:#37231b;--coral-text:#f0b49c;
+  --blue-bg:#182742;--blue-text:#8fb6ff;--blue-bd:#2c4a7a;
+  --rose-bg:#3a1c1f;--rose-text:#ff9d9d;--rose-bd:#6a2f33;
+  --c0bg:#16233d;--c1bg:#352a12;--c2bg:#271a3a;--c3bg:#3a1c1c;--c4bg:#123028;--c5bg:#3a1a2b;
+}
+:root[data-theme="dark"][data-accent="blue"]{--green-bg:#16233d;--green-text:#9dbcff}
+:root[data-theme="dark"][data-accent="graphite"]{--green-bg:#2b2b2e;--green-text:#cbc9c5}
+/* Dark: repair hardcoded light spots */
+:root[data-theme="dark"] .crew-card-header{background:rgba(255,255,255,0.04)}
+:root[data-theme="dark"] .card-section,:root[data-theme="dark"] .badge-bar{background:var(--surface)}
+:root[data-theme="dark"] .sv-body table{background:var(--surface)}
+:root[data-theme="dark"] .sv-body tr:first-child td,:root[data-theme="dark"] .sv-body th{background:var(--surface-2)}
+:root[data-theme="dark"] .btn-danger{background:#2e1a1a;border-color:#5a2b2b;color:#ff8f88}
+:root[data-theme="dark"] .we-pill{background:#22305a;color:#b8c8ff}
+:root[data-theme="dark"] .we-empty{background:#1a2138}
+:root[data-theme="dark"] .mile-ot-sel{background:var(--surface-2);color:var(--amber-text)}
+:root[data-theme="dark"] .ms-mi{background:var(--surface-2)!important}
+/* Density: compact tightens the big spacings */
+:root.density-compact .crew-card{margin:5px 10px 0}
+:root.density-compact .crew-card-header{padding:6px 10px 6px 12px}
+:root.density-compact .card-section{padding:8px 12px}
+:root.density-compact .count-row{padding:3px 0}
+:root.density-compact .job-row{padding:8px 10px;margin-bottom:5px}
+:root.density-compact .list-item{padding:8px 12px}
+:root.density-compact .log-day-header{padding:9px 14px}
+:root.density-compact .log-empty{padding:8px 14px 8px 12px}
+:root.density-compact .map-row{padding:4px 6px}
+:root.density-compact .add-crew-wrap,:root.density-compact .page{padding-bottom:64px}
+/* Appearance controls (Settings) */
+.ap-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 2px}
+.ap-row>span{font-size:14px;font-weight:600}
+.seg{display:inline-flex;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;overflow:hidden;flex-shrink:0}
+.seg-btn{border:none;background:none;padding:7px 11px;font-size:12px;font-weight:800;color:var(--ink-3);cursor:pointer;font-family:var(--font)}
+.seg-btn.active{background:var(--green);color:#fff}
+
 .nav{background:#111;border-bottom:none;display:flex;position:sticky;top:0;z-index:100}
 .nav-btn{flex:1;padding:13px 4px 11px;border:none;background:none;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#666;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;font-family:var(--font);transition:color .15s}
 .nav-btn svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}

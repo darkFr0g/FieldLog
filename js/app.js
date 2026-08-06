@@ -88,7 +88,7 @@ function showPage(p){
   if(p==='dlr'){var d=document.getElementById('log-date');if(d&&d.value)mileDate=d.value;renderMileage();maybeNotifyDraft();}
   if(p==='month')renderMonth();
   if(p==='jobs')renderJobs();
-  if(p==='settings'){updateSettingsCounts();renderProfile();}
+  if(p==='settings'){updateSettingsCounts();renderProfile();renderAppearanceControls();}
 }
 
 // ── MILEAGE ──────────────────────────────────────────────────────
@@ -2640,9 +2640,36 @@ function showUpdateBanner(){
   b.onclick=function(){checkForUpdate();};
   document.body.appendChild(b);
 }
-var APP_VERSION='v14.1';
+var APP_VERSION='v14.2';
 function setVersion(){var els=document.querySelectorAll('.vbadge,.ver-chip');for(var i=0;i<els.length;i++)els[i].textContent=APP_VERSION;}
 setVersion();
+
+// ── APPEARANCE (theme + accent + density; per-device, not synced) ──
+function applyAppearance(){
+  var root=document.documentElement;
+  var mode=getData('dlr_theme_mode','light'),resolved=mode;
+  if(mode==='auto')resolved=(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light';
+  root.setAttribute('data-theme',resolved==='dark'?'dark':'light');
+  var accent=getData('dlr_theme_accent','green');
+  if(accent==='green')root.removeAttribute('data-accent');else root.setAttribute('data-accent',accent);
+  root.classList.toggle('density-compact',getData('dlr_density','comfortable')==='compact');
+  var tc=document.querySelector('meta[name=theme-color]');if(tc)tc.setAttribute('content',resolved==='dark'?'#0f0f11':'#1a1917');
+  renderAppearanceControls();
+}
+function setThemeMode(m){setData('dlr_theme_mode',m);applyAppearance();}
+function setThemeAccent(a){setData('dlr_theme_accent',a);applyAppearance();}
+function setDensity(d){setData('dlr_density',d);applyAppearance();}
+function renderAppearanceControls(){
+  var host=document.getElementById('appearance-controls');if(!host)return;
+  var mode=getData('dlr_theme_mode','light'),accent=getData('dlr_theme_accent','green'),dens=getData('dlr_density','comfortable');
+  function seg(cur,opts,fn){return '<div class="seg">'+opts.map(function(o){return '<button class="seg-btn'+(cur===o[0]?' active':'')+'" onclick="'+fn+'(\''+o[0]+'\')">'+o[1]+'</button>';}).join('')+'</div>';}
+  host.innerHTML=
+    '<div class="ap-row"><span>Mode</span>'+seg(mode,[['light','Light'],['dark','Dark'],['auto','Auto']],'setThemeMode')+'</div>'+
+    '<div class="ap-row"><span>Accent</span>'+seg(accent,[['green','Green'],['blue','Blue'],['graphite','Graphite']],'setThemeAccent')+'</div>'+
+    '<div class="ap-row"><span>Density</span>'+seg(dens,[['comfortable','Comfortable'],['compact','Compact']],'setDensity')+'</div>';
+}
+if(window.matchMedia)try{window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',function(){if(getData('dlr_theme_mode','light')==='auto')applyAppearance();});}catch(e){}
+applyAppearance();
 function setNavH(){var n=document.querySelector('.nav');if(n)document.documentElement.style.setProperty('--navh',n.offsetHeight+'px');}
 setNavH();window.addEventListener('resize',setNavH);window.addEventListener('orientationchange',setNavH);
 if('serviceWorker' in navigator){
