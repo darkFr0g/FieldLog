@@ -1082,6 +1082,9 @@ function crewHTML(crew){
 
   var wdText=crew.workDescs&&crew.workDescs.length?crew.workDescs.join(' · '):'';
   var routeTag=crew._fromRoute?'<span class="crew-source-tag">Route</span>':'';
+  // "Entered into CworX?" checkbox — lives in the header, must not toggle the card.
+  var cwxTag='<label class="cwx-chk'+(crew.cworxEntered?' on':'')+'" onclick="event.stopPropagation()">'+
+    '<input type="checkbox"'+(crew.cworxEntered?' checked':'')+' onchange="setCworxEntered('+crew.id+',this.checked)">CworX'+(crew.cworxEntered?' ✓':'')+'</label>';
   var contBadge=isActive(crew.contingency)?
     '<button class="cont-chip" onclick="openContingencyCrew('+crew.id+')">⚠ '+escHtml(crew.contingencyNum||'Contingency')+' →</button>':
     '<span class="status-off">Contingency: No</span>';
@@ -1109,7 +1112,7 @@ function crewHTML(crew){
   return '<div class="crew-card" id="crew-'+crew.id+'"'+(coC?' style="border-left-color:'+coC+'"':'')+'>'+
     '<div class="crew-card-header" onclick="toggleCrew('+crew.id+')"'+(coT?' style="background:'+coT+'"':'')+'>'+
       '<div style="flex:1;min-width:0">'+
-        '<div class="crew-h-top"><h2>Job '+crew.num+'</h2>'+(wr?'<span class="crew-wr">'+escHtml(wr)+'</span>':'')+routeTag+'</div>'+
+        '<div class="crew-h-top"><h2>Job '+crew.num+'</h2>'+(wr?'<span class="crew-wr">'+escHtml(wr)+'</span>':'')+routeTag+cwxTag+'</div>'+
         (crew.location?'<div class="crew-loc-line">'+escHtml(shortAddr(crew.location))+'</div>':'')+
         metaLine+
       '</div>'+
@@ -1170,7 +1173,7 @@ function crewHTML(crew){
         '<div class="te-fields'+(crew.te?' open':'')+'" id="te-fields-'+crew.id+'">'+
           '<div class="te-grid">'+
             '<div class="te-field"><label>Trade Hours</label><input class="field-input" placeholder="e.g. 8:00" value="'+escHtml(crew.teHours||'')+'" oninput="updateCrew('+crew.id+',\'teHours\',this.value)"></div>'+
-            '<div class="te-field"><label>T&amp;E Reason</label><input class="field-input" placeholder="Field Decision" value="'+escHtml(crew.teReason||'')+'" oninput="updateCrew('+crew.id+',\'teReason\',this.value)"></div>'+
+            '<div class="te-field"><label>T&amp;E Reason</label>'+teReasonSelect(crew)+'</div>'+
           '</div>'+
           '<div class="te-field"><label>T&amp;E Remarks</label><textarea class="field-input" rows="2" placeholder="8 HOURS T&E - ALL CREW / EQUIPMENT" oninput="updateCrew('+crew.id+',\'teRemarks\',this.value)">'+escHtml(crew.teRemarks||'')+'</textarea></div>'+
         '</div>'+
@@ -1197,6 +1200,22 @@ function toggleTE(id){
 }
 
 function updateCrew(id,field,val){var cid=parseInt(id);var crew=currentCrews.find(function(c){return c.id===cid;});if(crew){crew[field]=val;saveWorkingDLR();}}
+// CworX's exact T&E reason list (from the Select Value dropdown).
+var TE_REASONS=['Field Decision','Job Cancelled','No Applicable Item','On Standby','Waiting for Inspector','Waiting for Peer','Waiting for other task'];
+function teReasonSelect(crew){
+  var cur=crew.teReason||'';
+  var opts=TE_REASONS.slice();
+  if(cur&&opts.indexOf(cur)===-1)opts.unshift(cur); // keep any custom value already saved
+  return '<select class="field-input" onchange="updateCrew('+crew.id+',\'teReason\',this.value)">'+
+    '<option value=""'+(cur?'':' selected')+'>— pick reason —</option>'+
+    opts.map(function(r){return '<option value="'+escHtml(r)+'"'+(r===cur?' selected':'')+'>'+escHtml(r)+'</option>';}).join('')+
+  '</select>';
+}
+function setCworxEntered(id,val){
+  var cid=parseInt(id);var crew=currentCrews.find(function(c){return c.id===cid;});if(!crew)return;
+  crew.cworxEntered=!!val;saveWorkingDLR();
+  renderOneCrew(cid); // refresh the ✓ on the label without losing open state
+}
 function updateCrewForeman(id,val){var cid=parseInt(id);var crew=currentCrews.find(function(c){return c.id===cid;});if(crew){crew.foremen=[val];saveWorkingDLR();}}
 
 function adjustItem(type,crewId,idx,delta){
@@ -2646,7 +2665,7 @@ function showUpdateBanner(){
   b.onclick=function(){checkForUpdate();};
   document.body.appendChild(b);
 }
-var APP_VERSION='v14.5';
+var APP_VERSION='v14.6';
 function setVersion(){var els=document.querySelectorAll('.vbadge,.ver-chip');for(var i=0;i<els.length;i++)els[i].textContent=APP_VERSION;}
 setVersion();
 
