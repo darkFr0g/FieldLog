@@ -2145,7 +2145,7 @@ function excLinePlain(p){
 // acronyms like XHP / IP-9 intact, unlike a blanket toLowerCase().
 function lcFirst(s){s=String(s||'');return s?s.charAt(0).toLowerCase()+s.slice(1):s;}
 // Compact email signature (name + title/company + phone·email on one line).
-function contactSig(){var p=getProfile();return {name:p.name||'Jeremiah Flavin',lines:['Construction Representative L1-2','Consolidated Edison of NY','Phone: '+(p.phone||'347-387-6934')+'  ·  Email: flavinj@coned.com']};}
+function contactSig(){var p=getProfile();return {name:p.name||'Jeremiah Flavin',lines:['Construction Representative L1-2','Consolidated Edison of NY','Phone: '+(p.phone||'347-387-6934'),'Email: flavinj@coned.com']};}
 function buildContingencyBody(){
   var num=getContVal('cont-num'),layout=getContVal('cont-layout'),code=getContVal('cont-code'),
       contractor=getContVal('cont-contractor'),scope=lcFirst(getContVal('cont-scope')),
@@ -2646,7 +2646,7 @@ function showUpdateBanner(){
   b.onclick=function(){checkForUpdate();};
   document.body.appendChild(b);
 }
-var APP_VERSION='v14.3';
+var APP_VERSION='v14.4';
 function setVersion(){var els=document.querySelectorAll('.vbadge,.ver-chip');for(var i=0;i<els.length;i++)els[i].textContent=APP_VERSION;}
 setVersion();
 
