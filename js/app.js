@@ -2144,6 +2144,8 @@ function excLinePlain(p){
 // Lowercase only the first character (so it reads after "will be …") — keeps
 // acronyms like XHP / IP-9 intact, unlike a blanket toLowerCase().
 function lcFirst(s){s=String(s||'');return s?s.charAt(0).toLowerCase()+s.slice(1):s;}
+// Compact email signature (name + title/company + phone·email on one line).
+function contactSig(){var p=getProfile();return {name:p.name||'Jeremiah Flavin',lines:['Construction Representative L1-2','Consolidated Edison of NY','Phone: '+(p.phone||'347-387-6934')+'  ·  Email: flavinj@coned.com']};}
 function buildContingencyBody(){
   var num=getContVal('cont-num'),layout=getContVal('cont-layout'),code=getContVal('cont-code'),
       contractor=getContVal('cont-contractor'),scope=lcFirst(getContVal('cont-scope')),
@@ -2158,12 +2160,14 @@ function buildContingencyBody(){
   L.push('────────────────────');
   L.push('');
   L.push('Good morning,');
+  L.push('');
   L.push('Con Edison contractor '+contractor+' will be '+scope+' at the following location(s):');
   L.push('');
   lines.forEach(function(ln,i){if(i>0)L.push('');L.push((i+1)+'. '+ln);});
   L.push('');
   if(comments){L.push(comments);L.push('');}
   L.push('I, '+insp+', am on location');
+  var sig=contactSig();L.push('');L.push(sig.name);sig.lines.forEach(function(x){L.push(x);});
   return L.join('\n');
 }
 // Quick-insert the standard closing line into Additional comments (it renders bold).
@@ -2231,12 +2235,14 @@ function buildContingencyHTML(){
   var head=['<b>Contingency:</b> '+bcEsc(num),'<b>Layout:</b> '+bcEsc(layout),'<b>Code 753/811:</b> '+bcEsc(code)].join('<br>');
   var body=[];
   body.push('Good morning,');
+  body.push('');
   body.push('Con Edison contractor '+bcEsc(contractor)+' will be '+bcEsc(scope)+' at the following location(s):');
   body.push('');
   body.push('<ol>'+items.map(function(x){return '<li style="margin-bottom:10px">'+x+'</li>';}).join('')+'</ol>');
   if(comments)body.push('<b>'+bcEsc(comments).replace(/\n/g,'<br>')+'</b>');
   body.push('');
   body.push('I, '+bcEsc(insp)+', am on location');
+  var sig=contactSig();body.push('');body.push('<b>'+bcEsc(sig.name)+'</b>');sig.lines.forEach(function(x){body.push(bcEsc(x));});
   return head+'<br><br>────────────────────<br><br>'+body.join('<br>');
 }
 function copyContingencyReport(){
@@ -2640,7 +2646,7 @@ function showUpdateBanner(){
   b.onclick=function(){checkForUpdate();};
   document.body.appendChild(b);
 }
-var APP_VERSION='v14.2';
+var APP_VERSION='v14.3';
 function setVersion(){var els=document.querySelectorAll('.vbadge,.ver-chip');for(var i=0;i<els.length;i++)els[i].textContent=APP_VERSION;}
 setVersion();
 
