@@ -1599,6 +1599,23 @@ function deleteJobConfirm(){
   document.getElementById('job-modal').style.display='none';renderJobs();
 }
 function closeJobModal(e){if(e&&!e.target.classList.contains('modal-overlay'))return;document.getElementById('job-modal').style.display='none';}
+// Manually add a job (route sheet missing/broken).
+function openAddJob(){['nj-loc','nj-wr','nj-wo','nj-co'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});document.getElementById('addjob-modal').style.display='block';}
+function closeAddJob(e){if(e&&!e.target.classList.contains('modal-overlay'))return;document.getElementById('addjob-modal').style.display='none';}
+function saveNewJob(){
+  function v(id){var el=document.getElementById(id);return el?el.value.trim():'';}
+  var loc=v('nj-loc'),wr=v('nj-wr'),wo=v('nj-wo'),co=v('nj-co');
+  if(!loc&&!wr&&!wo){showToast('Enter at least a location or WR/WO#');return;}
+  var key=jobKey(wr,wo)||('m'+(new Date().getTime()));
+  var jobs=getJobs();
+  if(jobs[key]&&!jobs[key].deleted){document.getElementById('addjob-modal').style.display='none';jobsTab='active';renderJobs();openJobDetail(key);showToast('That job is already in your list — opened it');return;}
+  var now=new Date().toISOString();
+  jobs[key]={key:key,ticket:cleanTicket(wr),wo:wo,location:loc,contractor:co,inspector:(allData&&allData.name)||getProfile().name||'',status:'active',firstSeen:now,savedAt:now,manual:true,field:{contractor:co}};
+  setData('dlr_jobs',jobs);syncPushJobs();
+  document.getElementById('addjob-modal').style.display='none';
+  jobsTab='active';renderJobs();openJobDetail(key);
+  showToast('Job added');
+}
 // Clean plain-text Field Data (only non-empty rows) for share/copy.
 function buildJobText(loc,ticket,wo,field){
   var L=[],f=field||{};
@@ -2623,7 +2640,7 @@ function showUpdateBanner(){
   b.onclick=function(){checkForUpdate();};
   document.body.appendChild(b);
 }
-var APP_VERSION='v14.0';
+var APP_VERSION='v14.1';
 function setVersion(){var els=document.querySelectorAll('.vbadge,.ver-chip');for(var i=0;i<els.length;i++)els[i].textContent=APP_VERSION;}
 setVersion();
 function setNavH(){var n=document.querySelector('.nav');if(n)document.documentElement.style.setProperty('--navh',n.offsetHeight+'px');}

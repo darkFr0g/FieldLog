@@ -140,6 +140,7 @@
 <div id="page-jobs" class="page">
   <div class="page-header"><h1>Jobs</h1><div style="display:flex;gap:8px;align-items:center"><span class="ver-chip"></span><span class="sync-stamp"></span><button class="btn btn-secondary btn-sm" onclick="syncRefresh(this)" aria-label="Refresh"><span class="ref-ico">↻</span></button></div></div>
   <div class="tabs" id="jobs-tabs" style="padding:0 12px"></div>
+  <button type="button" class="add-fac-btn" style="margin:8px 12px 2px" onclick="openAddJob()">+ Add job manually</button>
   <div id="jobs-list" style="padding:4px 12px 90px"></div>
 </div>
 
@@ -357,6 +358,29 @@
         <button class="btn btn-primary" style="justify-content:center" onclick="exportCSV()">Export to CSV (Excel)</button>
         <button class="btn btn-secondary" style="justify-content:center" onclick="exportTXT()">Export as Text Report</button>
         <button class="btn btn-secondary" style="justify-content:center" onclick="closeExportModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ADD JOB MANUALLY MODAL -->
+<div id="addjob-modal" style="display:none">
+  <div class="modal-overlay" onclick="closeAddJob(event)">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <div class="modal-title">Add job</div>
+        <button onclick="closeAddJob()" style="background:none;border:none;font-size:24px;color:var(--ink-3);cursor:pointer;line-height:1">×</button>
+      </div>
+      <div style="font-size:12px;color:var(--ink-3);margin-bottom:14px;line-height:1.4">For when a job isn't on the route sheet. Add it here, then tap it to fill in Field Data.</div>
+      <div class="cont-field"><label>Location</label><input id="nj-loc" class="field-input" autocapitalize="words" placeholder="Adee Ave & Bronxwood Ave"></div>
+      <div class="cont-row">
+        <div class="cont-field"><label>WR# / Ticket</label><input id="nj-wr" class="field-input" placeholder="101588268"></div>
+        <div class="cont-field"><label>WO#</label><input id="nj-wo" class="field-input" placeholder="20404273"></div>
+      </div>
+      <div class="cont-field"><label>Contractor</label><input id="nj-co" class="field-input" autocapitalize="characters" placeholder="CAC"></div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:16px">
+        <button type="button" class="btn btn-green" style="justify-content:center" onclick="saveNewJob()">Add to my jobs</button>
+        <button type="button" class="btn btn-secondary btn-sm" style="justify-content:center" onclick="closeAddJob()">Cancel</button>
       </div>
     </div>
   </div>
