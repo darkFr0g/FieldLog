@@ -337,6 +337,8 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
 .day-divider-btn:before,.day-divider-btn:after{display:none}
 .day-divider-btn .mchev{font-size:16px;color:var(--ink-2)}
 .ver-chip{font-size:10px;font-weight:700;color:var(--ink-4);font-family:var(--font-mono)}
+.ver-tap{cursor:pointer;user-select:none;-webkit-user-select:none}
+.ver-tap:active{opacity:.6}
 .sync-row{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:8px}
 .sync-btn{font-size:12px;font-weight:700;border:1px solid var(--border);background:var(--surface);border-radius:8px;padding:5px 14px;color:var(--ink-2);cursor:pointer;font-family:var(--font)}
 .sync-stamp{font-size:11px;color:var(--ink-4);font-weight:600;white-space:nowrap}

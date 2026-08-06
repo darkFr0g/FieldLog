@@ -2682,8 +2682,9 @@ function showUpdateBanner(){
   b.onclick=function(){checkForUpdate();};
   document.body.appendChild(b);
 }
-var APP_VERSION='v14.8';
-function setVersion(){var els=document.querySelectorAll('.vbadge,.ver-chip');for(var i=0;i<els.length;i++)els[i].textContent=APP_VERSION;}
+var APP_VERSION='v14.9';
+function setVersion(){var els=document.querySelectorAll('.vbadge,.ver-chip');for(var i=0;i<els.length;i++){els[i].textContent=APP_VERSION;els[i].classList.add('ver-tap');els[i].onclick=verTap;}}
+function verTap(){if(confirm('Check for update?'))checkForUpdate();}
 setVersion();
 
 // ── APPEARANCE (theme + accent + density; per-device, not synced) ──
