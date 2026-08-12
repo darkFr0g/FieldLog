@@ -2393,6 +2393,17 @@ function smartOrderMapStops(){
   showToast('Reordered north→south (rough)');
 }
 function openMapsRoute(){var stops=mapStopList();if(!stops.length){showToast('Add at least one stop');return;}openMapsWith(stops);}
+// Apple Maps: saddr/daddr with "%20to:" chaining for multi-stop (works in the
+// Apple Maps app on iOS 16+; older versions route to the first stop only).
+function openAppleMapsWith(stops){
+  stops=(stops||[]).filter(Boolean);
+  if(!stops.length){showToast('No stops to map');return;}
+  var home=homeAddr();
+  var daddr=stops.concat([home]).map(encodeURIComponent).join('%20to:');
+  var url='https://maps.apple.com/?saddr='+encodeURIComponent(home)+'&daddr='+daddr+'&dirflg=d';
+  var a=document.createElement('a');a.href=url;a.target='_blank';a.rel='noopener';document.body.appendChild(a);a.click();document.body.removeChild(a);
+}
+function openAppleMapsRoute(){var stops=mapStopList();if(!stops.length){showToast('Add at least one stop');return;}openAppleMapsWith(stops);}
 function copyMapStops(){
   var stops=mapStopList();if(!stops.length){showToast('No stops');return;}
   var text=stops.join('\n');
@@ -2682,7 +2693,7 @@ function showUpdateBanner(){
   b.onclick=function(){checkForUpdate();};
   document.body.appendChild(b);
 }
-var APP_VERSION='v14.9';
+var APP_VERSION='v15.0';
 function setVersion(){var els=document.querySelectorAll('.vbadge,.ver-chip');for(var i=0;i<els.length;i++){els[i].textContent=APP_VERSION;els[i].classList.add('ver-tap');els[i].onclick=verTap;}}
 function verTap(){if(confirm('Check for update?'))checkForUpdate();}
 setVersion();
