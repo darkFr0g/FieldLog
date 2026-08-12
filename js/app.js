@@ -2355,6 +2355,7 @@ function openMapModal(){
   var sfx=document.getElementById('map-suffix');if(sfx&&!sfx.value.trim())sfx.value='Bronx, NY';
   document.getElementById('map-list').innerHTML=(locs.length?locs:['']).map(function(l){return mapRowHTML(shortAddr(l));}).join('');
   renumberMapStops();
+  renderMapStart();
   document.getElementById('map-modal').style.display='block';
 }
 function closeMapModal(e){if(!e||e.target.classList.contains('modal-overlay'))document.getElementById('map-modal').style.display='none';}
@@ -2373,12 +2374,24 @@ function homeAddr(){return getProfile().home||'93 Hyatt Pl, Yonkers, NY';}
 function getProfile(){return getData('dlr_profile',{name:'Jeremiah Flavin',empNo:'31086',roll:'204',vehicle:'Subaru 2019',plate:'GKE 7821',phone:'347-387-6934',home:'93 Hyatt Pl, Yonkers, NY'});}
 function setProfileField(f,v){var p=getProfile();p[f]=v;setData('dlr_profile',p);syncPushProfile();}
 function renderProfile(){var p=getProfile();['name','empNo','roll','vehicle','plate','phone','home'].forEach(function(f){var el=document.getElementById('prof-'+f);if(el)el.value=p[f]||'';});}
+// Start-point mode: 'home' or 'current'. Omitting the origin makes both Google
+// and Apple Maps start from the device's current location.
+function mapStartMode(){return getData('dlr_map_start','home');}
+function setMapStart(m){setData('dlr_map_start',m);renderMapStart();}
+function renderMapStart(){
+  var cur=mapStartMode()==='current';
+  var txt=document.getElementById('map-start-txt');
+  if(txt)txt.innerHTML=cur?'<b>Start · Current location</b><span>wherever you are when you tap</span>':'<b>Start · Home</b><span id="map-home-addr">'+escHtml(homeAddr())+'</span>';
+  var h=document.getElementById('ms-home'),c=document.getElementById('ms-cur');
+  if(h)h.classList.toggle('active',!cur);if(c)c.classList.toggle('active',cur);
+}
 function openMapsWith(stops){
   stops=(stops||[]).filter(Boolean);
   if(!stops.length){showToast('No stops to map');return;}
   var home=encodeURIComponent(homeAddr());
-  // round trip: home -> all stops as waypoints -> home
-  var url='https://www.google.com/maps/dir/?api=1&travelmode=driving&origin='+home+'&destination='+home+
+  // round trip: (home | current location) -> all stops as waypoints -> home
+  var url='https://www.google.com/maps/dir/?api=1&travelmode=driving'+
+          (mapStartMode()==='current'?'':'&origin='+home)+'&destination='+home+
           '&waypoints='+stops.map(encodeURIComponent).join('|');
   if(stops.length>9)showToast('Many stops — Google caps waypoints (~9)');
   var a=document.createElement('a');a.href=url;a.target='_blank';a.rel='noopener';document.body.appendChild(a);a.click();document.body.removeChild(a);
@@ -2404,7 +2417,7 @@ function openAppleMapsWith(stops){
   if(!stops.length){showToast('No stops to map');return;}
   var home=homeAddr();
   var daddr=stops.concat([home]).map(encodeURIComponent).join('%20to:');
-  var url='https://maps.apple.com/?saddr='+encodeURIComponent(home)+'&daddr='+daddr+'&dirflg=d';
+  var url='https://maps.apple.com/?'+(mapStartMode()==='current'?'':'saddr='+encodeURIComponent(home)+'&')+'daddr='+daddr+'&dirflg=d';
   var a=document.createElement('a');a.href=url;a.target='_blank';a.rel='noopener';document.body.appendChild(a);a.click();document.body.removeChild(a);
 }
 function openAppleMapsRoute(){var stops=mapStopList();if(!stops.length){showToast('Add at least one stop');return;}openAppleMapsWith(stops);}
@@ -2697,7 +2710,7 @@ function showUpdateBanner(){
   b.onclick=function(){checkForUpdate();};
   document.body.appendChild(b);
 }
-var APP_VERSION='v15.2';
+var APP_VERSION='v15.3';
 function setVersion(){var els=document.querySelectorAll('.vbadge,.ver-chip');for(var i=0;i<els.length;i++){els[i].textContent=APP_VERSION;els[i].classList.add('ver-tap');els[i].onclick=verTap;}}
 function verTap(){if(confirm('Check for update?'))checkForUpdate();}
 setVersion();
