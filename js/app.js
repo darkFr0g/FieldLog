@@ -1557,7 +1557,7 @@ function accumulateJobs(){
     if(wo&&!j.wo){j.wo=wo;upd=true;}
     if(upd){j.savedAt=now;changed=true;}
   }
-  (allData.flavin||[]).forEach(function(row,i){add(row,(allData.flavinCompany&&allData.flavinCompany[i])||row._co||'');});
+  // Owned jobs only — covering assignments don't belong in the personal ledger.
   (allData.owned||[]).forEach(function(row){add(row,row._co||'');});
   if(changed){setData('dlr_jobs',jobs);syncPushJobs();}
 }
@@ -2693,7 +2693,7 @@ function showUpdateBanner(){
   b.onclick=function(){checkForUpdate();};
   document.body.appendChild(b);
 }
-var APP_VERSION='v15.0';
+var APP_VERSION='v15.1';
 function setVersion(){var els=document.querySelectorAll('.vbadge,.ver-chip');for(var i=0;i<els.length;i++){els[i].textContent=APP_VERSION;els[i].classList.add('ver-tap');els[i].onclick=verTap;}}
 function verTap(){if(confirm('Check for update?'))checkForUpdate();}
 setVersion();
