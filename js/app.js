@@ -1007,13 +1007,14 @@ function renderCrews(){
     container.innerHTML='<div style="padding:40px 20px;text-align:center;color:var(--ink-4);font-size:14px">No crews yet.<br>Generate from route sheet or tap Add Crew.</div>';
     return;
   }
-  container.innerHTML=currentCrews.map(function(crew){return crewHTML(crew);}).join('')+crewSummaryHTML();
+  container.innerHTML=currentCrews.map(function(crew,i){return crewHTML(crew,i);}).join('')+crewSummaryHTML();
 }
 // Copyable comma-separated WR#/WO# list for the day's jobs (mirrors All jobs footer).
-// Palette used by the crew-card nth-child background/border (c0…c5), so a job's
-// number matches the color of its block whether or not the contractor is themed.
+// ONE color per job position drives the whole block AND its WR#/WO# pill.
+// (Contractor-first coloring made several same-contractor jobs identical while
+// their card backgrounds rotated — pills couldn't match. Pure per-position now.)
 var CREW_PALETTE=['#2563EB','#D97706','#7C3AED','#DC2626','#059669','#DB2777'];
-function crewPillColor(c,idx){return contractorColor(c&&c.contractor)||CREW_PALETTE[idx%6];}
+function crewPillColor(c,idx){return CREW_PALETTE[idx%6];}
 function crewSummaryHTML(){
   function clean(s){return String(s||'').replace(/^\s*W[OR]\s*#?\s*:?\s*/i,'').trim();} // drop leading WO#/WR#
   function pill(v,col){return '<span class="wrwo-pill" style="background:'+col+'">'+escHtml(v)+'</span>';}
@@ -1038,11 +1039,12 @@ function crewSummaryHTML(){
 
 function renderOneCrew(cid){
   // Re-render a single crew card in place, preserving open/closed state
-  var crew=currentCrews.find(function(c){return c.id===cid;});if(!crew)return;
+  var idx=currentCrews.findIndex(function(c){return c.id===cid;});if(idx<0)return;
+  var crew=currentCrews[idx];
   var oldCard=document.getElementById('crew-'+cid);if(!oldCard)return;
   var wasOpen=oldCard.querySelector('.crew-body')&&oldCard.querySelector('.crew-body').classList.contains('open');
   var tmp=document.createElement('div');
-  tmp.innerHTML=crewHTML(crew);
+  tmp.innerHTML=crewHTML(crew,idx);
   var newCard=tmp.firstChild;
   if(wasOpen){
     var body=newCard.querySelector('.crew-body');
@@ -1053,7 +1055,8 @@ function renderOneCrew(cid){
   oldCard.parentNode.replaceChild(newCard,oldCard);
 }
 
-function crewHTML(crew){
+function crewHTML(crew,idx){
+  if(typeof idx!=='number'||idx<0)idx=Math.max(0,currentCrews.indexOf(crew));
   var equipRows=crew.equip.map(function(item,i){
     return '<div class="count-row">'+
       '<span class="count-name count-name-tap" onclick="openSwapPicker(\'equip\','+crew.id+','+i+')">'+escHtml(item.n)+'</span>'+
@@ -1108,9 +1111,10 @@ function crewHTML(crew){
   var metaLine=(leadTags||urg.length||spreadTag)?'<div class="crew-h-meta">'+leadTags+urg.join('')+spreadTag+'</div>':'';
   var wr=[crew.wo,crew.cworxWO].filter(Boolean).join(' · ');
 
-  var coC=contractorColor(crew.contractor),coT=coC?hexToRgba(coC,0.12):'';
-  return '<div class="crew-card" id="crew-'+crew.id+'"'+(coC?' style="border-left-color:'+coC+'"':'')+'>'+
-    '<div class="crew-card-header" onclick="toggleCrew('+crew.id+')"'+(coT?' style="background:'+coT+'"':'')+'>'+
+  // Card border + tint + summary pill all come from the same per-position color.
+  var jobCol=crewPillColor(crew,idx);
+  return '<div class="crew-card" id="crew-'+crew.id+'" style="border-left-color:'+jobCol+';background:'+hexToRgba(jobCol,0.10)+'">'+
+    '<div class="crew-card-header" onclick="toggleCrew('+crew.id+')">'+
       '<div style="flex:1;min-width:0">'+
         '<div class="crew-h-top"><h2>Job '+crew.num+'</h2>'+(wr?'<span class="crew-wr">'+escHtml(wr)+'</span>':'')+routeTag+cwxTag+'</div>'+
         (crew.location?'<div class="crew-loc-line">'+escHtml(shortAddr(crew.location))+'</div>':'')+
@@ -2693,7 +2697,7 @@ function showUpdateBanner(){
   b.onclick=function(){checkForUpdate();};
   document.body.appendChild(b);
 }
-var APP_VERSION='v15.1';
+var APP_VERSION='v15.2';
 function setVersion(){var els=document.querySelectorAll('.vbadge,.ver-chip');for(var i=0;i<els.length;i++){els[i].textContent=APP_VERSION;els[i].classList.add('ver-tap');els[i].onclick=verTap;}}
 function verTap(){if(confirm('Check for update?'))checkForUpdate();}
 setVersion();
