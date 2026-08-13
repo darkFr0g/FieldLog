@@ -160,6 +160,8 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
 .cont-chip:active{background:#f3e0c0}
 .hp-chip{display:inline-flex;align-items:center;gap:5px;background:var(--blue-bg);color:var(--blue-text);font-size:12px;font-weight:800;padding:5px 12px;border-radius:var(--radius-xs);border:2px solid var(--blue-bd);min-height:34px;cursor:pointer;font-family:var(--font);letter-spacing:.02em}
 .hp-chip:active{opacity:.75}
+/* Inactive hold point — album generator still tappable, styled muted/dashed */
+.hp-chip-off{background:var(--surface);color:var(--ink-3);border:2px dashed var(--border-mid);font-weight:700}
 .cont-saved{margin-bottom:14px}
 .cont-saved-toggle{width:100%;display:flex;align-items:center;gap:8px;background:var(--surface-2);border:1.5px solid var(--border);border-radius:8px;padding:10px 12px;font-family:var(--font);font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-2);cursor:pointer}
 .cont-saved-toggle .cs-ct{background:#111;color:#fff;border-radius:999px;font-size:11px;padding:1px 8px}

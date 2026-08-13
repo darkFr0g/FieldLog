@@ -709,11 +709,13 @@ function renderFlavinJobs(jobs){
       var contIdx=window._contData.push({num:cn||'',layout:wo||'',code:c7||'',contractor:co||'',location:(loc==='—'?'':loc),inspector:allData.name})-1;
       contTag='<button class="cont-chip" onclick="openContingencyRoute('+contIdx+')">⚠ '+escHtml(cn||'Contingency')+' →</button>';
     }
+    // Album generator works regardless of whether the sheet flags a hold point
+    // (the album name only needs date + ticket/WO + location).
     var hpTag;
+    var hpIdx=window._hpData.push({date:allData.routeDate||today(),ticket:tk||'',wo:wo||'',location:(loc==='—'?'':loc),hp:hp})-1;
     if(isActive(hp)){
-      var hpIdx=window._hpData.push({date:allData.routeDate||today(),ticket:tk||'',wo:wo||'',location:(loc==='—'?'':loc),hp:hp})-1;
       hpTag='<button class="hp-chip" onclick="holdPointAlbum('+hpIdx+')">📷 Hold Point: '+escHtml(hp)+'</button>';
-    }else hpTag='<span class="status-off">Hold Point: No</span>';
+    }else hpTag='<button class="hp-chip hp-chip-off" onclick="holdPointAlbum('+hpIdx+')">📷 Hold Point: No</button>';
     var fuseTag=isActive(fz)?('<span class="b-fuse">Pressure Test: '+escHtml(fz)+'</span>'):'<span class="status-off">Pressure Test: No</span>';
     var coColor=contractorColor(co);
     var coTint=coColor?hexToRgba(coColor,0.12):'';
@@ -1093,7 +1095,7 @@ function crewHTML(crew,idx){
     '<span class="status-off">Contingency: No</span>';
   var hpBadge=isActive(crew.holdPoint)?
     '<button class="hp-chip" onclick="event.stopPropagation();holdPointAlbumCrew('+crew.id+')">📷 Hold Point: '+escHtml(crew.holdPoint)+'</button>':
-    '<span class="status-off">Hold Point: No</span>';
+    '<button class="hp-chip hp-chip-off" onclick="event.stopPropagation();holdPointAlbumCrew('+crew.id+')">📷 Hold Point: No</button>';
   var leadTags=(crew.leads&&crew.leads.length)?
     crew.leads.map(function(l){var lbl=leadTypeLabel(l.type);return '<span class="lead-tag lead-tap lead-'+l.type+'" data-fn="'+escHtml(l.name)+'" data-fi="'+escHtml(l.its||'')+'" data-tk="'+escHtml(crew.wo||'')+'" onclick="event.stopPropagation();openForemanJobs(this.getAttribute(\'data-fn\'),this.getAttribute(\'data-fi\'),this.getAttribute(\'data-tk\'))">'+(l.its?'<b class="lead-its">'+escHtml(l.its)+'</b>':'')+escHtml(l.name)+(lbl?'<i>'+lbl+'</i>':'')+'</span>';}).join(''):'';
   // Does this crew's foreman(s) appear on other jobs (covered by me or another CR)?
@@ -2719,7 +2721,7 @@ function showUpdateBanner(){
   b.onclick=function(){checkForUpdate();};
   document.body.appendChild(b);
 }
-var APP_VERSION='v15.5';
+var APP_VERSION='v15.6';
 function setVersion(){var els=document.querySelectorAll('.vbadge,.ver-chip');for(var i=0;i<els.length;i++){els[i].textContent=APP_VERSION;els[i].classList.add('ver-tap');els[i].onclick=verTap;}}
 function verTap(){if(confirm('Check for update?'))checkForUpdate();}
 setVersion();
