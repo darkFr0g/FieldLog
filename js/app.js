@@ -2221,6 +2221,18 @@ function composeContingencyEmail(){
   var url='mailto:?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(buildContingencyBody());
   var a=document.createElement('a');a.href=url;document.body.appendChild(a);a.click();document.body.removeChild(a);
 }
+// Compose in Outlook specifically (skips the OS default-mail handler):
+// iOS → the Outlook app's ms-outlook:// scheme; desktop → the new-Outlook
+// (outlook.office.com) compose deep link in the browser.
+function composeContingencyOutlook(){
+  var subject=encodeURIComponent(getContVal('cont-subject'));
+  var body=encodeURIComponent(buildContingencyBody());
+  var url=isIOS()
+    ?('ms-outlook://compose?subject='+subject+'&body='+body)
+    :('https://outlook.office.com/mail/deeplink/compose?subject='+subject+'&body='+body);
+  var a=document.createElement('a');a.href=url;if(!isIOS()){a.target='_blank';a.rel='noopener';}
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+}
 // ── Bold HTML version (for "Copy formatted") ─────────────────────
 // mailto bodies are plain text and can't carry bold, so the formatted copy
 // puts rich text/html on the clipboard; pasting into Mail/OneNote keeps the
@@ -2707,7 +2719,7 @@ function showUpdateBanner(){
   b.onclick=function(){checkForUpdate();};
   document.body.appendChild(b);
 }
-var APP_VERSION='v15.4';
+var APP_VERSION='v15.5';
 function setVersion(){var els=document.querySelectorAll('.vbadge,.ver-chip');for(var i=0;i<els.length;i++){els[i].textContent=APP_VERSION;els[i].classList.add('ver-tap');els[i].onclick=verTap;}}
 function verTap(){if(confirm('Check for update?'))checkForUpdate();}
 setVersion();
