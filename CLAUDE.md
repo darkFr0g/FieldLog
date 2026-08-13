@@ -306,6 +306,13 @@ into `.claude/launch.json` for the preview tool on port 8123. Node/Python are no
 installed on the dev machine (Windows); icon generation uses .NET `System.Drawing`
 via PowerShell.
 
+## Other AI assistants
+
+**`AGENTS.md`** (repo root) is the handoff / working agreement for any AI
+assistant — ChatGPT/Codex reads it automatically the way Claude reads this
+file. Keep the two consistent: `CLAUDE.md` = full project brief, `AGENTS.md` =
+rules of engagement + pointers here.
+
 ## How we work together (sessions & memory)
 
 This brief is written here on purpose: **`CLAUDE.md` is committed to the repo, so
