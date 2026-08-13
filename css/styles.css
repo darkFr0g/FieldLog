@@ -168,7 +168,8 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
 #cont-saved-list{margin-top:8px;display:flex;flex-direction:column;gap:6px}
 .cs-item{display:flex;align-items:stretch;gap:8px;border:1.5px solid var(--border);border-radius:8px;overflow:hidden}
 .cs-main{flex:1;min-width:0;padding:9px 12px;cursor:pointer;background:var(--surface)}
-.cs-main:active{background:var(--surface-2)}
+#cont-saved-list .cs-item:nth-child(even) .cs-main{background:var(--surface-2)}
+.cs-main:active{background:var(--border)}
 .cs-label{font-size:14px;font-weight:800;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cs-when{font-size:11px;color:var(--ink-4);margin-top:1px}
 .cs-del{border:none;background:var(--surface-2);color:var(--red);font-size:20px;width:40px;flex-shrink:0;cursor:pointer;font-weight:700}

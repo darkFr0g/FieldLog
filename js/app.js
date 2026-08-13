@@ -2184,8 +2184,6 @@ function excLinePlain(p){
 // Lowercase only the first character (so it reads after "will be …") — keeps
 // acronyms like XHP / IP-9 intact, unlike a blanket toLowerCase().
 function lcFirst(s){s=String(s||'');return s?s.charAt(0).toLowerCase()+s.slice(1):s;}
-// Compact email signature (name + title/company + phone·email on one line).
-function contactSig(){var p=getProfile();return {name:p.name||'Jeremiah Flavin',lines:['Construction Representative L1-2','Consolidated Edison of NY','Phone: '+(p.phone||'347-387-6934'),'Email: flavinj@coned.com']};}
 function buildContingencyBody(){
   var num=getContVal('cont-num'),layout=getContVal('cont-layout'),code=getContVal('cont-code'),
       contractor=getContVal('cont-contractor'),scope=lcFirst(getContVal('cont-scope')),
@@ -2207,17 +2205,17 @@ function buildContingencyBody(){
   L.push('');
   if(comments){L.push(comments);L.push('');}
   L.push('I, '+insp+', am on location');
-  var sig=contactSig();L.push('');L.push(sig.name);sig.lines.forEach(function(x){L.push(x);});
   return L.join('\n');
 }
-// Quick-insert the standard closing line into Additional comments (it renders bold).
-function addNoExcavation(){
+// Quick-insert standard lines into Additional comments (they render bold).
+function addCommentPhrase(phrase){
   var el=document.getElementById('cont-comments');if(!el)return;
-  var phrase='NO ADDITIONAL EXCAVATION REQUIRED!';
   if(el.value.indexOf(phrase)!==-1){el.focus();return;}
   var v=el.value.replace(/\s+$/,'');
   el.value=v?(v+'\n'+phrase):phrase;
 }
+function addNoExcavation(){addCommentPhrase('NO ADDITIONAL EXCAVATION REQUIRED!');}
+function addCorrosionAware(){addCommentPhrase('Corrosion is aware of the exposure.');}
 function composeContingencyEmail(){
   var subject=getContVal('cont-subject');
   var url='mailto:?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(buildContingencyBody());
@@ -2282,7 +2280,6 @@ function buildContingencyHTML(){
   if(comments)body.push('<b>'+bcEsc(comments).replace(/\n/g,'<br>')+'</b>');
   body.push('');
   body.push('I, '+bcEsc(insp)+', am on location');
-  var sig=contactSig();body.push('');body.push('<b>'+bcEsc(sig.name)+'</b>');sig.lines.forEach(function(x){body.push(bcEsc(x));});
   return head+'<br><br>────────────────────<br><br>'+body.join('<br>');
 }
 function copyContingencyReport(){
@@ -2710,7 +2707,7 @@ function showUpdateBanner(){
   b.onclick=function(){checkForUpdate();};
   document.body.appendChild(b);
 }
-var APP_VERSION='v15.3';
+var APP_VERSION='v15.4';
 function setVersion(){var els=document.querySelectorAll('.vbadge,.ver-chip');for(var i=0;i<els.length;i++){els[i].textContent=APP_VERSION;els[i].classList.add('ver-tap');els[i].onclick=verTap;}}
 function verTap(){if(confirm('Check for update?'))checkForUpdate();}
 setVersion();
