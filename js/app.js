@@ -1700,11 +1700,31 @@ function openJobDetail(key){
   if(legacy.length)html+='<div class="jf-group"><div class="jf-gtitle">Previous fields</div>'+
     legacy.map(function(r){return '<div class="jf-row"><label>'+escHtml(r[1])+'</label><input id="jf-'+r[0]+'" class="field-input" value="'+escHtml(f[r[0]])+'"></div>';}).join('')+'</div>';
   document.getElementById('job-fields').innerHTML=html;
+  var st=document.getElementById('job-autosave');if(st)st.textContent='Autosaves as you type';
   setJobTab(getData('dlr_job_tab','cut'));
   var fb=document.getElementById('job-finish-btn');if(fb)fb.textContent=(j.status==='done'?'Reopen (back to Active)':'Mark finished →');
   document.getElementById('job-modal').style.display='block';
 }
 function collectJobFields(){var f={};document.querySelectorAll('#job-fields input[id^="jf-"]').forEach(function(el){f[el.id.slice(3)]=el.value.trim();});return f;}
+// ── FIELD DATA AUTOSAVE (debounced on every keystroke; flushed on close) ──
+var _jobAutoTimer=null;
+function jobAutosaveNow(){
+  clearTimeout(_jobAutoTimer);
+  if(!window._jobKey)return;
+  var jobs=getJobs(),j=jobs[window._jobKey];if(!j||j.deleted)return;
+  var host=document.getElementById('job-fields');if(!host||!host.querySelector('input'))return;
+  j.field=collectJobFields();j.savedAt=new Date().toISOString();
+  setData('dlr_jobs',jobs);syncPushJobs();
+  var st=document.getElementById('job-autosave');
+  if(st)st.textContent='Autosaved '+new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+}
+(function(){
+  var host=document.getElementById('job-fields');
+  if(host)host.addEventListener('input',function(){
+    clearTimeout(_jobAutoTimer);
+    _jobAutoTimer=setTimeout(jobAutosaveNow,600);
+  });
+})();
 function saveJobDetail(){
   var key=window._jobKey,jobs=getJobs(),j=jobs[key];if(!j)return;
   j.field=collectJobFields();j.savedAt=new Date().toISOString();
@@ -1724,9 +1744,10 @@ function deleteJobConfirm(){
   if(!confirm('Delete this job and its field data?'))return;
   jobs[key]={key:key,deleted:true,savedAt:new Date().toISOString()};
   setData('dlr_jobs',jobs);syncPushJobs();
+  window._jobKey=null;clearTimeout(_jobAutoTimer);
   document.getElementById('job-modal').style.display='none';renderJobs();
 }
-function closeJobModal(e){if(e&&!e.target.classList.contains('modal-overlay'))return;document.getElementById('job-modal').style.display='none';}
+function closeJobModal(e){if(e&&!e.target.classList.contains('modal-overlay'))return;jobAutosaveNow();document.getElementById('job-modal').style.display='none';renderJobs();}
 // Manually add a job (route sheet missing/broken).
 function openAddJob(){['nj-loc','nj-wr','nj-wo','nj-co'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});document.getElementById('addjob-modal').style.display='block';}
 function closeAddJob(e){if(e&&!e.target.classList.contains('modal-overlay'))return;document.getElementById('addjob-modal').style.display='none';}
@@ -2090,6 +2111,7 @@ function openContingencyModal(p){
   var subj='Contingency'+(p.num?' - '+p.num:'')+(p.location?' - '+p.location:'');
   setContVal('cont-subject',subj);
   renderContSaved();
+  updateContDraftBar();
   document.getElementById('cont-modal').style.display='block';
 }
 function closeContModal(e){if(!e||e.target.classList.contains('modal-overlay'))document.getElementById('cont-modal').style.display='none';}
@@ -2130,6 +2152,35 @@ function applyCont(o){
   updateExc2Visibility();
 }
 function getCont(){return getData('dlr_contingencies',{});}
+// ── CONTINGENCY AUTOSAVE (working draft; offer restore on next open) ──
+var _contAutoTimer=null;
+(function(){
+  var form=document.querySelector('#cont-modal .cont-form');
+  if(form)form.addEventListener('input',function(){
+    clearTimeout(_contAutoTimer);
+    _contAutoTimer=setTimeout(function(){
+      setData('dlr_cont_working',{at:new Date().toISOString(),data:serializeCont()});
+    },600);
+  });
+})();
+function contDraftMeaningful(d){
+  return ['cont-scope','cont-dim-l','cont-dim-w','cont-dim-d','cont-pin1-dist','cont-comments','cont-num'].some(function(k){return (d[k]||'').length;})||
+    ((d.fac||[]).some(function(x){return (x.desc||'').length;}));
+}
+function updateContDraftBar(){
+  var bar=document.getElementById('cont-draft-bar');if(!bar)return;
+  var w=getData('dlr_cont_working',null);
+  var show=w&&w.data&&contDraftMeaningful(w.data);
+  bar.style.display=show?'flex':'none';
+  if(show){var t=document.getElementById('cont-draft-when');if(t)t.textContent=new Date(w.at).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});}
+}
+function restoreContDraft(){
+  var w=getData('dlr_cont_working',null);if(!w||!w.data)return;
+  applyCont(w.data);
+  var bar=document.getElementById('cont-draft-bar');if(bar)bar.style.display='none';
+  showToast('Unsaved work restored');
+}
+function dismissContDraft(){try{localStorage.removeItem('dlr_cont_working');}catch(e){}var bar=document.getElementById('cont-draft-bar');if(bar)bar.style.display='none';}
 function saveContingency(){
   var data=serializeCont();
   var num=(data['cont-num']||'').trim();
@@ -2137,7 +2188,9 @@ function saveContingency(){
   var ref=data['cont-pin1-ref']||data['cont-pin2-ref']||'';
   var all=getCont();
   all[id]={id:id,savedAt:new Date().toISOString(),label:(num||'Contingency')+(ref?' · '+ref:''),data:data};
-  setData('dlr_contingencies',all);syncPushContingencies();renderContSaved();showToast('Contingency saved for later');
+  setData('dlr_contingencies',all);syncPushContingencies();renderContSaved();
+  dismissContDraft(); // safely stored now — the working draft has served its purpose
+  showToast('Contingency saved for later');
 }
 function loadContingency(id){var e=getCont()[id];if(e&&e.data&&!e.deleted){applyCont(e.data);showToast('Loaded — edit & send as needed');}}
 function deleteContingency(id){
@@ -2824,7 +2877,7 @@ function showUpdateBanner(){
   b.onclick=function(){checkForUpdate();};
   document.body.appendChild(b);
 }
-var APP_VERSION='v16.0';
+var APP_VERSION='v16.1';
 function setVersion(){var els=document.querySelectorAll('.vbadge,.ver-chip');for(var i=0;i<els.length;i++){els[i].textContent=APP_VERSION;els[i].classList.add('ver-tap');els[i].onclick=verTap;}}
 function verTap(){if(confirm('Check for update?'))checkForUpdate();}
 setVersion();

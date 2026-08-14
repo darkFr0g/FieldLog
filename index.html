@@ -398,7 +398,8 @@
         <div class="modal-title" id="job-title">Job</div>
         <button onclick="closeJobModal()" style="background:none;border:none;font-size:24px;color:var(--ink-3);cursor:pointer;line-height:1">×</button>
       </div>
-      <div id="job-sub" style="font-size:12px;color:var(--ink-3);margin-bottom:14px"></div>
+      <div id="job-sub" style="font-size:12px;color:var(--ink-3)"></div>
+      <div id="job-autosave" class="autosave-tag"></div>
       <div id="job-fields"></div>
       <div style="display:flex;flex-direction:column;gap:8px;margin-top:16px">
         <button type="button" class="btn btn-green" style="justify-content:center" onclick="saveJobDetail()">Save field data</button>
@@ -421,6 +422,11 @@
       <div class="cont-saved">
         <button type="button" class="cont-saved-toggle" onclick="toggleContSaved()">Saved contingencies <span class="cs-ct" id="cont-saved-ct">0</span><span class="cs-chev" id="cont-saved-chev">⌄</span></button>
         <div id="cont-saved-list" style="display:none"></div>
+      </div>
+      <div id="cont-draft-bar" style="display:none">
+        <span>Unsaved work from <b id="cont-draft-when"></b></span>
+        <button type="button" onclick="restoreContDraft()">Restore</button>
+        <button type="button" class="cdb-x" onclick="dismissContDraft()">×</button>
       </div>
       <form class="cont-form" onsubmit="return false">
         <div class="cont-field"><label>Subject</label><input id="cont-subject" class="field-input" enterkeyhint="next" autocapitalize="words"></div>

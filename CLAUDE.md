@@ -26,7 +26,10 @@ for more; Field Measurements live on the Service tab (`JOB_FIELDS_CUT`/`_SVC`; o
 Main/Cover/Service/Customer POE render as
 "Previous fields" only when they hold data). The top section auto-populates
 from the job + route (`jobPrefill`: contractor, foreman, house/street/cross
-streets parsed from location) — all editable.
+streets parsed from location) — all editable. **Field Data autosaves** on every
+keystroke (debounced, flushed on close — `jobAutosaveNow`); the contingency
+form autosaves a working draft (`dlr_cont_working`) with a Restore bar on
+reopen, cleared by an explicit save.
 "Mark finished" moves a job to **Completed** (its own pile — NOT the daily-log History
 tab). Syncs via `meta/jobs` (merge newest-wins). Jobs accumulate in `accumulateJobs()`
 on route load.
