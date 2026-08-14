@@ -1538,12 +1538,43 @@ function contCount(){var all=getCont();return Object.keys(all).filter(function(k
 function updateContCount(){var el=document.getElementById('cont-saved-count');if(el)el.textContent=contCount()+' →';}
 // ── JOBS LEDGER (persistent assigned jobs + permanent field/cut data) ──
 // Field Data schema mirrors the user's "Field Data" cut sheet.
+// Schema mirrors the user's cut-sheet workbook (column A of Book_1.xlsx).
 var JOB_FIELDS=[
   {group:'Location / Crew',rows:[['contractor','Contractor'],['foreman','Foreman'],['mechanic','Mechanic']]},
-  {group:'Address',rows:[['houseNo','House No'],['streetName','Street Name'],['leftCross','Left Cross Street'],['rightCross','Right Cross Street']]},
-  {group:'Field Measurements',rows:[['poe','POE (LRW/RLW)'],['clToPl','CL to PL'],['plToBl','PL to BL'],['clToBl','CL to BL'],['main','Main'],['cover','Cover'],['service','Service'],['streetWidth','Street Width'],['mainConn','Main Connection'],['custPoe','Customer POE']]},
-  {group:'Cuts',rows:[['cut1','Cut 1'],['cut2','Cut 2'],['cut3','Cut 3'],['cut4','Cut 4'],['cut5','Cut 5']]}
+  {group:'Location Info',rows:[['houseNo','House No'],['streetName','Street Name'],['leftCross','Left Cross Street'],['rightCross','Right Cross Street']]},
+  {group:'Field Measurements',rows:[['poe','POE (LRW/RLW)'],['clToPl','CL to PL'],['plToBl','PL to BL'],['clToBl','CL to BL']]},
+  {group:'Installation Measurements',rows:[['clToCv','CL to CV'],['cvToPl','CV to PL'],['plToPoe','PL to POE'],['poeHosToBl','POE/HOS to BL'],['cvToBl','CV to BL']]},
+  {group:'Gas Main Information',rows:[['mainToCl','Main to CL'],['oppClToMain','Opp CL to Main'],['mainToPl','Main to PL'],['mainToBl','Main to BL'],['mainToCv','Main to CV'],['pinpointPoe','Pinpoint (Corner to POE)']]},
+  {group:'Cover',rows:[['mainCover','Main Cover'],['svcCoverSt1','Service Cover (Street 1)'],['svcCoverSt2','Service Cover (Street 2)'],['svcCoverSt3','Service Cover (Street 3)'],['svcCoverSw1','Service Cover (SW 1)'],['svcCoverSw2','Service Cover (SW 2)'],['svcCoverProp','Service Cover (Property)']]},
+  {group:'Gas Service Information',rows:[['serviceSize','Service Size'],['serviceLength','Service Length'],['cv','CV'],['streetWidth','Street Width'],['meterLocation','Meter Location'],['serviceInfoLength','Service Info Length'],['mainInfo','Main Info'],['mainConn','Main Connection']]},
+  {group:'Misc',rows:[['misc1','Misc 1'],['misc2','Misc 2'],['misc3','Misc 3']]}
 ];
+// Fields from the earlier schema no longer in the sheet — shown only when they
+// already hold data, so nothing previously entered disappears.
+var LEGACY_JOB_FIELDS=[['main','Main'],['cover','Cover'],['service','Service'],['custPoe','Customer POE'],['cut1','Cut 1'],['cut2','Cut 2'],['cut3','Cut 3'],['cut4','Cut 4'],['cut5','Cut 5']];
+// Auto-populate the top section from what the app already knows (all editable).
+function jobPrefill(j){
+  var p={contractor:j.contractor||''};
+  try{
+    var k=jobKey(j.ticket,j.wo);
+    ((allData&&allData.allJobs)||[]).some(function(x){
+      if(jobKey(x.ticket,x.wo)===k&&x.foreman){p.foreman=x.foreman;return true;}
+      return false;
+    });
+  }catch(e){}
+  var loc=String(j.location||'').trim().replace(/\s*-\s*BX-\S+\s*$/i,'');
+  var rest=loc;
+  var m=loc.match(/^(\d+[A-Za-z]?)\s+(.*)$/);
+  if(m){p.houseNo=m[1];rest=m[2];}
+  var btw=rest.match(/^(.*?)\s+(?:btw|between)\s+(.*?)\s+(?:&|and)\s+(.*)$/i);
+  if(btw){p.streetName=btw[1].trim();p.leftCross=btw[2].trim();p.rightCross=btw[3].trim();}
+  else{
+    var amp=rest.split(/\s*(?:&|@)\s*|\s+and\s+/i).filter(Boolean);
+    p.streetName=(amp[0]||rest).trim();
+    if(!m&&amp.length>1)p.leftCross=amp[1].trim();
+  }
+  return p;
+}
 function getJobs(){return getData('dlr_jobs',{});}
 function jobKey(tk,wo){var s=cleanTicket(tk||'')||String(wo||'');return s.replace(/\s+/g,'').toUpperCase();}
 // Accumulate the inspector's covering + owned jobs from the loaded route into the ledger.
@@ -1598,14 +1629,20 @@ function openJobDetail(key){
   var j=getJobs()[key];if(!j||j.deleted)return;window._jobKey=key;
   document.getElementById('job-title').textContent=j.location||'Job';
   document.getElementById('job-sub').textContent=[j.ticket&&('WR# '+j.ticket),j.wo&&('WO# '+j.wo)].filter(Boolean).join('  ·  ')||'No WR/WO#';
-  document.getElementById('job-fields').innerHTML=JOB_FIELDS.map(function(g){
+  var f=j.field||{},pre=jobPrefill(j);
+  function val(k){return f[k]||pre[k]||'';} // saved value wins; prefill only fills blanks
+  var html=JOB_FIELDS.map(function(g){
     return '<div class="jf-group"><div class="jf-gtitle">'+escHtml(g.group)+'</div>'+
-      g.rows.map(function(r){return '<div class="jf-row"><label>'+escHtml(r[1])+'</label><input id="jf-'+r[0]+'" class="field-input" value="'+escHtml((j.field&&j.field[r[0]])||'')+'"></div>';}).join('')+'</div>';
+      g.rows.map(function(r){return '<div class="jf-row"><label>'+escHtml(r[1])+'</label><input id="jf-'+r[0]+'" class="field-input" value="'+escHtml(val(r[0]))+'"></div>';}).join('')+'</div>';
   }).join('');
+  var legacy=LEGACY_JOB_FIELDS.filter(function(r){return f[r[0]];});
+  if(legacy.length)html+='<div class="jf-group"><div class="jf-gtitle">Previous fields</div>'+
+    legacy.map(function(r){return '<div class="jf-row"><label>'+escHtml(r[1])+'</label><input id="jf-'+r[0]+'" class="field-input" value="'+escHtml(f[r[0]])+'"></div>';}).join('')+'</div>';
+  document.getElementById('job-fields').innerHTML=html;
   var fb=document.getElementById('job-finish-btn');if(fb)fb.textContent=(j.status==='done'?'Reopen (back to Active)':'Mark finished →');
   document.getElementById('job-modal').style.display='block';
 }
-function collectJobFields(){var f={};JOB_FIELDS.forEach(function(g){g.rows.forEach(function(r){var el=document.getElementById('jf-'+r[0]);if(el)f[r[0]]=el.value.trim();});});return f;}
+function collectJobFields(){var f={};document.querySelectorAll('#job-fields input[id^="jf-"]').forEach(function(el){f[el.id.slice(3)]=el.value.trim();});return f;}
 function saveJobDetail(){
   var key=window._jobKey,jobs=getJobs(),j=jobs[key];if(!j)return;
   j.field=collectJobFields();j.savedAt=new Date().toISOString();
@@ -1651,7 +1688,7 @@ function buildJobText(loc,ticket,wo,field){
   L.push('Field Data — '+(loc||'Job'));
   var ids=[ticket&&('WR# '+ticket),wo&&('WO# '+wo)].filter(Boolean).join('   ');
   if(ids)L.push(ids);
-  JOB_FIELDS.forEach(function(g){
+  JOB_FIELDS.concat([{group:'Previous fields',rows:LEGACY_JOB_FIELDS}]).forEach(function(g){
     var lines=g.rows.filter(function(r){return f[r[0]];}).map(function(r){return r[1]+': '+f[r[0]];});
     if(lines.length){L.push('');L.push(g.group.toUpperCase());lines.forEach(function(x){L.push(x);});}
   });
@@ -2721,7 +2758,7 @@ function showUpdateBanner(){
   b.onclick=function(){checkForUpdate();};
   document.body.appendChild(b);
 }
-var APP_VERSION='v15.6';
+var APP_VERSION='v15.7';
 function setVersion(){var els=document.querySelectorAll('.vbadge,.ver-chip');for(var i=0;i<els.length;i++){els[i].textContent=APP_VERSION;els[i].classList.add('ver-tap');els[i].onclick=verTap;}}
 function verTap(){if(confirm('Check for update?'))checkForUpdate();}
 setVersion();

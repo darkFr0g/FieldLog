@@ -15,9 +15,13 @@ screen as a PWA. **Primary device is an iPhone** — optimize for that.
 ### Tools inside the app (5 nav tabs: Route / Day / Jobs / History / Settings)
 **Jobs** = a persistent ledger of the inspector's assigned jobs (covering + owned),
 accumulated across every loaded route sheet, deduped by WR#/WO# (`dlr_jobs`, keyed by
-`jobKey`). Active/Completed sub-tabs; each job holds permanent **Field Data** (the
-user's cut sheet: Location/Crew, Address, Field Measurements incl. POE/CL·PL·BL/Main/
-Cover/Service/Street Width/Main Connection/Customer POE, and Cut 1–5 — see `JOB_FIELDS`).
+`jobKey`). Active/Completed sub-tabs; each job holds permanent **Field Data** — the
+user's cut-sheet workbook (Book_1.xlsx col A): Location/Crew, Location Info,
+Field Measurements, Installation Measurements, Gas Main Information, Cover,
+Gas Service Information, Misc (see `JOB_FIELDS`; old Cut 1–5 etc. render as
+"Previous fields" only when they hold data). The top section auto-populates
+from the job + route (`jobPrefill`: contractor, foreman, house/street/cross
+streets parsed from location) — all editable.
 "Mark finished" moves a job to **Completed** (its own pile — NOT the daily-log History
 tab). Syncs via `meta/jobs` (merge newest-wins). Jobs accumulate in `accumulateJobs()`
 on route load.
