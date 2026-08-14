@@ -185,6 +185,8 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
 .jr-meta{display:flex;flex-wrap:wrap;gap:4px 10px;margin-top:3px;font-size:12px;color:var(--ink-3);font-family:var(--font-mono)}
 .jr-flag{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--green-text);background:var(--green-bg);padding:1px 6px;border-radius:4px;font-family:var(--font)}
 .jr-chev{font-size:20px;color:var(--ink-4);flex-shrink:0}
+.jobtab-seg{display:flex;width:100%;margin:2px 0 14px}
+.jobtab-seg .seg-btn{flex:1;padding:10px;font-size:13px}
 .jf-group{margin-bottom:14px}
 .jf-gtitle{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-4);margin-bottom:6px;padding-bottom:4px;border-bottom:1.5px solid var(--border)}
 .jf-row{display:flex;align-items:center;gap:10px;margin-bottom:6px}

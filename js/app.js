@@ -1538,21 +1538,39 @@ function contCount(){var all=getCont();return Object.keys(all).filter(function(k
 function updateContCount(){var el=document.getElementById('cont-saved-count');if(el)el.textContent=contCount()+' →';}
 // ── JOBS LEDGER (persistent assigned jobs + permanent field/cut data) ──
 // Field Data schema mirrors the user's "Field Data" cut sheet.
-// Schema mirrors the user's cut-sheet workbook (column A of Book_1.xlsx).
-var JOB_FIELDS=[
-  {group:'Job Info',rows:[['msPlate','M&S Plate'],['project','Project']]},
-  {group:'Location / Crew',rows:[['contractor','Contractor'],['foreman','Foreman'],['mechanic','Mechanic']]},
-  {group:'Location Info',rows:[['houseNo','House No'],['streetName','Street Name'],['leftCross','Left Cross Street'],['rightCross','Right Cross Street']]},
+// Field Data is split into two tabs: Cut Info (foreman's excavation work) and
+// Service Info (mechanic's install work — column A of Book_1.xlsx). The shared
+// job/address section sits above the tabs.
+var JOB_FIELDS_COMMON=[
+  {group:'Job Info',rows:[['msPlate','M&S Plate'],['project','Project'],['contractor','Contractor']]},
+  {group:'Location Info',rows:[['houseNo','House No'],['streetName','Street Name'],['leftCross','Left Cross Street'],['rightCross','Right Cross Street']]}
+];
+var JOB_FIELDS_CUT=[
+  {group:'Cut Crew',rows:[['foreman','Foreman']]},
   {group:'Field Measurements',rows:[['poe','POE (LRW/RLW)'],['clToPl','CL to PL'],['plToBl','PL to BL'],['clToBl','CL to BL']]},
+  {group:'Cuts',rows:[['cut1','Cut 1'],['cut2','Cut 2'],['cut3','Cut 3'],['cut4','Cut 4'],['cut5','Cut 5']]}
+];
+var JOB_FIELDS_SVC=[
+  {group:'Service Crew',rows:[['mechanic','Mechanic']]},
   {group:'Installation Measurements',rows:[['clToCv','CL to CV'],['cvToPl','CV to PL'],['plToPoe','PL to POE'],['poeHosToBl','POE/HOS to BL'],['cvToBl','CV to BL']]},
   {group:'Gas Main Information',rows:[['mainToCl','Main to CL'],['oppClToMain','Opp CL to Main'],['mainToPl','Main to PL'],['mainToBl','Main to BL'],['mainToCv','Main to CV'],['pinpointPoe','Pinpoint (Corner to POE)']]},
   {group:'Cover',rows:[['mainCover','Main Cover'],['svcCoverSt1','Service Cover (Street 1)'],['svcCoverSt2','Service Cover (Street 2)'],['svcCoverSt3','Service Cover (Street 3)'],['svcCoverSw1','Service Cover (SW 1)'],['svcCoverSw2','Service Cover (SW 2)'],['svcCoverProp','Service Cover (Property)']]},
   {group:'Gas Service Information',rows:[['serviceSize','Service Size'],['serviceLength','Service Length'],['cv','CV'],['streetWidth','Street Width'],['meterLocation','Meter Location'],['serviceInfoLength','Service Info Length'],['mainInfo','Main Info'],['mainConn','Main Connection']]},
   {group:'Misc',rows:[['misc1','Misc 1'],['misc2','Misc 2'],['misc3','Misc 3']]}
 ];
+var JOB_FIELDS=JOB_FIELDS_COMMON.concat(JOB_FIELDS_CUT,JOB_FIELDS_SVC);
 // Fields from the earlier schema no longer in the sheet — shown only when they
 // already hold data, so nothing previously entered disappears.
-var LEGACY_JOB_FIELDS=[['main','Main'],['cover','Cover'],['service','Service'],['custPoe','Customer POE'],['cut1','Cut 1'],['cut2','Cut 2'],['cut3','Cut 3'],['cut4','Cut 4'],['cut5','Cut 5']];
+var LEGACY_JOB_FIELDS=[['main','Main'],['cover','Cover'],['service','Service'],['custPoe','Customer POE']];
+function setJobTab(t){
+  setData('dlr_job_tab',t);
+  var c=document.getElementById('jobtab-cut'),s=document.getElementById('jobtab-svc');
+  if(c)c.style.display=(t==='svc')?'none':'block';
+  if(s)s.style.display=(t==='svc')?'block':'none';
+  var bc=document.getElementById('jt-cut'),bs=document.getElementById('jt-svc');
+  if(bc)bc.classList.toggle('active',t!=='svc');
+  if(bs)bs.classList.toggle('active',t==='svc');
+}
 // Auto-populate the top section from what the app already knows (all editable).
 function jobPrefill(j){
   var p={contractor:j.contractor||''};
@@ -1632,14 +1650,19 @@ function openJobDetail(key){
   document.getElementById('job-sub').textContent=[j.ticket&&('WR# '+j.ticket),j.wo&&('WO# '+j.wo)].filter(Boolean).join('  ·  ')||'No WR/WO#';
   var f=j.field||{},pre=jobPrefill(j);
   function val(k){return f[k]||pre[k]||'';} // saved value wins; prefill only fills blanks
-  var html=JOB_FIELDS.map(function(g){
+  function groupsHTML(groups){return groups.map(function(g){
     return '<div class="jf-group"><div class="jf-gtitle">'+escHtml(g.group)+'</div>'+
       g.rows.map(function(r){return '<div class="jf-row"><label>'+escHtml(r[1])+'</label><input id="jf-'+r[0]+'" class="field-input" value="'+escHtml(val(r[0]))+'"></div>';}).join('')+'</div>';
-  }).join('');
+  }).join('');}
+  var html=groupsHTML(JOB_FIELDS_COMMON)+
+    '<div class="seg jobtab-seg"><button type="button" class="seg-btn" id="jt-cut" onclick="setJobTab(\'cut\')">Cut Info</button><button type="button" class="seg-btn" id="jt-svc" onclick="setJobTab(\'svc\')">Service Info</button></div>'+
+    '<div id="jobtab-cut">'+groupsHTML(JOB_FIELDS_CUT)+'</div>'+
+    '<div id="jobtab-svc">'+groupsHTML(JOB_FIELDS_SVC)+'</div>';
   var legacy=LEGACY_JOB_FIELDS.filter(function(r){return f[r[0]];});
   if(legacy.length)html+='<div class="jf-group"><div class="jf-gtitle">Previous fields</div>'+
     legacy.map(function(r){return '<div class="jf-row"><label>'+escHtml(r[1])+'</label><input id="jf-'+r[0]+'" class="field-input" value="'+escHtml(f[r[0]])+'"></div>';}).join('')+'</div>';
   document.getElementById('job-fields').innerHTML=html;
+  setJobTab(getData('dlr_job_tab','cut'));
   var fb=document.getElementById('job-finish-btn');if(fb)fb.textContent=(j.status==='done'?'Reopen (back to Active)':'Mark finished →');
   document.getElementById('job-modal').style.display='block';
 }
@@ -2759,7 +2782,7 @@ function showUpdateBanner(){
   b.onclick=function(){checkForUpdate();};
   document.body.appendChild(b);
 }
-var APP_VERSION='v15.8';
+var APP_VERSION='v15.9';
 function setVersion(){var els=document.querySelectorAll('.vbadge,.ver-chip');for(var i=0;i<els.length;i++){els[i].textContent=APP_VERSION;els[i].classList.add('ver-tap');els[i].onclick=verTap;}}
 function verTap(){if(confirm('Check for update?'))checkForUpdate();}
 setVersion();
