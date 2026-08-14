@@ -20,7 +20,9 @@ user's cut-sheet workbook (Book_1.xlsx col A): Location/Crew, Location Info,
 Field Measurements, Installation Measurements, Gas Main Information, Cover,
 Gas Service Information, Misc — split into two tabs: **Cut Info** (Foreman,
 Field Measurements, Cuts 1–5) and **Service Info** (Mechanic + the workbook
-sections), shared Job Info/Location Info above (`JOB_FIELDS_CUT`/`_SVC`; old
+sections), shared Job Info/Location Info above. Cuts are composite rows —
+L′×W′×D′ boxes + description (`cutNL/W/D/Desc`), standard 5 with "+ Add cut"
+for more; Field Measurements live on the Service tab (`JOB_FIELDS_CUT`/`_SVC`; old
 Main/Cover/Service/Customer POE render as
 "Previous fields" only when they hold data). The top section auto-populates
 from the job + route (`jobPrefill`: contractor, foreman, house/street/cross

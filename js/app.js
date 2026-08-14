@@ -1546,12 +1546,11 @@ var JOB_FIELDS_COMMON=[
   {group:'Location Info',rows:[['houseNo','House No'],['streetName','Street Name'],['leftCross','Left Cross Street'],['rightCross','Right Cross Street']]}
 ];
 var JOB_FIELDS_CUT=[
-  {group:'Cut Crew',rows:[['foreman','Foreman']]},
-  {group:'Field Measurements',rows:[['poe','POE (LRW/RLW)'],['clToPl','CL to PL'],['plToBl','PL to BL'],['clToBl','CL to BL']]},
-  {group:'Cuts',rows:[['cut1','Cut 1'],['cut2','Cut 2'],['cut3','Cut 3'],['cut4','Cut 4'],['cut5','Cut 5']]}
+  {group:'Cut Crew',rows:[['foreman','Foreman']]}
 ];
 var JOB_FIELDS_SVC=[
   {group:'Service Crew',rows:[['mechanic','Mechanic']]},
+  {group:'Field Measurements',rows:[['poe','POE (LRW/RLW)'],['clToPl','CL to PL'],['plToBl','PL to BL'],['clToBl','CL to BL']]},
   {group:'Installation Measurements',rows:[['clToCv','CL to CV'],['cvToPl','CV to PL'],['plToPoe','PL to POE'],['poeHosToBl','POE/HOS to BL'],['cvToBl','CV to BL']]},
   {group:'Gas Main Information',rows:[['mainToCl','Main to CL'],['oppClToMain','Opp CL to Main'],['mainToPl','Main to PL'],['mainToBl','Main to BL'],['mainToCv','Main to CV'],['pinpointPoe','Pinpoint (Corner to POE)']]},
   {group:'Cover',rows:[['mainCover','Main Cover'],['svcCoverSt1','Service Cover (Street 1)'],['svcCoverSt2','Service Cover (Street 2)'],['svcCoverSt3','Service Cover (Street 3)'],['svcCoverSw1','Service Cover (SW 1)'],['svcCoverSw2','Service Cover (SW 2)'],['svcCoverProp','Service Cover (Property)']]},
@@ -1562,6 +1561,41 @@ var JOB_FIELDS=JOB_FIELDS_COMMON.concat(JOB_FIELDS_CUT,JOB_FIELDS_SVC);
 // Fields from the earlier schema no longer in the sheet — shown only when they
 // already hold data, so nothing previously entered disappears.
 var LEGACY_JOB_FIELDS=[['main','Main'],['cover','Cover'],['service','Service'],['custPoe','Customer POE']];
+// Cuts: L' x W' x D' + description per cut. Standard 5, "+ Add cut" for more.
+// Keys: cutNL / cutNW / cutND / cutNDesc (an old single-string cutN migrates
+// into the description box and is re-saved under cutNDesc).
+function cutRowHTML(i,v){
+  v=v||{};
+  return '<div class="cut-row"><div class="cut-head">Cut '+i+'</div>'+
+    '<div class="cut-dims">'+
+      '<input id="jf-cut'+i+'L" class="field-input" inputmode="decimal" placeholder="L" value="'+escHtml(v.l||'')+'" onblur="mirrorFeet(this)"><span class="cut-x">×</span>'+
+      '<input id="jf-cut'+i+'W" class="field-input" inputmode="decimal" placeholder="W" value="'+escHtml(v.w||'')+'" onblur="mirrorFeet(this)"><span class="cut-x">×</span>'+
+      '<input id="jf-cut'+i+'D" class="field-input" inputmode="decimal" placeholder="D" value="'+escHtml(v.d||'')+'" onblur="mirrorFeet(this)">'+
+    '</div>'+
+    '<input id="jf-cut'+i+'Desc" class="field-input" placeholder="Description" value="'+escHtml(v.desc||'')+'">'+
+  '</div>';
+}
+function maxCutIndex(f){
+  var max=5;
+  Object.keys(f||{}).forEach(function(k){var m=k.match(/^cut(\d+)/);if(m&&(f[k]||'').length)max=Math.max(max,+m[1]);});
+  return max;
+}
+function addJobCut(){
+  var host=document.getElementById('job-cuts');if(!host)return;
+  var n=host.querySelectorAll('.cut-row').length+1;
+  var t=document.createElement('div');t.innerHTML=cutRowHTML(n,{});
+  host.appendChild(t.firstChild);
+}
+function cutShareLines(f){
+  var lines=[];
+  for(var i=1;i<=maxCutIndex(f);i++){
+    var d=[];if(f['cut'+i+'L'])d.push(f['cut'+i+'L']+' L');if(f['cut'+i+'W'])d.push(f['cut'+i+'W']+' W');if(f['cut'+i+'D'])d.push(f['cut'+i+'D']+' D');
+    var desc=f['cut'+i+'Desc']||f['cut'+i]||'';
+    var parts=[];if(d.length)parts.push(d.join(' x '));if(desc)parts.push(desc);
+    if(parts.length)lines.push('Cut '+i+': '+parts.join(' — '));
+  }
+  return lines;
+}
 function setJobTab(t){
   setData('dlr_job_tab',t);
   var c=document.getElementById('jobtab-cut'),s=document.getElementById('jobtab-svc');
@@ -1654,9 +1688,13 @@ function openJobDetail(key){
     return '<div class="jf-group"><div class="jf-gtitle">'+escHtml(g.group)+'</div>'+
       g.rows.map(function(r){return '<div class="jf-row"><label>'+escHtml(r[1])+'</label><input id="jf-'+r[0]+'" class="field-input" value="'+escHtml(val(r[0]))+'"></div>';}).join('')+'</div>';
   }).join('');}
+  var cutRows='';
+  for(var ci=1;ci<=maxCutIndex(f);ci++)cutRows+=cutRowHTML(ci,{l:f['cut'+ci+'L'],w:f['cut'+ci+'W'],d:f['cut'+ci+'D'],desc:f['cut'+ci+'Desc']||f['cut'+ci]});
+  var cutsBlock='<div class="jf-group"><div class="jf-gtitle">Cuts</div><div id="job-cuts">'+cutRows+'</div>'+
+    '<button type="button" class="add-fac-btn" onclick="addJobCut()">+ Add cut</button></div>';
   var html=groupsHTML(JOB_FIELDS_COMMON)+
     '<div class="seg jobtab-seg"><button type="button" class="seg-btn" id="jt-cut" onclick="setJobTab(\'cut\')">Cut Info</button><button type="button" class="seg-btn" id="jt-svc" onclick="setJobTab(\'svc\')">Service Info</button></div>'+
-    '<div id="jobtab-cut">'+groupsHTML(JOB_FIELDS_CUT)+'</div>'+
+    '<div id="jobtab-cut">'+groupsHTML(JOB_FIELDS_CUT)+cutsBlock+'</div>'+
     '<div id="jobtab-svc">'+groupsHTML(JOB_FIELDS_SVC)+'</div>';
   var legacy=LEGACY_JOB_FIELDS.filter(function(r){return f[r[0]];});
   if(legacy.length)html+='<div class="jf-group"><div class="jf-gtitle">Previous fields</div>'+
@@ -1712,10 +1750,14 @@ function buildJobText(loc,ticket,wo,field){
   L.push('Field Data — '+(loc||'Job'));
   var ids=[ticket&&('WR# '+ticket),wo&&('WO# '+wo)].filter(Boolean).join('   ');
   if(ids)L.push(ids);
-  JOB_FIELDS.concat([{group:'Previous fields',rows:LEGACY_JOB_FIELDS}]).forEach(function(g){
+  function pushGroups(groups){groups.forEach(function(g){
     var lines=g.rows.filter(function(r){return f[r[0]];}).map(function(r){return r[1]+': '+f[r[0]];});
     if(lines.length){L.push('');L.push(g.group.toUpperCase());lines.forEach(function(x){L.push(x);});}
-  });
+  });}
+  pushGroups(JOB_FIELDS_COMMON.concat(JOB_FIELDS_CUT));
+  var cuts=cutShareLines(f);
+  if(cuts.length){L.push('');L.push('CUTS');cuts.forEach(function(x){L.push(x);});}
+  pushGroups(JOB_FIELDS_SVC.concat([{group:'Previous fields',rows:LEGACY_JOB_FIELDS}]));
   return L.join('\n');
 }
 function shareJobData(){
@@ -2782,7 +2824,7 @@ function showUpdateBanner(){
   b.onclick=function(){checkForUpdate();};
   document.body.appendChild(b);
 }
-var APP_VERSION='v15.9';
+var APP_VERSION='v16.0';
 function setVersion(){var els=document.querySelectorAll('.vbadge,.ver-chip');for(var i=0;i<els.length;i++){els[i].textContent=APP_VERSION;els[i].classList.add('ver-tap');els[i].onclick=verTap;}}
 function verTap(){if(confirm('Check for update?'))checkForUpdate();}
 setVersion();
