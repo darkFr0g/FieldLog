@@ -18,7 +18,10 @@ accumulated across every loaded route sheet, deduped by WR#/WO# (`dlr_jobs`, key
 `jobKey`). Active/Completed sub-tabs; each job holds permanent **Field Data** — the
 user's cut-sheet workbook (Book_1.xlsx col A): Location/Crew, Location Info,
 Field Measurements, Installation Measurements, Gas Main Information, Cover,
-Gas Service Information, Misc (see `JOB_FIELDS`; old Cut 1–5 etc. render as
+Gas Service Information, Misc — split into two tabs: **Cut Info** (Foreman,
+Field Measurements, Cuts 1–5) and **Service Info** (Mechanic + the workbook
+sections), shared Job Info/Location Info above (`JOB_FIELDS_CUT`/`_SVC`; old
+Main/Cover/Service/Customer POE render as
 "Previous fields" only when they hold data). The top section auto-populates
 from the job + route (`jobPrefill`: contractor, foreman, house/street/cross
 streets parsed from location) — all editable.
