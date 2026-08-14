@@ -1540,6 +1540,7 @@ function updateContCount(){var el=document.getElementById('cont-saved-count');if
 // Field Data schema mirrors the user's "Field Data" cut sheet.
 // Schema mirrors the user's cut-sheet workbook (column A of Book_1.xlsx).
 var JOB_FIELDS=[
+  {group:'Job Info',rows:[['msPlate','M&S Plate'],['project','Project']]},
   {group:'Location / Crew',rows:[['contractor','Contractor'],['foreman','Foreman'],['mechanic','Mechanic']]},
   {group:'Location Info',rows:[['houseNo','House No'],['streetName','Street Name'],['leftCross','Left Cross Street'],['rightCross','Right Cross Street']]},
   {group:'Field Measurements',rows:[['poe','POE (LRW/RLW)'],['clToPl','CL to PL'],['plToBl','PL to BL'],['clToBl','CL to BL']]},
@@ -2758,7 +2759,7 @@ function showUpdateBanner(){
   b.onclick=function(){checkForUpdate();};
   document.body.appendChild(b);
 }
-var APP_VERSION='v15.7';
+var APP_VERSION='v15.8';
 function setVersion(){var els=document.querySelectorAll('.vbadge,.ver-chip');for(var i=0;i<els.length;i++){els[i].textContent=APP_VERSION;els[i].classList.add('ver-tap');els[i].onclick=verTap;}}
 function verTap(){if(confirm('Check for update?'))checkForUpdate();}
 setVersion();
