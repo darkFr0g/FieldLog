@@ -78,7 +78,7 @@ Every calendar day gets a slot, grouped by month.
 
 - **Months** are headers with a log count and are **collapsible** (tap to fold; it remembers).
 - Within a month, days are grouped into **Sunday-start weeks**; a week that crosses a month shows a **↑ / ↓** arrow.
-- **Days with a submitted log** are expandable cards — **Edit / Duplicate / Copy / Share / Delete**, an **EDITED** badge, and the saved time.
+- **Days with a submitted log** are expandable cards — **Edit** (edit the log right in place: location, tickets, foremen, trade/equipment counts, comments, T&E), **Open in Day** (load it into the full Day editor), **Duplicate / Copy / Share / Delete**, an **EDITED** badge, and the saved time.
 - **Days with no log** show a slim **"No log — tap to start"** row (weekday empties in amber, weekends in indigo with a SAT/SUN pill) — tap to open the Day page for that date.
 - **Search** (narrows to matching logs) and **sort** (date / created / last-edited).
 - **Export** (top-right) → CSV or text report for a date range.
@@ -118,6 +118,9 @@ Open from a job's **Contingency** chip (pre-fills that job) or **Settings → Sa
 - Google Maps caps waypoints at ~9–10; you'll get a warning past that.
 
 ### Cloud sync
+
+- **Devices out of step?** Settings → Sync & Account → **Force full re-sync** — run it on each device (signed in, online). It re-pulls everything from the cloud, merges newest-wins, and pushes back so all devices converge.
+
 - Sign in once (**Settings → Sync & Account**) and everything mirrors to your **own private Firebase** so your 4 devices share one dataset.
 - Local-first: the app fully works offline; it syncs when you're online and signed in.
 - **Newest change wins** per record; deletes stick (they don't resurrect).

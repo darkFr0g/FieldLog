@@ -1481,7 +1481,8 @@ function histLogCard(log,banded){
       '<span class="chevron" id="daychev-'+log.date+'">⌄</span></div>'+
     '<div class="log-expanded" id="daylog-'+log.date+'">'+crewsHTML+
       '<div style="padding:10px 16px;display:flex;gap:8px;flex-wrap:wrap">'+
-        '<button class="btn btn-secondary btn-sm" onclick="loadLogForEdit(\''+log.date+'\')">Edit</button>'+
+        '<button class="btn btn-secondary btn-sm" onclick="histEditOpen(\''+log.date+'\')">Edit</button>'+
+        '<button class="btn btn-secondary btn-sm" onclick="loadLogForEdit(\''+log.date+'\')">Open in Day</button>'+
         '<button class="btn btn-secondary btn-sm" onclick="duplicateLog(\''+log.date+'\')">Duplicate</button>'+
         '<button class="btn btn-secondary btn-sm" onclick="copyLogFormatted(\''+log.date+'\')">Copy</button>'+
         '<button class="btn btn-secondary btn-sm" onclick="shareLog(\''+log.date+'\')">Share</button>'+
@@ -1516,6 +1517,53 @@ function duplicateLog(date){
 
 function toggleDay(date){var el=document.getElementById('daylog-'+date);var ch=document.getElementById('daychev-'+date);if(el)el.classList.toggle('open');if(ch)ch.classList.toggle('open');}
 function loadLogForEdit(date){var log=logs.find(function(l){return l.date===date;});if(!log)return;currentCrews=JSON.parse(JSON.stringify(log.crews));document.getElementById('log-date').value=date;updateDateDisplay();saveWorkingDLR();renderCrews();showPage('dlr');showToast('Log loaded for editing');}
+// ── INLINE HISTORY EDIT (edit a submitted log in place; "Open in Day" = full editor) ──
+function histEditOpen(date){
+  var log=logs.find(function(l){return l.date===date;});if(!log)return;
+  var box=document.getElementById('daylog-'+date);if(!box)return;
+  var h='';
+  log.crews.forEach(function(c,i){
+    var p='he-'+date+'-'+i;
+    h+='<div class="he-crew">'+
+      '<div class="he-title">Crew '+c.num+'</div>'+
+      '<div class="he-grid">'+
+        '<div class="he-f"><label>Location</label><input id="'+p+'-loc" class="field-input" value="'+escHtml(c.location||'')+'"></div>'+
+        '<div class="he-f"><label>Ticket #</label><input id="'+p+'-wo" class="field-input" value="'+escHtml(c.wo||'')+'"></div>'+
+        '<div class="he-f"><label>WO#</label><input id="'+p+'-cwo" class="field-input" value="'+escHtml(c.cworxWO||'')+'"></div>'+
+        '<div class="he-f"><label>Foremen (comma-sep)</label><input id="'+p+'-fm" class="field-input" value="'+escHtml((c.foremen||[]).join(', '))+'"></div>'+
+      '</div>'+
+      '<div class="he-counts"><label>Trades</label>'+(c.trades||[]).map(function(t,ti){return '<span class="he-count"><i>'+escHtml(t.n)+'</i><input type="number" min="0" id="'+p+'-t'+ti+'" value="'+(t.c||0)+'"></span>';}).join('')+'</div>'+
+      '<div class="he-counts"><label>Equipment</label>'+(c.equip||[]).map(function(e2,ei){return '<span class="he-count"><i>'+escHtml(e2.n)+'</i><input type="number" min="0" id="'+p+'-e'+ei+'" value="'+(e2.c||0)+'"></span>';}).join('')+'</div>'+
+      '<div class="he-f"><label>Comments</label><textarea id="'+p+'-cm" class="field-input" rows="2">'+escHtml(c.comments||'')+'</textarea></div>'+
+      (c.te?('<div class="he-grid">'+
+        '<div class="he-f"><label>T&amp;E Hours</label><input id="'+p+'-teh" class="field-input" value="'+escHtml(c.teHours||'')+'"></div>'+
+        '<div class="he-f"><label>T&amp;E Reason</label><input id="'+p+'-ter" class="field-input" value="'+escHtml(c.teReason||'')+'"></div>'+
+      '</div><div class="he-f"><label>T&amp;E Remarks</label><textarea id="'+p+'-tem" class="field-input" rows="2">'+escHtml(c.teRemarks||'')+'</textarea></div>'):'')+
+    '</div>';
+  });
+  h+='<div class="he-actions">'+
+    '<button class="btn btn-green btn-sm" onclick="histEditSave(\''+date+'\')">Save changes</button>'+
+    '<button class="btn btn-secondary btn-sm" onclick="renderHistory()">Cancel</button>'+
+  '</div>';
+  box.innerHTML=h;box.classList.add('open');
+  var chev=document.getElementById('daychev-'+date);if(chev)chev.classList.add('open');
+}
+function histEditSave(date){
+  var log=logs.find(function(l){return l.date===date;});if(!log)return;
+  log.crews.forEach(function(c,i){
+    var p='he-'+date+'-'+i;
+    function v(s){var el=document.getElementById(p+s);return el?el.value:null;}
+    c.location=(v('-loc')||'').trim();c.wo=(v('-wo')||'').trim();c.cworxWO=(v('-cwo')||'').trim();
+    var fm=v('-fm');if(fm!==null)c.foremen=fm.split(/\s*,\s*/).filter(Boolean);
+    (c.trades||[]).forEach(function(t,ti){var x=v('-t'+ti);if(x!==null)t.c=Math.max(0,parseInt(x,10)||0);});
+    (c.equip||[]).forEach(function(e2,ei){var x=v('-e'+ei);if(x!==null)e2.c=Math.max(0,parseInt(x,10)||0);});
+    var cm=v('-cm');if(cm!==null)c.comments=cm;
+    if(c.te){c.teHours=(v('-teh')||'').trim();c.teReason=(v('-ter')||'').trim();c.teRemarks=v('-tem')||'';}
+  });
+  log.savedAt=new Date().toISOString();
+  setData('dlr_logs',logs);syncPushLog(log);
+  renderHistory();showToast('Log updated');
+}
 function deleteLog(date){if(!confirm('Delete log for '+fmtDate(date)+'?'))return;logs=logs.filter(function(l){return l.date!==date;});setData('dlr_logs',logs);syncDeleteLog(date);renderHistory();updateSettingsCounts();showToast('Log deleted');}
 
 // ── SETTINGS ─────────────────────────────────────────────────────
@@ -2841,6 +2889,25 @@ function syncPushWorking(){
     userCol('meta').doc('working').set(payload).catch(function(){});
   },1400);
 }
+// Full re-sync: tear down listeners, re-pull everything from Firestore (merge
+// rules apply: newest savedAt wins, tombstones stick), then push the merged
+// state back up so every device converges on the same dataset.
+function forceFullResync(){
+  if(!syncOn()){showToast('Sign in first — this device isn’t syncing');return;}
+  showToast('Re-syncing everything…');
+  stopSync();
+  startSync(); // re-subscribes logs/mileage/drafts/route/routefile/working + syncMeta pulls
+  setTimeout(function(){
+    syncPushAll(); // push the merged state back up
+    var a=document.querySelector('.page.active');
+    if(a){if(a.id==='page-dlr'){renderCrews();renderMileage();}
+      else if(a.id==='page-history')renderHistory();
+      else if(a.id==='page-jobs')renderJobs();
+      else if(a.id==='page-route'&&allData&&allData.headers)renderRouteResults();}
+    updateSettingsCounts();markSynced();
+    showToast('Full re-sync complete — '+logs.length+' logs · '+Object.keys(getJobs()).filter(function(k){return !getJobs()[k].deleted;}).length+' jobs');
+  },3500);
+}
 function syncPushAll(){if(!syncOn())return;logs.forEach(function(l){syncPushLog(l);});syncPushDrafts();syncPushLists();syncPushMileage();syncPushProfile();syncPushRoute();syncPushContingencies();syncPushJobs();}
 
 function updateAccountUI(){
@@ -2877,7 +2944,7 @@ function showUpdateBanner(){
   b.onclick=function(){checkForUpdate();};
   document.body.appendChild(b);
 }
-var APP_VERSION='v16.1';
+var APP_VERSION='v16.2';
 function setVersion(){var els=document.querySelectorAll('.vbadge,.ver-chip');for(var i=0;i<els.length;i++){els[i].textContent=APP_VERSION;els[i].classList.add('ver-tap');els[i].onclick=verTap;}}
 function verTap(){if(confirm('Check for update?'))checkForUpdate();}
 setVersion();
