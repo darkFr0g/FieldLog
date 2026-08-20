@@ -66,7 +66,27 @@ function restoreRoute(){
   allData=r;
   renderRouteResults();
 }
-function saveWorkingDLR(){try{var d=document.getElementById('log-date');setData('dlr_working',{date:d?d.value:today(),crews:currentCrews});}catch(e){}}
+// ── DEVICE PROVENANCE (per-device name; stamps every synced write) ──
+function deviceName(){return getData('dlr_device','');}
+function setDeviceName(v){setData('dlr_device',String(v||'').trim());showToast(deviceName()?('Edits from here now stamp as “'+deviceName()+'”'):'Device name cleared');}
+// "5:42 PM · 8/14 · iPhone" — the little italic stamp text
+function provTxt(iso,dev){
+  if(!iso)return '';var d=new Date(iso);if(isNaN(d))return '';
+  var t=d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+  return t+' · '+(d.getMonth()+1)+'/'+d.getDate()+(dev?' · '+dev:'');
+}
+function provHTML(iso,dev){var s=provTxt(iso,dev);return s?'<i class="prov">'+escHtml(s)+'</i>':'';}
+// Day header stamp: latest of this date's draft vs the live scratchpad.
+function updateDayProv(){
+  var el=document.getElementById('day-prov');if(!el)return;
+  var date=(document.getElementById('log-date')||{}).value;
+  var d=getData('dlr_drafts',{})[date],w=getData('dlr_working',null);
+  var src=null;
+  if(d&&d.savedAt)src={at:d.savedAt,dev:d.dev};
+  if(w&&w.at&&(!w.date||w.date===date)&&(!src||w.at>src.at))src={at:w.at,dev:w.dev};
+  el.innerHTML=src?(' · '+provHTML(src.at,src.dev)):'';
+}
+function saveWorkingDLR(){try{var d=document.getElementById('log-date');setData('dlr_working',{date:d?d.value:today(),crews:currentCrews,at:new Date().toISOString(),dev:deviceName()});}catch(e){}}
 function clearWorkingDLR(){try{localStorage.removeItem('dlr_working');}catch(e){}}
 function restoreWorkingDLR(){
   var w=getData('dlr_working',null);
@@ -516,7 +536,8 @@ function renderRouteResults(){
   });
   cciBar.classList.toggle('visible',allData.ccis.length>0);
   var grouped=groupByWOLocation(allData.flavin);var keys=Object.keys(grouped);
-  document.getElementById('genDlrInfo').innerHTML=(allData.routeDate?'<div class="gen-dlr-date">'+escHtml(fmtDate(allData.routeDate))+'</div>':'')+'<b>'+allData.flavin.length+' job row'+(allData.flavin.length!==1?'s':'')+' → '+keys.length+' DLR block'+(keys.length!==1?'s':'')+' by WO / Location</b>';
+  document.getElementById('genDlrInfo').innerHTML=(allData.routeDate?'<div class="gen-dlr-date">'+escHtml(fmtDate(allData.routeDate))+'</div>':'')+'<b>'+allData.flavin.length+' job row'+(allData.flavin.length!==1?'s':'')+' → '+keys.length+' DLR block'+(keys.length!==1?'s':'')+' by WO / Location</b>'+
+    (getData('dlr_route_sa','')?'<div>'+provHTML(getData('dlr_route_sa',''),getData('dlr_route_dev',''))+'</div>':'');
   document.getElementById('genDlrBar').classList.add('visible');
   updateViewSheetBtn();
   routeAll=false;routeCRs=false;routeMine='flavin';routeCo='';
@@ -981,7 +1002,7 @@ function generateDLR(){
 // ── DLR RENDERING ────────────────────────────────────────────────
 function today(){return new Date().toISOString().split('T')[0];}
 function fmtDate(d){var dt=new Date(d+'T12:00:00');return dt.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});}
-function updateDateDisplay(){var v=document.getElementById('log-date').value;document.getElementById('today-display').textContent=fmtDate(v);mileDate=v;saveWorkingDLR();renderMileage();}
+function updateDateDisplay(){var v=document.getElementById('log-date').value;document.getElementById('today-display').textContent=fmtDate(v);mileDate=v;saveWorkingDLR();renderMileage();updateDayProv();}
 function initLogDate(){var d=today();document.getElementById('log-date').value=d;document.getElementById('today-display').textContent=fmtDate(d);}
 
 function addCrew(){
@@ -1010,6 +1031,7 @@ function renderCrews(){
     return;
   }
   container.innerHTML=currentCrews.map(function(crew,i){return crewHTML(crew,i);}).join('')+crewSummaryHTML();
+  updateDayProv();
 }
 // Copyable comma-separated WR#/WO# list for the day's jobs (mirrors All jobs footer).
 // ONE color per job position drives the whole block AND its WR#/WO# pill.
@@ -1327,7 +1349,7 @@ function closePicker(e){
 function saveDraft(btn){
   var date=document.getElementById('log-date').value;
   var drafts=getData('dlr_drafts',{}),sa=new Date().toISOString();
-  drafts[date]={date:date,crews:JSON.parse(JSON.stringify(currentCrews)),savedAt:sa};
+  drafts[date]={date:date,crews:JSON.parse(JSON.stringify(currentCrews)),savedAt:sa,dev:deviceName()};
   setData('dlr_drafts',drafts);lastDraftSave=new Date(sa).getTime();syncPushDrafts();showToast('Draft saved — syncs to your other devices');
   if(btn&&btn.classList){
     var orig=btn.getAttribute('data-lbl')||btn.textContent;btn.setAttribute('data-lbl',orig);
@@ -1371,7 +1393,7 @@ function submitLog(){
   var idx=logs.findIndex(function(l){return l.date===date;});
   var now=new Date().toISOString();
   var createdAt=(idx>=0&&logs[idx].createdAt)||now;
-  var entry={date:date,crews:JSON.parse(JSON.stringify(currentCrews)),submitted:true,createdAt:createdAt,savedAt:now};
+  var entry={date:date,crews:JSON.parse(JSON.stringify(currentCrews)),submitted:true,createdAt:createdAt,savedAt:now,dev:deviceName()};
   if(idx>=0)logs[idx]=entry;else logs.unshift(entry);
   logs.sort(function(a,b){return b.date.localeCompare(a.date);});
   setData('dlr_logs',logs);
@@ -1469,7 +1491,7 @@ function histLogCard(log,banded){
   }).join('');
   var edited=(log.createdAt&&log.savedAt&&log.savedAt!==log.createdAt);
   var editedBadge=edited?' <span class="edited-tag">EDITED</span>':'';
-  var savedTxt=log.savedAt?(' · saved '+fmtShortStamp(log.savedAt)):'';
+  var savedTxt=log.savedAt?(' · '+provHTML(log.savedAt,log.dev)):'';
   // CworX audit summary on the collapsed header: green when all entered, amber otherwise.
   var cwxDone=log.crews.filter(function(c){return c.cworxEntered;}).length;
   var cwxSum=' · <span class="hcwx-sum'+(cwxDone===log.crews.length?' ok':'')+'">CworX '+cwxDone+'/'+log.crews.length+'</span>';
@@ -1560,7 +1582,7 @@ function histEditSave(date){
     var cm=v('-cm');if(cm!==null)c.comments=cm;
     if(c.te){c.teHours=(v('-teh')||'').trim();c.teReason=(v('-ter')||'').trim();c.teRemarks=v('-tem')||'';}
   });
-  log.savedAt=new Date().toISOString();
+  log.savedAt=new Date().toISOString();log.dev=deviceName();
   setData('dlr_logs',logs);syncPushLog(log);
   renderHistory();showToast('Log updated');
 }
@@ -1581,7 +1603,7 @@ function renderListItems(items){
 function addListItem(){var input=document.getElementById('new-item-input');var val=input.value.trim();if(!val)return;if(editingList==='trade'){trades.push(val);setData('dlr_trades',trades);renderListItems(trades);}else{equipment.push(val);setData('dlr_equipment',equipment);renderListItems(equipment);}input.value='';updateSettingsCounts();syncPushLists();}
 function removeListItem(i){if(editingList==='trade'){trades.splice(i,1);setData('dlr_trades',trades);renderListItems(trades);}else{equipment.splice(i,1);setData('dlr_equipment',equipment);renderListItems(equipment);}updateSettingsCounts();syncPushLists();}
 function closeListModal(e){if(!e||e.target.classList.contains('modal-overlay'))document.getElementById('list-modal').style.display='none';}
-function updateSettingsCounts(){document.getElementById('trade-count').textContent=trades.length+' items';document.getElementById('equip-count').textContent=equipment.length+' items';document.getElementById('log-count-display').textContent=logs.length;updateContCount();}
+function updateSettingsCounts(){var dn=document.getElementById('dev-name');if(dn&&document.activeElement!==dn)dn.value=deviceName();document.getElementById('trade-count').textContent=trades.length+' items';document.getElementById('equip-count').textContent=equipment.length+' items';document.getElementById('log-count-display').textContent=logs.length;updateContCount();}
 function contCount(){var all=getCont();return Object.keys(all).filter(function(k){return all[k]&&!all[k].deleted;}).length;}
 function updateContCount(){var el=document.getElementById('cont-saved-count');if(el)el.textContent=contCount()+' →';}
 // ── JOBS LEDGER (persistent assigned jobs + permanent field/cut data) ──
@@ -1687,7 +1709,7 @@ function accumulateJobs(){
     var tk=gv(row,h,'Ticket #')||'',loc=gv(row,h,'Location')||'',wo=gv(row,h,'Layout/CWORX Work Order #')||'';
     var k=jobKey(tk,wo);if(!k)return;
     var j=jobs[k];
-    if(!j){jobs[k]={key:k,ticket:cleanTicket(tk),wo:wo,location:loc,contractor:co||'',inspector:allData.name||'',status:'active',firstSeen:now,savedAt:now,field:{}};changed=true;return;}
+    if(!j){jobs[k]={key:k,ticket:cleanTicket(tk),wo:wo,location:loc,contractor:co||'',inspector:allData.name||'',status:'active',firstSeen:now,savedAt:now,dev:deviceName(),field:{}};changed=true;return;}
     if(j.deleted)return;
     var upd=false;
     if(loc&&j.location!==loc){j.location=loc;upd=true;}
@@ -1724,6 +1746,7 @@ function jobRow(j){
       (j.contractor?'<span'+(jc?' style="color:'+jc+';font-weight:800"':'')+'>'+escHtml(j.contractor)+'</span>':'')+
       (hasField?'<span class="jr-flag">field data</span>':'')+
       (j.status==='done'&&j.doneAt?'<span>done '+escHtml(new Date(j.doneAt).toLocaleDateString('en-US',{month:'short',day:'numeric'}))+'</span>':'')+
+      (j.savedAt?provHTML(j.savedAt,j.dev):'')+
     '</div></div><span class="jr-chev">›</span></div>';
 }
 function openJobDetail(key){
@@ -1748,7 +1771,7 @@ function openJobDetail(key){
   if(legacy.length)html+='<div class="jf-group"><div class="jf-gtitle">Previous fields</div>'+
     legacy.map(function(r){return '<div class="jf-row"><label>'+escHtml(r[1])+'</label><input id="jf-'+r[0]+'" class="field-input" value="'+escHtml(f[r[0]])+'"></div>';}).join('')+'</div>';
   document.getElementById('job-fields').innerHTML=html;
-  var st=document.getElementById('job-autosave');if(st)st.textContent='Autosaves as you type';
+  var st=document.getElementById('job-autosave');if(st)st.textContent=j.savedAt?('Saved '+provTxt(j.savedAt,j.dev)+' — autosaves as you type'):'Autosaves as you type';
   setJobTab(getData('dlr_job_tab','cut'));
   var fb=document.getElementById('job-finish-btn');if(fb)fb.textContent=(j.status==='done'?'Reopen (back to Active)':'Mark finished →');
   document.getElementById('job-modal').style.display='block';
@@ -1761,10 +1784,10 @@ function jobAutosaveNow(){
   if(!window._jobKey)return;
   var jobs=getJobs(),j=jobs[window._jobKey];if(!j||j.deleted)return;
   var host=document.getElementById('job-fields');if(!host||!host.querySelector('input'))return;
-  j.field=collectJobFields();j.savedAt=new Date().toISOString();
+  j.field=collectJobFields();j.savedAt=new Date().toISOString();j.dev=deviceName();
   setData('dlr_jobs',jobs);syncPushJobs();
   var st=document.getElementById('job-autosave');
-  if(st)st.textContent='Autosaved '+new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+  if(st)st.textContent='Autosaved '+provTxt(new Date().toISOString(),deviceName());
 }
 (function(){
   var host=document.getElementById('job-fields');
@@ -1775,7 +1798,7 @@ function jobAutosaveNow(){
 })();
 function saveJobDetail(){
   var key=window._jobKey,jobs=getJobs(),j=jobs[key];if(!j)return;
-  j.field=collectJobFields();j.savedAt=new Date().toISOString();
+  j.field=collectJobFields();j.savedAt=new Date().toISOString();j.dev=deviceName();
   setData('dlr_jobs',jobs);syncPushJobs();showToast('Field data saved');renderJobs();
 }
 function toggleJobDone(){
@@ -1784,7 +1807,7 @@ function toggleJobDone(){
   var now=new Date().toISOString();
   if(j.status==='done'){j.status='active';j.doneAt='';showToast('Reopened → Active');}
   else{j.status='done';j.doneAt=now;showToast('Finished → Completed');}
-  j.savedAt=now;setData('dlr_jobs',jobs);syncPushJobs();
+  j.savedAt=now;j.dev=deviceName();setData('dlr_jobs',jobs);syncPushJobs();
   document.getElementById('job-modal').style.display='none';renderJobs();
 }
 function deleteJobConfirm(){
@@ -1807,7 +1830,7 @@ function saveNewJob(){
   var jobs=getJobs();
   if(jobs[key]&&!jobs[key].deleted){document.getElementById('addjob-modal').style.display='none';jobsTab='active';renderJobs();openJobDetail(key);showToast('That job is already in your list — opened it');return;}
   var now=new Date().toISOString();
-  jobs[key]={key:key,ticket:cleanTicket(wr),wo:wo,location:loc,contractor:co,inspector:(allData&&allData.name)||getProfile().name||'',status:'active',firstSeen:now,savedAt:now,manual:true,field:{contractor:co}};
+  jobs[key]={key:key,ticket:cleanTicket(wr),wo:wo,location:loc,contractor:co,inspector:(allData&&allData.name)||getProfile().name||'',status:'active',firstSeen:now,savedAt:now,dev:deviceName(),manual:true,field:{contractor:co}};
   setData('dlr_jobs',jobs);syncPushJobs();
   document.getElementById('addjob-modal').style.display='none';
   jobsTab='active';renderJobs();openJobDetail(key);
@@ -2235,7 +2258,7 @@ function saveContingency(){
   var id=num?('n:'+num.toLowerCase()):('c'+(new Date().getTime()));
   var ref=data['cont-pin1-ref']||data['cont-pin2-ref']||'';
   var all=getCont();
-  all[id]={id:id,savedAt:new Date().toISOString(),label:(num||'Contingency')+(ref?' · '+ref:''),data:data};
+  all[id]={id:id,savedAt:new Date().toISOString(),dev:deviceName(),label:(num||'Contingency')+(ref?' · '+ref:''),data:data};
   setData('dlr_contingencies',all);syncPushContingencies();renderContSaved();
   dismissContDraft(); // safely stored now — the working draft has served its purpose
   showToast('Contingency saved for later');
@@ -2259,9 +2282,9 @@ function renderContSaved(){
   updateContCount();
   var host=document.getElementById('cont-saved-list');if(!host)return;
   host.innerHTML=items.length?items.map(function(e){
-    var when=e.savedAt?new Date(e.savedAt).toLocaleDateString('en-US',{month:'short',day:'numeric'}):'';
+    var when=provTxt(e.savedAt,e.dev);
     return '<div class="cs-item">'+
-      '<div class="cs-main" onclick="loadContingency(\''+e.id.replace(/'/g,"\\'")+'\')"><div class="cs-label">'+escHtml(e.label||'Contingency')+'</div><div class="cs-when">saved '+escHtml(when)+' · tap to load</div></div>'+
+      '<div class="cs-main" onclick="loadContingency(\''+e.id.replace(/'/g,"\\'")+'\')"><div class="cs-label">'+escHtml(e.label||'Contingency')+'</div><div class="cs-when">'+escHtml(when)+' · tap to load</div></div>'+
       '<button type="button" class="cs-del" onclick="deleteContingency(\''+e.id.replace(/'/g,"\\'")+'\')">×</button></div>';
   }).join(''):'<div class="cs-empty">No saved contingencies yet</div>';
 }
@@ -2774,7 +2797,7 @@ function startSync(){
   fbUnsubRoute=userCol('meta').doc('route').onSnapshot(function(d){
     if(!d.exists||!d.data().json)return;var sa=d.data().savedAt||'';
     if(sa<=getData('dlr_route_sa',''))return;
-    try{var rd=JSON.parse(d.data().json);if(rd&&rd.headers){allData=rebuildRoute(rd);setData('dlr_route',rd);setData('dlr_route_sa',sa);markSynced();if(document.getElementById('page-route').classList.contains('active'))renderRouteResults();}}catch(e){}
+    try{var rd=JSON.parse(d.data().json);if(rd&&rd.headers){allData=rebuildRoute(rd);setData('dlr_route',rd);setData('dlr_route_sa',sa);setData('dlr_route_dev',d.data().dev||'');markSynced();if(document.getElementById('page-route').classList.contains('active'))renderRouteResults();}}catch(e){}
   },function(){});
   // Live raw workbook — view the uploaded spreadsheet on every device.
   if(fbUnsubRF)fbUnsubRF();
@@ -2865,8 +2888,8 @@ function syncPushJobs(){if(syncOn())userCol('meta').doc('jobs').set({data:getDat
 // Sync the loaded route sheet (as JSON — it has nested arrays Firestore won't take raw).
 function syncPushRoute(){
   if(!syncOn()||!allData||!allData.headers)return;
-  var sa=new Date().toISOString();setData('dlr_route_sa',sa);
-  try{userCol('meta').doc('route').set({json:JSON.stringify(getData('dlr_route',allData)),savedAt:sa}).catch(function(){});}catch(e){}
+  var sa=new Date().toISOString();setData('dlr_route_sa',sa);setData('dlr_route_dev',deviceName());
+  try{userCol('meta').doc('route').set({json:JSON.stringify(getData('dlr_route',allData)),savedAt:sa,dev:deviceName()}).catch(function(){});}catch(e){}
 }
 // Sync the raw workbook so it's viewable on every device. Firestore caps a doc at
 // 1 MiB — oversized sheets stay local-only (returns false so the caller can note it).
@@ -2944,7 +2967,7 @@ function showUpdateBanner(){
   b.onclick=function(){checkForUpdate();};
   document.body.appendChild(b);
 }
-var APP_VERSION='v16.2';
+var APP_VERSION='v16.3';
 function setVersion(){var els=document.querySelectorAll('.vbadge,.ver-chip');for(var i=0;i<els.length;i++){els[i].textContent=APP_VERSION;els[i].classList.add('ver-tap');els[i].onclick=verTap;}}
 function verTap(){if(confirm('Check for update?'))checkForUpdate();}
 setVersion();

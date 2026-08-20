@@ -106,7 +106,7 @@
   <div class="date-header">
     <div>
       <div class="date-display" id="today-display"></div>
-      <div class="date-sub">Daily Log + Mileage · <span class="sync-stamp"></span> · <span class="ver-chip"></span></div>
+      <div class="date-sub">Daily Log + Mileage · <span class="sync-stamp"></span> · <span class="ver-chip"></span><span id="day-prov"></span></div>
     </div>
     <div style="display:flex;gap:8px;align-items:center">
       <button class="btn btn-secondary btn-sm" onclick="syncRefresh(this)" aria-label="Refresh"><span class="ref-ico">↻</span></button>
@@ -205,6 +205,8 @@
       </div>
     </div>
     <div class="settings-card" style="margin-top:8px">
+      <div class="settings-row"><span style="font-size:15px">This device's name</span><input id="dev-name" class="mile-sel" style="width:150px;text-align:right" placeholder="e.g. iPhone" onchange="setDeviceName(this.value)"></div>
+      <div class="settings-row"><span style="font-size:12px;color:var(--ink-3);line-height:1.4">Stamps every edit made from this device — pages show <i>time · date · device</i> so you can tell where data last changed. Per-device, not synced.</span></div>
       <div class="settings-row" style="cursor:pointer" onclick="forceFullResync()"><span style="font-size:15px">Force full re-sync</span><span style="color:var(--ink-3);font-size:13px">Pull + push everything →</span></div>
       <div class="settings-row"><span style="font-size:12px;color:var(--ink-3);line-height:1.4">Devices out of step? Run this on each device (signed in &amp; online). It re-pulls every record from the cloud, merges newest-wins, then pushes back so all devices converge on the same data.</span></div>
     </div>
