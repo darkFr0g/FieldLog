@@ -141,6 +141,25 @@ Open from a job's **Contingency** chip (pre-fills that job) or **Settings → Sa
 
 ---
 
+## Full reset of a device (home-screen app)
+
+iOS gives a home-screen web app its **own storage**, separate from Safari.
+Deleting the icon erases that device's local data — so protect it first:
+
+1. Signed in + online → **Settings → Sync & Account → Force full re-sync**
+   (and optionally **Settings → Data → Back up all data**).
+2. **Delete the home-screen icon** (long-press → Remove) — this wipes the
+   app's local storage, service worker, and caches.
+3. iPhone **Settings → Apps → Safari → Advanced → Website Data** → search
+   `github.io` → swipe → Delete (clears Safari's separate copy).
+4. Open https://darkfr0g.github.io/FieldLog/ in Safari → **Share → Add to
+   Home Screen** (fresh code + current icon).
+5. Open it → sign in → data pulls down → **Force full re-sync** once →
+   confirm the version badge and History count. Reload the route sheet
+   (local-only files don't survive a reset).
+
+Do one device at a time and verify data returned before resetting the next.
+
 ## Tips
 
 - **Updating:** home-screen apps can't be hard-refreshed. The app checks for a new version on launch and shows a "New version ready" banner; **Settings → Check for updates** forces it. The version is shown on every page — make sure all your devices read the same one.
