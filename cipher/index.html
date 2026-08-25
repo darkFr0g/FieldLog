@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Cipher — NATO &amp; Binary Translator</title>
+  <meta name="description" content="Paste text, NATO phonetics, or binary — Cipher detects what it is and translates it instantly. Reads screenshots too. Works offline.">
+  <meta name="theme-color" content="#0b1220">
+
+  <!-- PWA -->
+  <link rel="manifest" href="./manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Cipher">
+  <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
+
+  <link rel="stylesheet" href="./css/styles.css">
+</head>
+<body>
+
+  <header class="hdr">
+    <div class="hdr-title">
+      <h1>Cipher</h1>
+      <span class="vbadge">v1.0</span>
+    </div>
+    <p class="hdr-sub">NATO &amp; binary translator — paste anything, it just works.</p>
+  </header>
+
+  <main>
+    <!-- Input -->
+    <section class="panel">
+      <div class="inp-tools">
+        <button id="btn-paste" class="btn btn-accent" type="button">Paste</button>
+        <button id="btn-ocr" class="btn" type="button">Read screenshot</button>
+        <button id="btn-clear" class="btn btn-ghost" type="button">Clear</button>
+      </div>
+      <textarea id="inp" rows="4" autocapitalize="off" autocomplete="off" spellcheck="false"
+        placeholder="Paste or type text, NATO words, or binary here&#8230;&#10;You can also paste / drop a screenshot."></textarea>
+      <div class="mode-row">
+        <span class="mode-label">Input:</span>
+        <button class="chip chip-on" data-mode="auto" type="button">Auto</button>
+        <button class="chip" data-mode="text" type="button">Text</button>
+        <button class="chip" data-mode="nato" type="button">NATO</button>
+        <button class="chip" data-mode="binary" type="button">Binary</button>
+        <span id="detected" class="detected"></span>
+      </div>
+      <div id="ocr-status" class="ocr-status" hidden></div>
+      <input id="file-ocr" type="file" accept="image/*" hidden>
+    </section>
+
+    <!-- Output -->
+    <section id="out" class="out">
+      <div class="empty">
+        <div class="empty-icon">01</div>
+        <p>Nothing to translate yet.</p>
+        <p class="empty-hint">Try pasting <em>Bravo Romeo Oscar November X-ray</em><br>or <em>01101000 01101001</em></p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="ftr">
+    <p>Runs entirely on this device · works offline · nothing is uploaded.</p>
+  </footer>
+
+  <div id="drop-veil" class="drop-veil" hidden><div>Drop screenshot to read it</div></div>
+  <div id="toast" class="toast" hidden></div>
+
+  <script src="./js/app.js"></script>
+</body>
+</html>
