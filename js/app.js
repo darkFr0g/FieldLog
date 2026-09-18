@@ -2445,6 +2445,7 @@ function addCommentPhrase(phrase){
 }
 function addNoExcavation(){addCommentPhrase('NO ADDITIONAL EXCAVATION REQUIRED!');}
 function addCorrosionAware(){addCommentPhrase('Corrosion is aware of the exposure.');}
+function addMainExposedCorrosionAware(){addCommentPhrase('Main is exposed - corrosion is aware of the exposure.');}
 function composeContingencyEmail(){
   var subject=getContVal('cont-subject');
   var url='mailto:?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(buildContingencyBody());
@@ -2967,7 +2968,7 @@ function showUpdateBanner(){
   b.onclick=function(){checkForUpdate();};
   document.body.appendChild(b);
 }
-var APP_VERSION='v16.3';
+var APP_VERSION='v16.4';
 function setVersion(){var els=document.querySelectorAll('.vbadge,.ver-chip');for(var i=0;i<els.length;i++){els[i].textContent=APP_VERSION;els[i].classList.add('ver-tap');els[i].onclick=verTap;}}
 function verTap(){if(confirm('Check for update?'))checkForUpdate();}
 setVersion();
