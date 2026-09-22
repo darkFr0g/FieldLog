@@ -325,6 +325,13 @@ assistant — ChatGPT/Codex reads it automatically the way Claude reads this
 file. Keep the two consistent: `CLAUDE.md` = full project brief, `AGENTS.md` =
 rules of engagement + pointers here.
 
+**`RESEARCH.md`** (repo root) — the user also uses **Perplexity** for
+sourced/current-fact research (pricing, API docs, best practice). Perplexity
+has no repo access; findings get pasted into `RESEARCH.md` by the user, and
+that's where Claude/ChatGPT should check before building against an external
+fact that might be stale in training data (see `AGENTS.md` → "Three-tool
+workflow" for the full protocol).
+
 ## How we work together (sessions & memory)
 
 This brief is written here on purpose: **`CLAUDE.md` is committed to the repo, so

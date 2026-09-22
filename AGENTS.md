@@ -81,3 +81,23 @@ user-facing feature guide. This file adds the rules of engagement.
   don't stall on questions. If it's genuinely destructive/irreversible, ask.
 - Backlog priorities live at the bottom of `CLAUDE.md` (#1 is true Google
   Maps route optimization via the Directions API).
+
+## Three-tool workflow (Claude + ChatGPT/Codex + Perplexity)
+
+The user runs Claude, ChatGPT/Codex, and Perplexity together on this project.
+They don't talk to each other directly — **the user is the router** — but they
+share state through this repo, the same way Claude and ChatGPT share `CLAUDE.md`.
+
+- **Claude / ChatGPT (Codex)** — the builders. Both have repo access and follow
+  this file.
+- **Perplexity** (or any web-search tool) — the researcher. No repo access,
+  can't commit. Its job is *current, sourced* facts: API pricing, auth setup,
+  current docs, best practice — things a coding model's training data may be
+  stale on.
+- **`RESEARCH.md`** (repo root) is the handoff point. Before building anything
+  that depends on an external fact you're not certain is current (pricing, an
+  API's auth model, rate limits, a UI that changes often), check `RESEARCH.md`
+  first. If it's not answered there, tell the user what to ask Perplexity
+  rather than guessing — then once they paste the answer back, add it to
+  `RESEARCH.md` (with the source links) before building on it.
+
