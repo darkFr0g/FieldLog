@@ -650,3 +650,15 @@ textarea.field-input{resize:none;min-height:70px;line-height:1.5}
 .pay-sec{margin:0 12px 28px;padding:12px;background:var(--surface);border:2px solid var(--border);border-radius:var(--radius-sm)}
 .pay-nav{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
 .pay-lbl{font-size:13px;font-weight:800}
+
+/* ── Bronx intersection picker (tad-patch) ── */
+.bxn-ov{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;display:none;}
+.bxn-sheet{position:absolute;left:0;right:0;bottom:0;max-height:82vh;overflow-y:auto;background:var(--surface);border-radius:14px 14px 0 0;padding:14px 14px calc(14px + env(safe-area-inset-bottom));}
+.bxn-head{display:flex;align-items:center;justify-content:space-between;font-weight:700;font-size:17px;margin-bottom:10px;}
+.bxn-lbl{display:block;font-size:13px;color:var(--ink-3);margin:10px 0 6px;}
+.bxn-lbl .field-input{margin-top:4px;font-size:17px;padding:12px;}
+.bxn-list{display:flex;flex-direction:column;gap:6px;max-height:32vh;overflow-y:auto;}
+.bxn-item{text-align:left;font-size:16px;padding:12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--ink);}
+.bxn-item:active{background:var(--surface-2);}
+.bxn-empty{padding:14px;text-align:center;color:var(--ink-4);font-size:14px;}
+.nst-mi.nst-auto{border-color:#2e7d32;background:#eef7ee;}
