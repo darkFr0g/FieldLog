@@ -21,6 +21,7 @@ var SHELL_ASSETS = [
   './css/styles.css',
   './js/app.js',
   './js/tad-patch.js',
+  './data/bxn-streets.json',
   './manifest.json'
 ];
 var STATIC_ASSETS = [
