@@ -224,13 +224,19 @@ Rocksplitter, Sawcut Equipment, Other.
 
 ## Big project: replace the monthly Excel mileage workbook
 
-> **PAUSED (v11.3).** The **Mileage** section (on Day) and the **Month** tab are
-> **hidden in the UI** — the user said the mileage approach "isn't working out as
-> planned." All the code (mileage capture, `renderMonth`, `buildCIMileageHTML`,
-> `exportCIMileage`, etc.) is **left intact**; only the entry points are hidden
-> (`display:none` on `#nav-month`, the Day `.day-divider` Mileage toggle, and
-> `#mileage-body`). To bring it back, remove those three `display:none`s. Revisit
-> the whole approach before re-enabling.
+> **ACTIVE again (v16.x).** The earlier v11.3 pause is over — Mileage (Day tab)
+> and the **Month** tab are live. Current direction (Oct 2026, branch
+> `tad/mileage-payroll`): kill the laptop entirely. The app must (1) make
+> mileage entry thumb-friendly, (2) **generate the actual submittable Excel
+> file** (not just a PDF), (3) auto-calculate leg miles from addresses via a
+> Bronx intersection picker (permit-locator style: pick street → only its real
+> cross streets), since the user works Bronx-only.
+>
+> **Delivery note:** `js/app.js` is ~210KB — too big for some push tooling.
+> New work ships as an additive override file **`js/tad-patch.js`** (loaded
+> after `app.js`; redefines `renderMileage`/`renderMonth`, adds payroll +
+> Excel export). Also listed in `sw.js` SHELL_ASSETS. When finalized, fold it
+> into `js/app.js`, delete the patch file, and bump APP_VERSION.
 
 The user keeps a macro-heavy `.xlsm` (`3-Mileage <Month> top dog.xlsm`, built with
 a separate "Claude-in-Excel" agent — it has its own `Claude Log` sheet) that is
@@ -238,19 +244,29 @@ the monthly system of record: **INPUT** (daily mileage hand-entry), **CI Mileage
 Form** (CI-660-1 reimbursement), **Daily Log** (per-stop PDF), **TI-1** (truck
 inspection), Payroll, Records, plus a **`#DLR`** sheet whose columns exactly match
 Field Log's CSV export. Goal: **Field Log absorbs capture + generates the
-submission PDFs, retiring the workbook.** Incremental, keep Excel as the safety
-net until each PDF is faithful.
-- **Done:** (1) Mileage capture tab — odometer-on-arrival per stop is actually
-  **miles driven per leg** + one Start odometer that carries the running total;
-  stops pre-load from the loaded route (shortened address + ticket, QIAS stripped);
-  day fields Shift/OT/CCI/POET#/Work Code/Expenses/Notes carry forward; "Copy
-  stops from another day" + "Map drive". (Profile) seeded form-header profile.
-  (2) **CI Mileage Form PDF** — `buildCIMileageHTML` renders the user's CI-660-1
-  layout for the month from the mileage data; `exportCIMileage` prints via
-  `window.print()` (print-only `#printArea`, `@media print` isolates it → Save as
-  PDF / email).
-- **Next:** (3) **Daily Log PDF** (per-stop detail), (4) **TI-1** as a stored
-  template — must be **pixel-identical** to the user's version (re-share when building).
+submission files, retiring the workbook.** Incremental, keep Excel as the safety
+net until each output is faithful.
+- **Done:** (1) Mileage capture — per-leg miles + one Start odometer with
+  running total; stops pre-load from the loaded route; day fields carry
+  forward; "Copy stops from another day" + "Map drive". **(2) Phone-first
+  mileage cards** (`tad-patch.js`): card-per-stop, 44px touch targets, running
+  odometer chip per stop, notes behind a toggle, scroll preserved.
+  **(3) Friday payroll report** — Sun–Sat week picker on Month tab, per-day
+  shift/reg-hrs/OT/work-code/task#/expenses, week totals, printable.
+  **(4) CI-660 Excel export** — `exportExcel()` (SheetJS, already vendored)
+  writes `FieldLog_CI660_YYYY-MM.xlsx` with a filled **CI Mileage Form**
+  (CI-660-1 layout: title, employee block, 31 day rows, grand totals,
+  declaration) + **Daily Log** (per-stop odo chain). This is the submittable
+  file — the user confirmed the form must be the CI-660 sheet.
+  (Profile) seeded form-header profile. **CI Mileage Form PDF** also exists
+  (`buildCIMileageHTML` + `exportCIMileage` via `window.print()`).
+- **In progress:** (5) **Bronx intersection dataset** — OSM-derived
+  `{streets, x: {street: [[cross, lat, lon]]}}` JSON baked into the app;
+  powers the permit-locator picker AND auto-miles (haversine × circuity
+  factor between consecutive intersections, manual override kept).
+  (6) **Intersection picker UI** on the mileage cards.
+- **Next:** Daily Log PDF (per-stop detail), TI-1 as stored template —
+  must be **pixel-identical** to the user's version (re-share when building).
 - **Maps:** `openMapsWith` round-trips home → stops → home (origin/dest = Profile
   home); `shortAddr` cleans addresses (drops cross-streets when a house # exists,
   else keeps first cross street; strips `WR…` job prefix); "Smart order" does a
