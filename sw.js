@@ -20,6 +20,7 @@ var SHELL_ASSETS = [
   './index.html',
   './css/styles.css',
   './js/app.js',
+  './js/tad-patch.js',
   './manifest.json'
 ];
 var STATIC_ASSETS = [
