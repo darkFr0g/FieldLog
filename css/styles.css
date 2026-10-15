@@ -626,3 +626,39 @@ textarea.field-input{resize:none;min-height:70px;line-height:1.5}
 .toast.show{opacity:1}
 .prov{font-style:italic;font-size:11px;font-weight:600;color:var(--ink-4)}
 #day-prov .prov{font-size:10px}
+
+/* ── Phone-first stop cards ── */
+.nst-list{display:flex;flex-direction:column;gap:8px;margin:6px 0 10px}
+.nst-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px}
+.nst-card-start{border-color:var(--green-text);background:var(--green-bg)}
+.nst-top{display:flex;align-items:center;gap:8px}
+.nst-num{width:24px;height:24px;flex-shrink:0;border-radius:12px;background:var(--surface-2);color:var(--ink-2);font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center}
+.nst-loc{flex:1;min-width:0;font-size:15px;padding:10px 12px}
+.nst-tkt{font-family:var(--font-mono);font-size:11px;color:var(--ink-4);white-space:nowrap}
+.nst-mid{display:flex;align-items:center;gap:8px;margin-top:8px}
+.nst-mi{width:88px;flex-shrink:0;font-size:17px;font-weight:800;text-align:center;padding:10px 8px}
+.nst-startlbl{font-size:11px;font-weight:800;letter-spacing:.08em;color:var(--green-text)}
+.nst-odo{font-family:var(--font-mono);font-size:12px;color:var(--ink-2);white-space:nowrap}
+.nst-btns{margin-left:auto;display:flex;gap:6px}
+.nst-btn{min-width:44px;height:44px;border:1px solid var(--border);background:var(--surface-2);border-radius:8px;font-size:18px;line-height:1;color:var(--ink-2);cursor:pointer;font-family:var(--font)}
+.nst-del{color:var(--red)}
+.nst-sub{margin-top:4px}
+.nst-notebtn{border:none;background:none;color:var(--ink-4);font-size:12px;cursor:pointer;padding:6px 0;font-family:var(--font)}
+.nst-rmk{margin-top:6px;font-size:13px}
+.nst-startodo{font-size:16px;font-weight:700;padding:10px}
+/* ── Payroll ── */
+.pay-sec{margin:0 12px 28px;padding:12px;background:var(--surface);border:2px solid var(--border);border-radius:var(--radius-sm)}
+.pay-nav{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.pay-lbl{font-size:13px;font-weight:800}
+
+/* ── Bronx intersection picker (tad-patch) ── */
+.bxn-ov{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;display:none;}
+.bxn-sheet{position:absolute;left:0;right:0;bottom:0;max-height:82vh;overflow-y:auto;background:var(--surface);border-radius:14px 14px 0 0;padding:14px 14px calc(14px + env(safe-area-inset-bottom));}
+.bxn-head{display:flex;align-items:center;justify-content:space-between;font-weight:700;font-size:17px;margin-bottom:10px;}
+.bxn-lbl{display:block;font-size:13px;color:var(--ink-3);margin:10px 0 6px;}
+.bxn-lbl .field-input{margin-top:4px;font-size:17px;padding:12px;}
+.bxn-list{display:flex;flex-direction:column;gap:6px;max-height:32vh;overflow-y:auto;}
+.bxn-item{text-align:left;font-size:16px;padding:12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--ink);}
+.bxn-item:active{background:var(--surface-2);}
+.bxn-empty{padding:14px;text-align:center;color:var(--ink-4);font-size:14px;}
+.nst-mi.nst-auto{border-color:#2e7d32;background:#eef7ee;}
